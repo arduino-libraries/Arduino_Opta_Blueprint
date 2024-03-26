@@ -148,6 +148,22 @@ void readInformation(DigitalExpansion &dexp, ExpansionType_t ex_type) {
   }
 }
 
+void readInformation(AnalogExpansion &aexp) {
+  Serial.print("Current expansion Serial Number: ");
+
+  char buffer[32];
+  uint8_t dbuf = 32;
+  uint16_t add = PRODUCTION_DATA_FLASH_ADDRESS;
+  aexp.getFlashData((uint8_t *)buffer,dbuf,add);
+  for(int i = 0;  i < dbuf; i++) {
+    if(std::isprint(buffer[i])) {
+      Serial.print((char)buffer[i]);
+    }
+  }
+  Serial.println();
+
+}
+
 char askToWrite() {
   Serial.println("If you continue, this data will be overwritten.");
   Serial.println("Pay attention this may make the expansion unusable!!!");
@@ -202,6 +218,10 @@ void loop() {
     DigitalExpansion dexp = OptaController.getExpansion(i);
 
     if(dexp) {
+      
+      /* this code will be executed only if dexp is valid i.e. if at the index
+      i there is a digital expansion */
+
       Serial.print("Expansion n. ");
       Serial.print(dexp.getIndex());
       Serial.print(" type ");
@@ -268,6 +288,58 @@ void loop() {
             written[i] = true;
             Serial.println("WRITTEN");
          }
+      }
+    }
+
+    
+    /* ANALOG EXPANSION */
+    AnalogExpansion aexp = OptaController.getExpansion(i);
+
+    if(aexp) {
+      
+      /* this code will be executed only if aexp is valid i.e. if at the index
+      i there is an analog expansion */
+
+      Serial.print("Expansion n. ");
+      Serial.print(aexp.getIndex());
+      Serial.print(" type ");
+      ExpansionType_t ex_type = aexp.getType();
+      printExpansionType(ex_type);
+      Serial.println();
+      
+      readInformation(aexp);
+      
+      if(!written[i]) {
+
+        char ans = askToWrite();
+
+        if( !(ans == 'Y' || ans == 'y') ){
+          continue;
+        }
+
+        Serial.print("\nWriting to ");
+        Serial.println(" ANALOG flash");
+        char product_data_example[32]; // Max 32 bytes
+
+        /*
+         * WRITING INFORMATION FOR OPTA DIGITAL
+         */
+        Serial.println("Write the serial number as hex value on 8 number: ");
+        getHEXNumberFromSerial();
+
+        sprintf(product_data_example, "EXT-AFX00007%c%c%c%c%c%c%c%c",
+            serial_number[0], serial_number[1], serial_number[2],
+            serial_number[3], serial_number[4], serial_number[5],
+            serial_number[6], serial_number[7]);
+
+        Serial.println(product_data_example);
+        // MAX 32 bytes can be written 
+        aexp.setProductData((uint8_t *)product_data_example,
+            strlen(product_data_example));
+        
+        written[i] = true;
+        Serial.println("WRITTEN");
+
       }
     }
   }

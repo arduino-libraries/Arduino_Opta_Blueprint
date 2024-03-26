@@ -98,6 +98,32 @@ void loop() {
         }
       }
     }
+
+    AnalogExpansion aexp = OptaController.getExpansion(i);
+    if(aexp) {
+      Serial.print("\nExpansion n. ");
+      Serial.print(aexp.getIndex());
+      Serial.print(" type ");
+      ExpansionType_t ex_type = aexp.getType();
+      printExpansionType(ex_type);
+
+      /*
+       * READING INFORMATION FROM EXPANSION FLASH 
+       */
+      Serial.println("\n---- READING DATA FROM FLASH ----");
+      uint8_t buffer[32];
+      uint8_t dbuf = 32;
+      uint16_t add = PRODUCTION_DATA_FLASH_ADDRESS;
+      aexp.getFlashData((uint8_t *)buffer,dbuf,add);
+      Serial.print("Serial number: ");
+      for(int i = 0;  i < 32; i++) {
+        if(std::isprint(buffer[i])) {
+          Serial.print((char)buffer[i]);
+        }
+      }
+      Serial.println();
+
+    }
   }
   delay(3000);
 }
