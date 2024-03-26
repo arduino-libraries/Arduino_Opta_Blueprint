@@ -14,16 +14,12 @@
 #ifndef OPTA_BLUEPRINT_H
 #define OPTA_BLUEPRINT_H
 
-#include "AnalogExpansion.h"
 #include "Controller.h"
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
 #include "Expansion.h"
 #include "Module.h"
-#include "OptaAnalog.h"
-#include "OptaAnalogCfg.h"
-#include "OptaAnalogTypes.h"
 #include "OptaDigital.h"
 #include "Protocol.h"
 typedef enum {

@@ -13,7 +13,6 @@
 /* -------------------------------------------------------------------------- */
 
 #include "Controller.h"
-#include "AnalogExpansion.h"
 #include "Arduino.h"
 #include "CommonCfg.h"
 #include "ControllerCfg.h"
@@ -133,11 +132,6 @@ Expansion *Controller::getExpansionPtr(int device) {
         expansions[device] = new DigitalStSolidExpansion();
         setExpStartUpCb(DigitalExpansion::startUp);
         break;
-      case EXPANSION_OPTA_ANALOG:
-        expansions[device] = new AnalogExpansion();
-        setExpStartUpCb(AnalogExpansion::startUp);
-        break;
-
       case EXPANSION_DIGITAL_INVALID:
         expansions[device] = new DigitalExpansion();
         setExpStartUpCb(DigitalExpansion::startUp);
