@@ -22,6 +22,7 @@
 #include "Protocol.h"
 #include "boot.h"
 
+#include "OptaAnalogCfg.h"
 #include "OptaDigitalCfg.h"
 
 Module *OptaExpansion = nullptr;
@@ -275,6 +276,10 @@ int Module::prepare_ans_get_version() {
     tx_buffer[GET_VERSION_MAJOR_POS] = OD_FW_VERSION_MAJOR;
     tx_buffer[GET_VERSION_MINOR_POS] = OD_FW_VERSION_MINOR;
     tx_buffer[GET_VERSION_RELEASE_POS] = OD_FW_VERSION_RELEASE;
+  } else if (expansion_type == EXPANSION_OPTA_ANALOG) {
+    tx_buffer[GET_VERSION_MAJOR_POS] = OA_FW_VERSION_MAJOR;
+    tx_buffer[GET_VERSION_MINOR_POS] = OA_FW_VERSION_MINOR;
+    tx_buffer[GET_VERSION_RELEASE_POS] = OA_FW_VERSION_RELEASE;
   }
   return prepareGetAns(tx_buffer, ANS_ARG_GET_VERSION, ANS_LEN_GET_VERSION,
                        ANS_GET_VERSION_LEN);
