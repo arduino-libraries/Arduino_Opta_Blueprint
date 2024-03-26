@@ -37,8 +37,8 @@ void debug_task() {
     for(int i = 0; i < 8; i++) {
       Serial.print("   Channel ");
       Serial.print(i);
-      Serial.print(" value ");
-      Serial.println(oa->getRtdValue(i));
+      Serial.print(" ADC value ");
+      Serial.println(oa->getAdcValue(i));
     }
     
   } 

@@ -179,6 +179,13 @@ public:
 
   void setProductData(uint8_t *data, uint8_t len);
 
+  bool isChDac(uint8_t ch);
+  bool isChAdc(uint8_t ch);
+  bool isChVoltageDac(uint8_t ch);
+  bool isChCurrentDac(uint8_t ch);
+  bool isChVoltageAdc(uint8_t ch);
+  bool isChCurrentAdc(uint8_t ch);
+
 protected:
   bool verify_address(unsigned int add) override;
   unsigned int i2c_transaction(uint8_t (AnalogExpansion::*prepare)(),
