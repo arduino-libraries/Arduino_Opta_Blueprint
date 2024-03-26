@@ -12,7 +12,7 @@
 /* -------------------------------------------------------------------------- */
 
 #include "OptaBlue.h"
-#include "BossaOpta.h"
+#include "updater/BossaOpta.h"
 #include "fwUpdateDigital.h"
 #include "fwUpdateAnalog.h"
 #include "BossaArduino.h"
@@ -67,9 +67,6 @@ void printExpansionType(ExpansionType_t t) {
   else if(t == EXPANSION_DIGITAL_INVALID) {
     Serial.print("Opta --- DIGITAL [!!Invalid!!] ---");
   }
-  else if(t == EXPANSION_OPTA_ANALOG) {
-    Serial.print("Opta ~~~ ANALOG ~~~ ");
-  }
   else {
     Serial.print("Unknown!");
   }
@@ -100,10 +97,6 @@ bool isUpdatable(int device) {
       unsigned int current_version = M * 100 + m * 10 + r;
       if(EXPANSION_OPTA_DIGITAL_MEC == type || EXPANSION_OPTA_DIGITAL_STS == type) {
          if(od_version > current_version ) {
-            rv = true;
-         }
-      } else if(EXPANSION_OPTA_ANALOG == type) {
-         if(oa_version > current_version ) {
             rv = true;
          }
       }
@@ -180,11 +173,8 @@ void updateTask() {
                if(EXPANSION_OPTA_DIGITAL_MEC == type || EXPANSION_OPTA_DIGITAL_STS == type) {
                   fw = (unsigned char *)opta_digital_fw_update;
                   sz = od_fw_size;
-               } else if(EXPANSION_OPTA_ANALOG == type) {
-                  fw = (unsigned char *)opta_analog_fw_update;
-                  sz = oa_fw_size;
                }
-               
+
                if(sz == 0 || fw == nullptr) {
                   continue;
                }

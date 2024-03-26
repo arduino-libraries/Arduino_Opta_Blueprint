@@ -12,7 +12,7 @@
 /* -------------------------------------------------------------------------- */
 
 #include "OptaBlue.h"
-#include "BossaOpta.h"
+#include "updater/BossaOpta.h"
 #include "BossaArduino.h"
 #include <string>
 

@@ -14,9 +14,13 @@
 #include <cstdint>
 #include <cstring>
 #include <stdint.h>
+
 #ifdef ARDUINO_OPTA
+
+#if __has_include ("utility/BossaOpta.h")
+
 #include "Arduino.h"
-#include "BossaOpta.h"
+#include "utility/BossaOpta.h"
 #include <Arduino_DebugUtils.h>
 
 void BossaOptaObserver::onProgress(int num, int div) {
@@ -178,4 +182,5 @@ bool BossaOpta::flash(const uint8_t *const fw, uint32_t sz) {
 
 BossaOpta BOSSA(obs);
 
+#endif
 #endif

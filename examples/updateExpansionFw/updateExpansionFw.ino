@@ -12,7 +12,7 @@
 /* -------------------------------------------------------------------------- */
 
 #include "OptaBlue.h"
-#include "BossaOpta.h"
+#include "utility/BossaOpta.h"
 #include "fwUpdateDigital.h"
 #include "fwUpdateAnalog.h"
 #include "BossaArduino.h"
