@@ -118,14 +118,16 @@ void getHEXNumberFromSerial() {
 
 
 void readInformation(DigitalExpansion &dexp, ExpansionType_t ex_type) {
-  Serial.println("Current expansion Serial Number: ");
+  Serial.print("Current expansion Serial Number: ");
 
   char buffer[32];
   uint8_t dbuf = 32;
   uint16_t add = PRODUCTION_DATA_FLASH_ADDRESS;
   dexp.getFlashData((uint8_t *)buffer,dbuf,add);
   for(int i = 0;  i < dbuf; i++) {
-    Serial.print((char)buffer[i]);
+    if(std::isprint(buffer[i])) {
+      Serial.print((char)buffer[i]);
+    }
   }
   Serial.println();
   if(ex_type == EXPANSION_OPTA_DIGITAL_MEC ||
@@ -205,6 +207,7 @@ void loop() {
       Serial.print(" type ");
       ExpansionType_t ex_type = dexp.getType();
       printExpansionType(ex_type);
+      Serial.println();
       
       readInformation(dexp,ex_type);
       

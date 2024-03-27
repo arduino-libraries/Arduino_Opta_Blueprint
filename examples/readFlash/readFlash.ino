@@ -69,13 +69,16 @@ void loop() {
       /*
        * READING INFORMATION FROM EXPANSION FLASH 
        */
-      Serial.println("\n---- READING DATA FROM FLASH ----");
+      Serial.println();
       uint8_t buffer[32];
       uint8_t dbuf = 32;
       uint16_t add = PRODUCTION_DATA_FLASH_ADDRESS;
+      Serial.print("Expansion Serial Number: ");
       dexp.getFlashData((uint8_t *)buffer,dbuf,add);
       for(int i = 0;  i < 32; i++) {
-        Serial.print((char)buffer[i]);
+        if(std::isprint(buffer[i])) {
+          Serial.print((char)buffer[i]);
+        }
       }
       Serial.println();
       if(ex_type == EXPANSION_OPTA_DIGITAL_MEC ||
