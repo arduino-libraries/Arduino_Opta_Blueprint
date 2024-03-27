@@ -17,7 +17,7 @@
 
 #ifdef ARDUINO_OPTA
 
-#if __has_include ("utility/BossaOpta.h")
+#if __has_include("utility/BossaOpta.h")
 
 #include "Arduino.h"
 #include "utility/BossaOpta.h"
@@ -68,7 +68,7 @@ bool BossaOpta::begin(HardwareSerial &serial, Controller *c, uint8_t device,
           DEBUG_INFO(" OK!");
           DEBUG_INFO("Connecting to bootloader...");
           if (!_samba.connect(port, 115200)) {
-            DEBUG_INFO(" OK!");
+            DEBUG_INFO(" FAILED!");
 
             rv = false;
           }
