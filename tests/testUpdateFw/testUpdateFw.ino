@@ -26,7 +26,7 @@ using namespace mbed;
 #define NUMBER_OF_UPGRADE  2
 #define FW_MAJOR 0
 #define FW_MINOR 0
-#define FW_RELEASE 12
+#define FW_RELEASE 9
 
 UART BossaSerial(D14, D13, NC, NC);
 
