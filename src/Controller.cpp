@@ -572,6 +572,7 @@ void Controller::checkForExpansions() {
         */
     int attempts = 0;
 
+    bool remain_in_while_loop = true;
     do {
       _send(tmp_exp_add[tmp_num_of_exp], msg_set_address(address), 0);
 
@@ -593,17 +594,21 @@ void Controller::checkForExpansions() {
       tmp_num_of_exp is decreased in the else branch */
 
       if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req)) {
-        parse_address_and_type(address);
+        if (parse_address_and_type(address)) {
+          remain_in_while_loop = (tmp_num_of_exp != initial_value);
+        }
         attempts = 0;
       } else {
         attempts++;
         if (attempts > 2) {
           DEC_WITH_MAX(tmp_num_of_exp, OPTA_CONTROLLER_MAX_EXPANSION_NUM);
+          Serial.println(tmp_num_of_exp);
+          remain_in_while_loop = (tmp_num_of_exp != initial_value);
+        } else {
+          remain_in_while_loop = true;
         }
       }
-
-    } while (tmp_exp_add[tmp_num_of_exp] != 0 &&
-             tmp_num_of_exp != initial_value);
+    } while (tmp_exp_add[tmp_num_of_exp] != 0 && remain_in_while_loop);
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.print("FINAL Number of expansions found ");
