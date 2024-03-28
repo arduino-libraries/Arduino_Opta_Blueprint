@@ -1173,7 +1173,7 @@ bool AnalogExpansion::isChDac(uint8_t ch) {
 
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
-    return (AnalogExpansion::cfg[index].isVoltageDacCh(ch) ||
+    return (AnalogExpansion::cfgs[index].isVoltageDacCh(ch) ||
             AnalogExpansion::cfgs[index].isCurrentDacCh(ch));
   }
   return false;
@@ -1183,7 +1183,7 @@ bool AnalogExpansion::isChAdc(uint8_t ch) {
   //
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
-    return (AnalogExpansion::cfg[index].isVoltageAdcCh(ch) ||
+    return (AnalogExpansion::cfgs[index].isVoltageAdcCh(ch) ||
             AnalogExpansion::cfgs[index].isCurrentAdcCh(ch));
   }
   return false;
@@ -1192,7 +1192,7 @@ bool AnalogExpansion::isChVoltageDac(uint8_t ch) {
   //
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
-    return (AnalogExpansion::cfg[index].isVoltageDacCh(ch));
+    return (AnalogExpansion::cfgs[index].isVoltageDacCh(ch));
   }
   return false;
 }
@@ -1200,7 +1200,7 @@ bool AnalogExpansion::isChCurrentDac(uint8_t ch) {
   //
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
-    return (AnalogExpansion::cfg[index].isCurrentDacCh(ch));
+    return (AnalogExpansion::cfgs[index].isCurrentDacCh(ch));
   }
   return false;
 }
@@ -1208,7 +1208,7 @@ bool AnalogExpansion::isChVoltageAdc(uint8_t ch) {
   //
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
-    return (AnalogExpansion::cfg[index].isVoltageAdcCh(ch));
+    return (AnalogExpansion::cfgs[index].isVoltageAdcCh(ch));
   }
   return false;
 }
@@ -1216,7 +1216,7 @@ bool AnalogExpansion::isChCurrentAdc(uint8_t ch) {
   //
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
-    return (AnalogExpansion::cfg[index].isCurrentAdcCh(ch));
+    return (AnalogExpansion::cfgs[index].isCurrentAdcCh(ch));
   }
   return false;
 }
