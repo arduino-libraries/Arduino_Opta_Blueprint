@@ -1388,7 +1388,6 @@ bool OptaAnalog::is_dac_used(uint8_t ch) {
 
 void OptaAnalog::updateDac(uint8_t ch) {
   if (is_dac_used(ch)) {
-    updateDacValue(ch, false);
     updateDacPresentValue(ch);
   }
 }
@@ -2063,12 +2062,12 @@ bool OptaAnalog::parse_set_dac_value() {
 
     if (rx_buffer[OA_SET_DAC_UPDATE_VALUE] == 1) {
       update_dac_using_LDAC = true;
-
     } else {
       update_dac_using_LDAC = false;
     }
 
     configureDacValue(ch, value);
+    updateDacValue(ch, false);
     /* value are sent to the analog device during
      * update function */
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
