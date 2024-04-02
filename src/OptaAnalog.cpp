@@ -1144,7 +1144,7 @@ void OptaAnalog::updateRtd(uint8_t ch) {
         digitalWrite(DIO_RTD_SWITCH_1, LOW);
         //}
 #endif
-        delay(5);
+        delay(10);
         configureDacValue(ch, rtd[ch].current_value);
         updateDacValue(ch, true);
         /* measure the current provided by the
@@ -1181,7 +1181,11 @@ void OptaAnalog::updateRtd(uint8_t ch) {
         updateAdc(true);
         rtd[ch].set_adc_RTD_2RL(adc[ch].conversion);
 
+        configureDacValue(ch, 0);
+        updateDacValue(ch, true);
+
         Module::update();
+        delay(5);
 
         /* =============================================== */
         /* PART 3 - measure the voltage on the RDT
@@ -1197,7 +1201,10 @@ void OptaAnalog::updateRtd(uint8_t ch) {
         // Serial.println("channel 1");
         //}
 #endif
-        delay(5);
+        configureDacValue(ch, rtd[ch].current_value);
+        updateDacValue(ch, true);
+        delay(10);
+
         configureAdcForCurrent(ch, false, // no rejection
                                false,     // no function set
                                false);    // self loop powered
