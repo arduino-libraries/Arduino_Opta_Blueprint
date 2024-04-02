@@ -61,6 +61,12 @@ bool BossaOpta::begin(HardwareSerial &serial, Controller *c, uint8_t device,
   if (ctrl != nullptr && block_updates == false) {
 
     initial_num_of_devices = ctrl->getExpansionNum();
+
+    if (reboot == false) {
+      /* special case when device have only bootloader */
+      initial_num_of_devices = 1;
+    }
+
     if (device < initial_num_of_devices) {
       if (reboot) {
         DEBUG_INFO("Rebooting device...");
