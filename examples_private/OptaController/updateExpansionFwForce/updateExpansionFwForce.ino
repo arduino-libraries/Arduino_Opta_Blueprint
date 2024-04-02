@@ -12,7 +12,7 @@
 /* -------------------------------------------------------------------------- */
 
 #include "OptaBlue.h"
-#include "BossaOpta.h"
+#include "utility/BossaOpta.h"
 #include "fwUpdateDigital.h"
 #include "fwUpdateAnalog.h"
 #include "BossaArduino.h"
@@ -172,7 +172,7 @@ void updateTask() {
                
       Serial.println("OK!");
       delay(500);
-      if(BOSSA.begin(BossaSerial,&controller)) {
+      if(BOSSA.begin(BossaSerial,&controller,0,false)) {
           Serial.println("BOSSA correctly initialized");
           #ifdef ASK_FOR_FW_UPDATE
           if(ask_for_confirmation(0)) {
