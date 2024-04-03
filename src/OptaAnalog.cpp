@@ -632,8 +632,8 @@ void OptaAnalog::sendFunction(uint8_t ch) {
     uint8_t v = 0;
     CfgFun_t f = fun[ch];
     switch (f) {
-    case CH_FUNC_ADC:
-      v = CH_ADC;
+    case CH_FUNC_HIGH_IMPEDENCE:
+      v = CH_HIGH_IMP;
       break;
     case CH_FUNC_VOLTAGE_OUTPUT:
       v = CH_VO;
@@ -660,7 +660,7 @@ void OptaAnalog::sendFunction(uint8_t ch) {
       v = CH_DI_LP;
       break;
     default:
-      v = CH_ADC;
+      v = CH_HIGH_IMP;
       break;
     }
 
@@ -1951,6 +1951,19 @@ bool OptaAnalog::parse_setup_rtd_channel() {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+bool OptaAnalog::parse_setup_high_imp_channel() {
+  if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_HIGH_IMPEDENCE,
+                          LEN_OA_CH_HIGH_IMPEDENCE, OA_CH_HIGH_IMPEDENCE_LEN)) {
+    uint8_t ch = rx_buffer[OA_HIGH_IMPEDENCE_CH_POS];
+    configureFunction(ch, CH_FUNC_HIGH_IMPEDENCE);
+    sendFunction(ch);
+    prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    return true;
+  }
+  return false;
+}
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 bool OptaAnalog::parse_setup_adc_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_ADC, LEN_OA_CH_ADC,
                           OA_CH_ADC_LEN)) {
@@ -2303,6 +2316,11 @@ int OptaAnalog::parse_rx() {
   } else if (parse_set_all_dac_value()) {
 #if defined DEBUG_SERIAL && defined DEBUG_ANALOG_PARSE_MESSAGE
     Serial.println("set all DAC values");
+#endif
+    rv = CTRL_ANS_OA_LEN;
+  } else if (parse_setup_high_imp_channel()) {
+#if defined DEBUG_SERIAL && defined DEBUG_ANALOG_PARSE_MESSAGE
+    Serial.println("begin HIGH IMPEDENCE channel");
 #endif
     rv = CTRL_ANS_OA_LEN;
   } else {

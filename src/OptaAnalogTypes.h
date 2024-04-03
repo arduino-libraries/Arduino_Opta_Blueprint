@@ -26,7 +26,7 @@
 /* ###################### Channel functions ################################# */
 
 typedef enum {
-  CH_FUNC_ADC,
+  CH_FUNC_HIGH_IMPEDENCE,
   CH_FUNC_VOLTAGE_OUTPUT,
   CH_FUNC_CURRENT_OUTPUT,
   CH_FUNC_VOLTAGE_INPUT,

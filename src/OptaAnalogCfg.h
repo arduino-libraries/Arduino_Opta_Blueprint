@@ -18,7 +18,7 @@
 #ifndef DEBUG_UPDATE_FW
 #define OA_FW_VERSION_MAJOR 0
 #define OA_FW_VERSION_MINOR 0
-#define OA_FW_VERSION_RELEASE 18
+#define OA_FW_VERSION_RELEASE 19
 #else
 #define OA_FW_VERSION_MAJOR 0
 #define OA_FW_VERSION_MINOR 0
@@ -105,10 +105,10 @@
 
 #define OPTA_AN_CH_FUNC_SETUP(x) (0x01 + x)
 
-#define CH_ADC 0x0 // ADC
-#define CH_VO 0x1  // Voltage Output
-#define CH_CO 0x2  // Current output
-#define CH_VI 0x3  // Voltage Input
+#define CH_HIGH_IMP 0x0 // ADC
+#define CH_VO 0x1       // Voltage Output
+#define CH_CO 0x2       // Current output
+#define CH_VI 0x3       // Voltage Input
 #define CH_CI_EP                                                               \
   0x4                // Current Input Externally
                      // Powered
@@ -368,5 +368,5 @@
 #define CH_CFG_CUR (0x2 << 5)
 #define CH_CFG_BICUR (0x3 << 5)
 
-// #define DEBUG_ANALOG_PARSE_MESSAGE
+#define DEBUG_ANALOG_PARSE_MESSAGE
 #endif

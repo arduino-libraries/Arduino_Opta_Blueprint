@@ -155,6 +155,7 @@ private:
   bool parse_setup_adc_channel();
   bool parse_setup_dac_channel();
   bool parse_setup_di_channel();
+  bool parse_setup_high_imp_channel();
   bool parse_get_adc_value();
   bool parse_get_all_adc_value();
   bool parse_set_dac_value();
