@@ -115,6 +115,35 @@ public:
     }
     return false;
   }
+
+  bool isDigitalInputCh(uint8_t ch) {
+    if (is_cfg(ch)) {
+      if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_DI) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool isRtdCh(uint8_t ch) {
+    if (is_cfg(ch)) {
+      if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_RTD) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool isHighImpedenceCh(uint8_t ch) {
+    if (!is_cfg(ch)) {
+      return true;
+    } else if (is_cfg(ch)) {
+      if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_HIGH_IMPEDENCE) {
+        return true;
+      }
+    }
+  }
+
   void backup(uint8_t *src, uint8_t ch, uint8_t s) {
     if (allocate(ch, s)) {
       memcpy(cfg[ch], src, s);

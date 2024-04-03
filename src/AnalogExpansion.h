@@ -125,6 +125,8 @@ public:
   static void beginChannelAsCurrentDac(Controller &ctrl, uint8_t device,
                                        uint8_t ch);
 
+  void beginChannelAsHighImpedence(uint8_t ch);
+
   /*
    * Set /get channel functions
    */
@@ -185,6 +187,9 @@ public:
   bool isChCurrentDac(uint8_t ch);
   bool isChVoltageAdc(uint8_t ch);
   bool isChCurrentAdc(uint8_t ch);
+  bool isChDigitalInput(uint8_t ch);
+  bool isChRtd(uint8_t ch);
+  bool isChHighImpedence(uint8_t ch);
 
 protected:
   bool verify_address(unsigned int add) override;
@@ -198,6 +203,7 @@ protected:
   uint8_t msg_begin_dac();
   uint8_t msg_begin_rtd();
   uint8_t msg_set_rtd_time();
+  uint8_t msg_begin_high_imp();
   bool parse_oa_ack();
   bool adc_registers_defined();
   bool di_registers_defined();
