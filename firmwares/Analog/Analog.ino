@@ -31,15 +31,17 @@ void setup() {
 #ifdef DEBUG_ANALOG_FW
 void debug_task() {
   static unsigned long int start = millis();
-  if(millis() -  start > 5000) {
+  if(millis() -  start > 10000) {
     start = millis();
     oa->displayOaDebugInformation();
+    /*
     for(int i = 0; i < 8; i++) {
       Serial.print("   Channel ");
       Serial.print(i);
-      Serial.print(" ADC value ");
-      Serial.println(oa->getAdcValue(i));
+      Serial.print(" RTD value ");
+      Serial.println(oa->getRtdValue(i));
     }
+    */
     
   } 
 }

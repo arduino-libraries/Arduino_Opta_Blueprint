@@ -401,9 +401,8 @@ void OptaAnalog::update() {
   debug_with_leds();
   updateLedStatus();
 #endif
-
+  setup_channels();
   // unsigned long time = millis();
-  static unsigned long last_rtd_update = millis();
 
   // MEMO: always first update DAC and then rtd
   // This ensure synchronization
@@ -415,14 +414,10 @@ void OptaAnalog::update() {
     toggle_ldac();
   }
 
+  static unsigned long last_rtd_update = millis();
   if (millis() - last_rtd_update > rtd_update_time) {
-    static int i = 0;
-    updateRtd(i);
-    i++;
-    if (i >= OA_AN_CHANNELS_NUM) {
-      i = 0;
-      last_rtd_update = millis();
-    }
+    last_rtd_update = millis();
+    updateRtd();
   }
 
   for (int i = 0; i < OA_PWM_CHANNELS_NUM; i++) {
@@ -609,8 +604,31 @@ bool OptaAnalog::read_direct_reg(uint8_t device, uint8_t addr,
 /* CONFIGURE CHANNEL FUNCTIONs                                         */
 /* ################################################################### */
 
+// this function "reset" channels in case they are used for DAC or
+// resistance measurement
 void OptaAnalog::configureFunction(uint8_t ch, CfgFun_t f) {
   if (ch < OA_AN_CHANNELS_NUM) {
+    CfgFun_t current_fun = fun[ch];
+    if (current_fun == CH_FUNC_VOLTAGE_OUTPUT ||
+        current_fun == CH_FUNC_CURRENT_OUTPUT ||
+        current_fun == CH_FUNC_RESISTANCE_MEASUREMENT) {
+      configureDacValue(ch, 0);
+      updateDacValue(ch, true);
+      if (ch == 0) {
+        digitalWrite(DIO_RTD_SWITCH_2, LOW);
+      }
+      if (ch == 1) {
+        digitalWrite(DIO_RTD_SWITCH_2, LOW);
+      }
+    }
+
+    if (current_fun != CH_FUNC_HIGH_IMPEDENCE) {
+      // to switch function first go in high impedence
+      uint8_t v = CH_HIGH_IMP;
+      write_reg(OA_REG_FUNC_SETUP, v, ch);
+      delay(1);
+    }
+
     // Serial.println("Configure function: ch " + String(ch) + " function " +
     // String((int)f));
     fun[ch] = f;
@@ -630,6 +648,7 @@ CfgFun_t OptaAnalog::getFunction(uint8_t ch) {
 void OptaAnalog::sendFunction(uint8_t ch) {
   if (ch < OA_AN_CHANNELS_NUM) {
     uint8_t v = 0;
+
     CfgFun_t f = fun[ch];
     switch (f) {
     case CH_FUNC_HIGH_IMPEDENCE:
@@ -1033,47 +1052,6 @@ uint16_t OptaAnalog::getAdcValue(uint8_t ch) {
   return 0;
 }
 
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-void OptaAnalog::configureAdcForCurrent(uint8_t ch, bool en_rej,
-                                        bool set_function /*= true*/,
-                                        bool loop /*= false*/) {
-  /* configure the channel function */
-  if (set_function) {
-    configureFunction(ch, CH_FUNC_CURRENT_INPUT_EXT_POWER);
-    sendFunction(ch);
-  }
-  /* Set the channel ADC with the following
-   * configuration*/
-  configureAdcMux(ch, CFG_ADC_INPUT_NODE_100OHM_R);
-  if (loop) {
-    configureAdcRange(ch, CFG_ADC_RANGE_2_5V_LOOP);
-  } else {
-    configureAdcRange(ch, CFG_ADC_RANGE_2_5V_RTD);
-  }
-  configureAdcPullDown(ch, false);
-  configureAdcRejection(ch, en_rej);
-  configureAdcEnable(ch, true);
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-void OptaAnalog::configureAdcForVoltage(uint8_t ch, bool en_rej,
-                                        bool use_pulldown,
-                                        bool set_function /*=true*/) {
-  if (set_function) {
-    configureFunction(ch, CH_FUNC_VOLTAGE_INPUT);
-    sendFunction(ch);
-  }
-  /* Set the channel ADC with the following
-   * configuration*/
-  configureAdcMux(ch, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
-  configureAdcRange(ch, CFG_ADC_RANGE_10V);
-  configureAdcPullDown(ch, use_pulldown);
-  configureAdcRejection(ch, en_rej);
-  configureAdcEnable(ch, true);
-}
-
 /* ##################################################################### */
 /*                         RTD FUNCTIONs                                 */
 /* ##################################################################### */
@@ -1101,16 +1079,6 @@ void OptaAnalog::configureRtd(uint8_t ch, bool use_3_w, float current_mA) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-void OptaAnalog::sendRtdConfiguration(uint8_t ch) {
-  if (ch < OA_AN_CHANNELS_NUM) {
-    if (rtd[ch].is_rtd) {
-      sendFunction(ch);
-    }
-  }
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 float OptaAnalog::getRtdValue(uint8_t ch) {
   if (ch < OA_AN_CHANNELS_NUM) {
     if (rtd[ch].is_rtd) {
@@ -1128,106 +1096,216 @@ float OptaAnalog::getRtdValue(uint8_t ch) {
  * this could lead to problem in detecting a "reset" of other expansion
  * when they pull down the detect out pin so the Module::update is called
  * here */
-void OptaAnalog::updateRtd(uint8_t ch) {
-  if (ch < OA_AN_CHANNELS_NUM) {
-    if (rtd[ch].is_rtd) {
-      if (rtd[ch].use_3_wires) {
-        /* =============================================== */
-        /* PART 1 - Set and measure the excitation current */
-        /* =============================================== */
+void OptaAnalog::updateRtd() {
+
+  // 3 wires RTD calculation
+
+  if ((rtd[0].is_rtd && rtd[0].use_3_wires) ||
+      (rtd[1].is_rtd && rtd[1].use_3_wires)) {
+#ifdef RTD_SET_SWTICH_AT_BEGIN
+    // 1. put the switch in the LOW position
 #ifdef ARDUINO_OPTA_ANALOG
-        /* switch SENSEHF to RSENSE
-         * LOW is correct for measuring current */
-        // if (ch == 0) {
-        digitalWrite(DIO_RTD_SWITCH_2, LOW);
-        //} else {
-        digitalWrite(DIO_RTD_SWITCH_1, LOW);
-        //}
-#endif
-        delay(10);
-        configureDacValue(ch, rtd[ch].current_value);
-        updateDacValue(ch, true);
-        /* measure the current provided by the
-         * "current" DAC */
-        configureAdcForCurrent(ch, true, // no rejection
-                               false,    // no function set
-                               true);    // self loop powered
-        sendAdcConfiguration(ch);
-        stopAdc(); // program configuration
-        startAdc();
-        updateAdc(true);
-
-        rtd[ch].set_i_excite(adc[ch].conversion);
-
-        Module::update();
-        /* ===============================================
-         */
-        /* PART 2 - measure the voltage on the RDT
-         * this will determine R_RDT + 2*RL so the
-         * resistance of the RDT plus the resistance of
-         * the 2 wires   */
-        /* ===============================================
-         */
-        configureAdcForVoltage(ch, true, // no rejection
-                               false,    // no pulldows
-                               false);   // no function set
-        // "correct" the configuration respect to the
-        // default one
-        configureAdcRange(ch, CFG_ADC_RANGE_2_5V_RTD); // range
-        sendAdcConfiguration(ch);
-        stopAdc(); // program configuration
-
-        startAdc();
-        updateAdc(true);
-        rtd[ch].set_adc_RTD_2RL(adc[ch].conversion);
-
-        configureDacValue(ch, 0);
-        updateDacValue(ch, true);
-
-        Module::update();
-        delay(5);
-
-        /* =============================================== */
-        /* PART 3 - measure the voltage on the RDT
-         * this will determine R_RDT + RL so the resistance
-         * of the RDT plus the resistance of the 2 wires   */
-        /* =============================================== */
-#ifdef ARDUINO_OPTA_ANALOG
-        // if (ch == 0) {
-        digitalWrite(DIO_RTD_SWITCH_2, HIGH);
-        // Serial.println("channel 0");
-        //} else {
-        digitalWrite(DIO_RTD_SWITCH_1, HIGH);
-        // Serial.println("channel 1");
-        //}
-#endif
-        configureDacValue(ch, rtd[ch].current_value);
-        updateDacValue(ch, true);
-        delay(10);
-
-        configureAdcForCurrent(ch, false, // no rejection
-                               false,     // no function set
-                               false);    // self loop powered
-        sendAdcConfiguration(ch);
-        stopAdc(); // program configuration
-        startAdc();
-        updateAdc(true);
-
-        Module::update();
-        /* This uses a formula to convert ADC value to
-         * excitement current
-         */
-        rtd[ch].set_adc_RTD_RL(adc[ch].conversion);
-
-        rtd[ch].calc_RTD();
-      } else {
-        /* use 2 wire measurement */
-        startAdc();
-
-        updateAdc(false);
-        rtd[ch].set(adc[ch].conversion);
-      }
+    if (rtd[0].is_rtd) {
+      digitalWrite(DIO_RTD_SWITCH_1, LOW);
     }
+    if (rtd[1].is_rtd) {
+      digitalWrite(DIO_RTD_SWITCH_2, LOW);
+    }
+#endif
+
+    // 2. wait a little for the switch to be in the right position
+    delay(10);
+#endif
+
+    // 3. put the current in to the DAC
+    if (rtd[0].is_rtd) {
+      configureDacValue(0, rtd[0].current_value);
+      updateDacValue(0, true);
+    }
+    if (rtd[1].is_rtd) {
+      configureDacValue(1, rtd[1].current_value);
+      updateDacValue(1, true);
+    }
+    delay(2);
+    // 4. stop the ADC to program a new ADC configuration
+    stopAdc();
+
+    // 5. program new ADC configuration
+    if (rtd[0].is_rtd) {
+      configureAdcMux(0, CFG_ADC_INPUT_NODE_100OHM_R);
+      configureAdcRange(0, CFG_ADC_RANGE_2_5V_LOOP);
+      configureAdcPullDown(0, false);
+      configureAdcRejection(0, true);
+      configureAdcEnable(0, true);
+      sendAdcConfiguration(0);
+    }
+
+    if (rtd[1].is_rtd) {
+      configureAdcMux(1, CFG_ADC_INPUT_NODE_100OHM_R);
+      configureAdcRange(1, CFG_ADC_RANGE_2_5V_LOOP);
+      configureAdcPullDown(1, false);
+      configureAdcRejection(1, true);
+      configureAdcEnable(1, true);
+      sendAdcConfiguration(1);
+    }
+
+    // 6. start ADC
+    startAdc();
+    // 7. update ADC value and wait for the conversion to be finished
+    updateAdc(true);
+
+    // 8. store the measurement
+    if (rtd[0].is_rtd) {
+      rtd[0].set_i_excite(adc[0].conversion);
+    }
+    if (rtd[1].is_rtd) {
+      rtd[1].set_i_excite(adc[1].conversion);
+    }
+
+    // 9. stop adc to program a new configuration
+    stopAdc();
+
+    // 10. program new ADC configuration
+    if (rtd[0].is_rtd) {
+      configureAdcMux(0, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
+      configureAdcRange(0, CFG_ADC_RANGE_2_5V_RTD); // range
+      configureAdcPullDown(0, false);
+      configureAdcRejection(0, true);
+      configureAdcEnable(0, true);
+      sendAdcConfiguration(0);
+    }
+
+    if (rtd[1].is_rtd) {
+      configureAdcMux(1, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
+      configureAdcRange(1, CFG_ADC_RANGE_2_5V_RTD); // range
+      configureAdcPullDown(1, false);
+      configureAdcRejection(1, true);
+      configureAdcEnable(1, true);
+      sendAdcConfiguration(1);
+    }
+    // 11. start ADC
+    startAdc();
+    // 12. update ADC value and wait for the conversion to be finished
+    updateAdc(true);
+
+    // 13. store the measurement
+    if (rtd[0].is_rtd) {
+      rtd[0].set_adc_RTD_2RL(adc[0].conversion);
+    }
+    if (rtd[1].is_rtd) {
+      rtd[1].set_adc_RTD_2RL(adc[1].conversion);
+    }
+
+// ???? set dac to 0 ??? before to change switch status
+#ifdef RTD_CLEAR_DAC
+    configureDacValue(ch, 0);
+    updateDacValue(ch, true);
+#endif
+
+    // 14. change the position of the switch
+#ifdef ARDUINO_OPTA_ANALOG
+    if (rtd[0].is_rtd) {
+      digitalWrite(DIO_RTD_SWITCH_1, HIGH);
+    }
+    if (rtd[1].is_rtd) {
+      digitalWrite(DIO_RTD_SWITCH_2, HIGH);
+    }
+#endif
+
+#ifdef RTD_CLEAR_DAC
+    configureDacValue(ch, rtd[ch].current_value);
+    updateDacValue(ch, true);
+    delay(10);
+#endif
+
+    // 15. stop adc to program a new configuration
+    stopAdc();
+
+    // 16. program new ADC configuration
+    if (rtd[0].is_rtd) {
+      configureAdcMux(0, CFG_ADC_INPUT_NODE_100OHM_R);
+      configureAdcRange(0, CFG_ADC_RANGE_2_5V_RTD);
+      configureAdcPullDown(0, false);
+      configureAdcRejection(0, true);
+      configureAdcEnable(0, true);
+      sendAdcConfiguration(0);
+    }
+
+    if (rtd[1].is_rtd) {
+      configureAdcMux(1, CFG_ADC_INPUT_NODE_100OHM_R);
+      configureAdcRange(1, CFG_ADC_RANGE_2_5V_RTD);
+      configureAdcPullDown(1, false);
+      configureAdcRejection(1, true);
+      configureAdcEnable(1, true);
+      sendAdcConfiguration(1);
+    }
+
+    // NOTE: RTD 3 wires calculation continues here below
+    // outside the if 3 wires (this is wanted and is because
+    // the last steps are common to 2 wires calculation )
+
+  } // 3 wires RTD calculation if
+
+  if (rtd[0].is_rtd || rtd[1].is_rtd || rtd[2].is_rtd || rtd[3].is_rtd ||
+      rtd[4].is_rtd || rtd[5].is_rtd || rtd[6].is_rtd || rtd[7].is_rtd) {
+    // (17. from 3 wires) start ADC
+    startAdc();
+    // (18. from 3 wires) update ADC value and wait for the conversion to be
+    // finished
+    updateAdc(true);
+
+    // (19. from 3 wires) store the measurement
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
+      rtd[0].set_adc_RTD_RL(adc[0].conversion);
+      rtd[0].calc_RTD();
+    } else if (rtd[0].is_rtd) {
+      rtd[0].set(adc[0].conversion);
+    }
+
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
+      rtd[1].set_adc_RTD_RL(adc[1].conversion);
+      rtd[1].calc_RTD();
+    } else if (rtd[1].is_rtd) {
+      rtd[1].set(adc[1].conversion);
+    }
+    if (rtd[2].is_rtd) {
+      rtd[2].set(adc[2].conversion);
+    }
+    if (rtd[3].is_rtd) {
+      rtd[3].set(adc[3].conversion);
+    }
+    if (rtd[4].is_rtd) {
+      rtd[4].set(adc[4].conversion);
+    }
+    if (rtd[5].is_rtd) {
+      rtd[5].set(adc[5].conversion);
+    }
+    if (rtd[6].is_rtd) {
+      rtd[6].set(adc[6].conversion);
+    }
+    if (rtd[7].is_rtd) {
+      rtd[7].set(adc[7].conversion);
+    }
+  }
+
+  // this section of 3 wires RTD is just to reset the current and turn
+  // the switch in LOW position again
+  if (rtd[0].is_rtd || rtd[1].is_rtd) {
+    // 1. put the switch in the LOW position
+#ifdef ARDUINO_OPTA_ANALOG
+    if (rtd[0].is_rtd) {
+      configureDacValue(0, 0);
+      updateDacValue(0, true);
+      delay(1);
+      digitalWrite(DIO_RTD_SWITCH_1, LOW);
+    }
+    if (rtd[1].is_rtd) {
+      configureDacValue(1, 0);
+      updateDacValue(1, true);
+      delay(1);
+      digitalWrite(DIO_RTD_SWITCH_2, LOW);
+    }
+#endif
   }
 }
 
@@ -1352,7 +1430,7 @@ void OptaAnalog::configureDacValue(uint8_t ch, uint16_t value) {
 void OptaAnalog::toggle_ldac() {
   digitalWrite(LDAC1, LOW);
   digitalWrite(LDAC2, LOW);
-  delay(100);
+  delay(30);
   digitalWrite(LDAC1, HIGH);
   digitalWrite(LDAC2, HIGH);
 }
@@ -1363,7 +1441,7 @@ void OptaAnalog::updateDacValue(uint8_t ch, bool toggle /*= true*/) {
   if (ch < OA_AN_CHANNELS_NUM) {
     if (dac[ch].value != dac[ch].set_value) {
       write_reg(OA_REG_DAC_CODE, dac[ch].set_value, ch);
-      // Serial.println("DAC ch " + String(ch) + " value " +
+      // Serial.println("++++++++ DAC ch " + String(ch) + " value " +
       //                String(dac[ch].set_value));
       dac[ch].value = dac[ch].set_value;
 
@@ -1802,7 +1880,6 @@ bool OptaAnalog::parse_setup_di_channel() {
     }
 
     configureFunction(ch, CH_FUNC_DIGITAL_INPUT);
-    sendFunction(ch);
     if (rx_buffer[OA_CH_DI_FILTER_COMP_POS] == OA_ENABLE) {
       configureDinFilterCompIn(ch, true);
     } else {
@@ -1832,10 +1909,10 @@ bool OptaAnalog::parse_setup_di_channel() {
 
     configureDinCurrentSink(ch, rx_buffer[OA_CH_DI_CURR_SINK_POS]);
     configureDinDebounceTime(ch, rx_buffer[OA_CH_DI_DEBOUNCE_TIME_POS]);
-    sendDinConfiguration(ch);
 
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
 
+    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -1857,8 +1934,6 @@ bool OptaAnalog::parse_setup_dac_channel() {
     } else if (rx_buffer[OA_CH_DAC_TYPE_POS] == OA_CURRENT_DAC) {
       configureFunction(ch, CH_FUNC_CURRENT_OUTPUT);
     }
-
-    sendFunction(ch);
 
     if (rx_buffer[OA_CH_DAC_LIMIT_CURRENT_POS] == OA_ENABLE) {
       configureDacCurrLimit(ch, OUT_CURRENT_LIMIT_7_5mA);
@@ -1920,8 +1995,8 @@ bool OptaAnalog::parse_setup_dac_channel() {
     } else {
       configureDacDisableSlew(ch);
     }
-    sendDacConfiguration(ch);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -1942,8 +2017,8 @@ bool OptaAnalog::parse_setup_rtd_channel() {
     } else {
       configureRtd(ch, false, v.value);
     }
-    sendRtdConfiguration(ch);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -1956,8 +2031,8 @@ bool OptaAnalog::parse_setup_high_imp_channel() {
                           LEN_OA_CH_HIGH_IMPEDENCE, OA_CH_HIGH_IMPEDENCE_LEN)) {
     uint8_t ch = rx_buffer[OA_HIGH_IMPEDENCE_CH_POS];
     configureFunction(ch, CH_FUNC_HIGH_IMPEDENCE);
-    sendFunction(ch);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -2015,13 +2090,10 @@ bool OptaAnalog::parse_setup_adc_channel() {
       configureAdcDiagnostic(ch, false);
     }
     configureAdcMovingAverage(ch, rx_buffer[OA_CH_ADC_MOVING_AVE_POS]);
-    if (configure_function) {
-      sendFunction(ch);
-    }
-    sendAdcConfiguration(ch);
     configureAdcEnable(ch, true);
 
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    set_channel_setup(ch);
 
     return true;
   }
@@ -2100,7 +2172,6 @@ bool OptaAnalog::parse_set_dac_value() {
 
 bool OptaAnalog::parse_set_all_dac_value() {
 
-  Serial.println();
   if (checkSetMsgReceived(rx_buffer, ARG_OA_SET_ALL_DAC, LEN_OA_SET_ALL_DAC,
                           OA_SET_ALL_DAC_LEN)) {
 
@@ -2329,324 +2400,384 @@ int OptaAnalog::parse_rx() {
   return rv;
 }
 
+void OptaAnalog::set_channel_setup(uint8_t ch) {
+  if (ch >= 0 && ch <= OA_AN_CHANNELS_NUM) {
+    channel_setup |= (1 << ch);
+  }
+}
+void OptaAnalog::setup_channels() {
+  if (channel_setup != 0) {
+    stopAdc();
+    for (uint8_t ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
+      if ((channel_setup & (1 << ch)) != 0) {
+        sendFunction(ch);
+        CfgFun_t f = fun[ch];
+        switch (f) {
+        case CH_FUNC_HIGH_IMPEDENCE:
+          // Serial.println("HI");
+          break;
+        case CH_FUNC_VOLTAGE_OUTPUT:
+          sendDacConfiguration(ch);
+          // Serial.println("DAC V");
+          break;
+        case CH_FUNC_CURRENT_OUTPUT:
+          sendDacConfiguration(ch);
+          // Serial.println("DAC C");
+          break;
+        case CH_FUNC_VOLTAGE_INPUT:
+          sendAdcConfiguration(ch);
+          // Serial.println("ADC V");
+          break;
+        case CH_FUNC_CURRENT_INPUT_EXT_POWER:
+          sendAdcConfiguration(ch);
+          // Serial.println("ADC C");
+          break;
+        case CH_FUNC_CURRENT_INPUT_LOOP_POWER:
+          sendAdcConfiguration(ch);
+          // Serial.println("ADC C 1");
+          break;
+        case CH_FUNC_RESISTANCE_MEASUREMENT:
+          // Serial.println("RES");
+          break;
+        case CH_FUNC_DIGITAL_INPUT:
+          sendDinConfiguration(ch);
+          // Serial.println("DIGITAL");
+          break;
+        case CH_FUNC_DIGITAL_INPUT_LOOP_POWER:
+          sendDinConfiguration(ch);
+          // Serial.println("DIGITAL 1");
+          break;
+        default:
+          break;
+        }
+        channel_setup &= ~(1 << ch);
+      }
+    }
+    startAdc();
+  }
+}
+
 #ifdef DEBUG_SERIAL
 void print_function(uint8_t v) {
   switch (v) {
   case 0:
-    Serial.println("Function: HIGH IMPEDENCE");
+    Serial.print("HIGH IMPEDENCE");
     break;
   case 1:
-    Serial.println("Function: DAC VOLTAGE [V] -->");
+    Serial.print("DAC VOLTAGE");
     break;
   case 2:
-    Serial.println("Function: DAC CURRENT [I] -->");
+    Serial.print("DAC CURRENT");
     break;
   case 3:
-    Serial.println("Function: ADC VOLTAGE [V] <--");
+    Serial.print("ADC VOLTAGE");
     break;
   case 4:
-    Serial.println("Function: ADC CURRENT [I] <-- "
-                   "(externally powered)");
+    Serial.print("ADC CURRENT (ep)");
     break;
   case 5:
-    Serial.println("Function: ADC CURRENT [I] <-- "
-                   "(loop powered)");
+    Serial.print("ADC CURRENT (lp)");
     break;
   case 6:
-    Serial.println("Function: RESISTANCE [R]");
+    Serial.print("RESISTANCE");
     break;
   case 7:
-    Serial.println("Function: DIGITAL INPUT [D] - (logic)");
+    Serial.print("DIGITAL INPUT");
     break;
   case 8:
-    Serial.println("Function: DIGITAL INPUT [D] - "
-                   "(loop powered)");
+    Serial.print("DIGITAL INPUT (lp)");
+
     break;
   }
+  Serial.print(" ");
 }
 
 void print_adc_configuration(uint16_t v) {
+  Serial.print("ADC: ");
   if (v & 1) {
-    Serial.println("- MUX is 100 ohm resistor");
+    Serial.print("cur ");
   } else {
-    Serial.println("- MUX is IOP / AGND_SENSE");
+    Serial.print("vol ");
   }
 
   if (v & 4) {
-    Serial.println("- PULL DOWN enabled");
+    Serial.print("pull_Y ");
   } else {
-    Serial.println("- PULL DOWN disabled");
+    Serial.print("pull_N ");
   }
 
   if (v & 8) {
-    Serial.println("- REJECTION disabled");
+    Serial.print("rej_Y ");
   } else {
-    Serial.println("- REJECTION enabled");
+    Serial.print("rej_N ");
   }
 
   uint8_t m = (v & (7 << 5)) >> 5;
 
   if (m == 0) {
-    Serial.println("- RANGE 0-10V");
+    Serial.print("10.0V ");
   } else if (m == 1) {
-    Serial.println("- RANGE 2.5V RTD and externally powered");
+    Serial.print("2.5V RTD ");
   } else if (m == 2) {
-    Serial.println("- RANGE 2.5V loop powered");
+    Serial.print("2.5V LOOP ");
   } else if (m == 3) {
-    Serial.println("- RANGE 2.5V voltage output mode");
+    Serial.print("2.5V (3) ");
   }
 }
 
 void print_adc_control(uint16_t v, int d) {
   int ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 1 : 2;
+  Serial.print(" ");
   if (v & 1) {
-    Serial.println("- Ch " + String(ch) + " ADC conversion enabled");
+    Serial.print(String(ch) + " YES ");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC conversion DISABLED");
+    Serial.print(String(ch) + " NO ");
   }
   ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 0 : 3;
   if (v & 2) {
-    Serial.println("- Ch " + String(ch) + " ADC conversion enabled");
+    Serial.print(String(ch) + " YES ");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC conversion DISABLED");
+    Serial.print(String(ch) + " NO ");
   }
   ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 6 : 4;
   if (v & 4) {
-    Serial.println("- Ch " + String(ch) + " ADC conversion enabled");
+    Serial.print(String(ch) + " YES ");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC conversion DISABLED");
+    Serial.print(String(ch) + " NO ");
   }
   ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 7 : 5;
   if (v & 8) {
-    Serial.println("- Ch " + String(ch) + " ADC conversion enabled");
+    Serial.print(String(ch) + " YES ");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC conversion DISABLED");
+    Serial.print(String(ch) + " NO ");
   }
   ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 1 : 2;
   if (v & 16) {
-    Serial.println("- Ch " + String(ch) + " ADC diag enabled");
+    // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
+    // Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
   }
   ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 0 : 3;
   if (v & 32) {
-    Serial.println("- Ch " + String(ch) + " ADC diag enabled");
+    // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
+    // Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
   }
   ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 6 : 4;
   if (v & 64) {
-    Serial.println("- Ch " + String(ch) + " ADC diag enabled");
+    // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
+    // Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
   }
   ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 7 : 5;
   if (v & 128) {
-    Serial.println("- Ch " + String(ch) + " ADC diag enabled");
+    // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
-    Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
+    // Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
   }
 
   if (v & (1 << 10)) {
-    Serial.println("- DIAGNOSTIC REJECTION enabled");
+    // Serial.println("- DIAGNOSTIC REJECTION enabled");
   } else {
-    Serial.println("- DIAGNOSTIC REJECTION DISABLED");
+    // Serial.println("- DIAGNOSTIC REJECTION DISABLED");
   }
 
   uint8_t m = (v & (3 << 8)) >> 8;
 
   if (m == 0) {
-    Serial.println("- ADC STOPPED AND POWERED UP");
+    Serial.print(" STOPPED AND POWERED UP ");
   } else if (m == 1) {
-    Serial.println("- ADC STARTED SINGLE CONVERSION");
+    Serial.print(" STARTED SINGLE CONVERSION ");
   } else if (m == 2) {
-    Serial.println("- ADC STARTED CONTINUOS");
+    Serial.print(" STARTED CONTINUOS ");
   } else if (m == 3) {
-    Serial.println("- ADC STOPPED AND POWERED DOWN");
+    Serial.print(" STOPPED AND POWERED DOWN ");
   }
 }
 
 void print_output_configuration(uint16_t v) {
+  Serial.print("DAC: ");
   if (v & 1) {
-    Serial.println("- OUTPUT Current Limit 7.5mA");
+    Serial.print("7.5mA ");
   } else {
-    Serial.println("- OUTPUT Current Limit 29mA");
+    Serial.print("29mA ");
   }
   if (v & 2) {
-    Serial.println("- OUTPUT Clear function ENABLED");
+    Serial.print("CL_Y ");
   } else {
-    Serial.println("- OUTPUT Clear function DISABLED");
+    Serial.print("CL_N ");
   }
   if ((v & (1 << 6)) && (v & (1 << 7) == 0)) {
-    Serial.println("- OUTPUT Slave rate ENABLED");
+    Serial.print("SL_Y ");
   } else {
-    Serial.println("- OUTPUT Slave rate DISABLED");
+    Serial.print("SL_N ");
   }
   uint8_t m = (v & (3 << 2)) >> 2;
 
   if (m == 0) {
-    Serial.println("- OUTPUT Slew rate time step 4 kHz");
+    Serial.print("4 kHz ");
   } else if (m == 1) {
-    Serial.println("- OUTPUT Slew rate time step 64 kHz");
+    Serial.print("64 kHz ");
   } else if (m == 2) {
-    Serial.println("- OUTPUT Slew rate time step 150 kHz");
+    Serial.print("150 kHz ");
   } else if (m == 3) {
-    Serial.println("- OUTPUT Slew rate time step 240 kHz");
+    Serial.print("240 kHz ");
   }
   m = (v & (3 << 4)) >> 4;
 
   if (m == 0) {
-    Serial.println("- OUTPUT Slew rate increment 64 bit");
+    Serial.print("64 bit ");
   } else if (m == 1) {
-    Serial.println("- OUTPUT Slew rate increment 120 bit");
+    Serial.print("120 bit ");
   } else if (m == 2) {
-    Serial.println("- OUTPUT Slew rate increment 500 bit");
+    Serial.print("500 bit ");
   } else if (m == 3) {
-    Serial.println("- OUTPUT Slew rate increment 1820 bit");
+    Serial.print("1820 bit ");
   }
 }
 
 void print_digital_input_configuration(uint16_t v1, uint16_t v2) {
   uint8_t dt = v1 & 0x1F;
+  Serial.print("DI: ");
   switch (dt) {
   case 0:
-    Serial.println("- DIN debounce time NONE");
+    Serial.print("time NONE ");
     break;
   case 1:
-    Serial.println("- DIN debounce time 13us");
+    Serial.print("time 13us ");
     break;
   case 2:
-    Serial.println("- DIN debounce time 18.7us");
+    Serial.print("time 18.7us ");
     break;
   case 3:
-    Serial.println("- DIN debounce time 24.4us");
+    Serial.print("time 24.4us ");
     break;
   case 4:
-    Serial.println("- DIN debounce time 32.5us");
+    Serial.print("time 32.5us ");
     break;
   case 5:
-    Serial.println("- DIN debounce time 42.3us");
+    Serial.print("time 42.3us ");
     break;
   case 6:
-    Serial.println("- DIN debounce time 56.1us");
+    Serial.print("time 56.1us ");
     break;
   case 7:
-    Serial.println("- DIN debounce time 75.6us");
+    Serial.print("time 75.6us ");
     break;
   case 8:
-    Serial.println("- DIN debounce time 100.8us");
+    Serial.print("time 100.8us ");
     break;
   case 9:
-    Serial.println("- DIN debounce time 130.1us");
+    Serial.print("time 130.1us ");
     break;
   case 10:
-    Serial.println("- DIN debounce time 180.5us");
+    Serial.print("time 180.5us ");
     break;
   case 11:
-    Serial.println("- DIN debounce time 240.6us");
+    Serial.print("time 240.6us ");
     break;
   case 12:
-    Serial.println("- DIN debounce time 320.3us");
+    Serial.print("time 320.3us ");
     break;
   case 13:
-    Serial.println("- DIN debounce time 420.3us");
+    Serial.print("time 420.3us ");
     break;
   case 14:
-    Serial.println("- DIN debounce time 560.2us");
+    Serial.print("time 560.2us ");
     break;
   case 15:
-    Serial.println("- DIN debounce time 750.4us");
+    Serial.print("time 750.4us ");
     break;
   case 16:
-    Serial.println("- DIN debounce time 1ms");
+    Serial.print("time 1ms ");
     break;
   case 17:
-    Serial.println("- DIN debounce time 1.8ms");
+    Serial.print("time 1.8ms ");
     break;
   case 18:
-    Serial.println("- DIN debounce time 2.4ms");
+    Serial.print("time 2.4ms ");
     break;
   case 19:
-    Serial.println("- DIN debounce time 3.2ms");
+    Serial.print("time 3.2ms ");
     break;
   case 20:
-    Serial.println("- DIN debounce time 4.2ms");
+    Serial.print("time 4.2ms ");
     break;
   case 21:
-    Serial.println("- DIN debounce time 5.6ms");
+    Serial.print("time 5.6ms ");
     break;
   case 22:
-    Serial.println("- DIN debounce time 7.5ms");
+    Serial.print("time 7.5ms ");
     break;
   case 23:
-    Serial.println("- DIN debounce time 10ms");
+    Serial.print("time 10ms ");
     break;
   case 24:
-    Serial.println("- DIN debounce time 13ms");
+    Serial.print("time 13ms ");
     break;
   case 25:
-    Serial.println("- DIN debounce time 18ms");
+    Serial.print("time 18ms ");
     break;
   case 26:
-    Serial.println("- DIN debounce time 18ms");
+    Serial.print("time 18ms ");
     break;
   case 27:
-    Serial.println("- DIN debounce time 24ms");
+    Serial.print("time 24ms ");
     break;
   case 28:
-    Serial.println("- DIN debounce time 32ms");
+    Serial.print("time 32ms ");
     break;
   case 29:
-    Serial.println("- DIN debounce time 42ms");
+    Serial.print("time 42ms ");
     break;
   case 30:
-    Serial.println("- DIN debounce time 56ms");
+    Serial.print("time 56ms ");
     break;
   case 31:
-    Serial.println("- DIN debounce time 75ms");
+    Serial.print("time 75ms ");
     break;
   }
   if (v1 & 32) {
-    Serial.println("- DIN debounce mode INTEGRATOR");
+    Serial.print("INTEGRATOR ");
   } else {
-    Serial.println("- DIN debounce mode SIMPLE");
+    Serial.print("SIMPLE ");
   }
 
   uint8_t isink = (v1 & (0xF << 6)) >> 6;
-  Serial.print("- DIN current sink ");
+  Serial.print(" sink ");
   Serial.print(isink * 120);
-  Serial.println("uA");
+  Serial.print("uA ");
   if (v1 & 0x1000) {
-    Serial.println("- DIN comparator ENABLED");
+    Serial.print("comparator ENABLED ");
   } else {
-    Serial.println("- DIN comparator DISABLED");
+    Serial.print("comparator DISABLED ");
   }
   if (v1 & 0x2000) {
-    Serial.println("- DIN comparator output INVERTED");
+    Serial.print("output INVERTED ");
   } else {
-    Serial.println("- DIN comparator output not inverted");
+    Serial.print("output not inverted ");
   }
   if (v1 & 0x4000) {
-    Serial.println("- DIN input is FILTERED");
+    Serial.print("FILTERED ");
   } else {
-    Serial.println("- DIN input is not FILTERED");
+    Serial.print("not FILTERED ");
   }
   if (v2 & 1) {
-    Serial.println("- DIN threshold is fixed at 16V");
+    Serial.print("th 16V");
   } else {
-    Serial.println("- DIN threshold moves with VDD");
+    Serial.print("th VDD");
   }
+  Serial.println();
 }
 
 void OptaAnalog::debugDacFunction(uint8_t ch) {
-  Serial.print("   -> ");
   uint16_t reg = 0;
   read_reg(0x12, reg, ch);
   print_output_configuration(reg);
 }
 
 int OptaAnalog::debugChannelFunction(uint8_t ch) {
-  Serial.print(" ########## CHANNEL ");
+  Serial.print("# CHANNEL ");
   Serial.print(ch);
   Serial.print(" ");
   uint16_t reg = 0;
@@ -2657,13 +2788,11 @@ int OptaAnalog::debugChannelFunction(uint8_t ch) {
   return (reg & 0xF);
 }
 void OptaAnalog::debugAdcConfiguration(uint8_t ch) {
-  Serial.print("   -> ");
   uint16_t reg = 0;
   read_reg(0x05, reg, ch);
   print_adc_configuration(reg);
 }
 void OptaAnalog::debugDiConfiguration(uint8_t ch) {
-  Serial.print("   -> ");
   uint16_t r2 = 0;
   uint16_t reg = 0;
   read_reg(0x09, reg, ch);
@@ -2683,25 +2812,16 @@ void OptaAnalog::displayOaDebugInformation() {
                  "**************\n");
   for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
     int ch_function = debugChannelFunction(i);
-    if (ch_function == 0 || ch_function == 3 || ch_function == 4 ||
-        ch_function == 5) {
-      /* HIGH IMPEDENCE (ADC works) */
-      debugAdcConfiguration(i);
-    } else if (ch_function == 1 || ch_function == 2) {
-      debugDacFunction(i);
-    } else if (ch_function == 6) {
-      /* resistance */
-    } else if (ch_function == 7 || ch_function == 8) {
-      debugDiConfiguration(i);
-      Serial.println("+++++++++++++++++++++++++++++++++++++++");
-      debugAdcConfiguration(i);
-    }
+    debugAdcConfiguration(i);
+    debugDacFunction(i);
+    debugDiConfiguration(i);
   }
 #ifdef ARDUINO_OPTA_ANALOG
   read_reg(0x23, reg, OA_DUMMY_CHANNEL_DEVICE_0);
   print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_0);
   read_reg(0x23, reg, OA_DUMMY_CHANNEL_DEVICE_1);
   print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_1);
+  Serial.println();
 #else
   read_reg(0x23, reg, OA_DUMMY_CHANNEL_DEVICE_0);
   print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_0);

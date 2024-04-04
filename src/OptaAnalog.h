@@ -71,6 +71,11 @@ private:
 
   bool update_dac_using_LDAC = false;
 
+  uint8_t channel_setup = 0;
+
+  void set_channel_setup(uint8_t ch);
+  void setup_channels();
+
   /* ABOUT register and reading writing register with the function below
    * --------------------------------------------------------------------
    * Typically in the Analog Device AD74412R there are 2 "kind" of registers
@@ -209,10 +214,6 @@ public:
   void configureAdcDiagRejection(uint8_t ch, bool en);
   void configureAdcMovingAverage(uint8_t ch, uint8_t ma);
   void configureAdcEnable(uint8_t ch, bool en);
-  void configureAdcForVoltage(uint8_t ch, bool en_rej, bool use_pulldown,
-                              bool set_function = true);
-  void configureAdcForCurrent(uint8_t ch, bool en_rej, bool set_function = true,
-                              bool loop = false);
   /* send ADC configuration to the device */
   void sendAdcConfiguration(uint8_t ch);
   /* start and stop the ADC conversion */
@@ -239,10 +240,8 @@ public:
    * used. The configuration is not actually used until the 'send' function is
    * called */
   void configureRtd(uint8_t ch, bool use_3_w, float current);
-  /* set the RTD configuration previously configured with the 'configure'
-   * function */
-  void sendRtdConfiguration(uint8_t ch);
-  void updateRtd(uint8_t ch);
+  /* calculate and update the Rdt values */
+  void updateRtd();
   /* get the RTD value */
   float getRtdValue(uint8_t ch);
   /* ##################################################################### */

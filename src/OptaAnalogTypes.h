@@ -243,9 +243,35 @@ public:
 #endif
   }
   void calc_RTD() {
+#if defined DEBUG_SERIAL && defined DEBUG_RTD
+    Serial.print(" v_RTD_2RL: ");
+    Serial.println(v_RTD_2RL, 10);
+    Serial.print(" i_excite: ");
+    Serial.println(i_excite, 10);
+    Serial.print(" v_RTD_RL: ");
+    Serial.println(v_RTD_RL, 10);
+#endif
+
     RRTD_2RL = v_RTD_2RL / i_excite;
+
+#if defined DEBUG_SERIAL && defined DEBUG_RTD
+    Serial.print(" RRTD_2RL: ");
+    Serial.println(RRTD_2RL, 10);
+#endif
+
     RRTD_RL = v_RTD_RL / i_excite;
+
+#if defined DEBUG_SERIAL && defined DEBUG_RTD
+    Serial.print(" RRTD_RL: ");
+    Serial.println(RRTD_RL, 10);
+#endif
+
     double RL = RRTD_2RL - RRTD_RL;
+
+#if defined DEBUG_SERIAL && defined DEBUG_RTD
+    Serial.print(" RL: ");
+    Serial.println(RL, 10);
+#endif
     RTD = RRTD_RL - RL;
 #if defined DEBUG_SERIAL && defined DEBUG_RTD
     Serial.print("RDT: ");
@@ -253,12 +279,20 @@ public:
 #endif
   }
   void set(uint16_t adc_value) {
+#if defined DEBUG_SERIAL && defined DEBUG_RTD
+    Serial.print(" RESISTANCE adc_value: ");
+    Serial.println(adc_value);
+#endif
     double adc32 = (double)adc_value;
     if (65535.0 - adc32 == 0.0) {
       RTD = 0.0;
     } else {
       RTD = (adc32 * 2100.0) / (65535.0 - adc32);
     }
+#if defined DEBUG_SERIAL && defined DEBUG_RTD
+    Serial.print(" RESISTANCE: ");
+    Serial.println(RTD, 10);
+#endif
   }
   CfgRtd() : is_rtd(false), use_3_wires(false), RTD(0.0), current_value(1.2) {}
 };
