@@ -74,7 +74,7 @@ bool BossaOpta::begin(HardwareSerial &serial, Controller *c, uint8_t device,
           DEBUG_INFO(" OK!");
           DEBUG_INFO("Connecting to bootloader...");
           if (!_samba.connect(port, 115200)) {
-            DEBUG_INFO(" FAILED!");
+            DEBUG_INFO(" FAILED connection");
 
             rv = false;
           }

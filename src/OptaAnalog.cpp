@@ -195,6 +195,9 @@ OptaAnalog::OptaAnalog()
     : pwm{CfgPwm(PWM_0), CfgPwm(PWM_1), CfgPwm(PWM_2), CfgPwm(PWM_3)},
       led_status(0), rtd_update_time(1000) {
   expansion_type = EXPANSION_OPTA_ANALOG;
+  for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
+    fun[i] = CH_FUNC_HIGH_IMPEDENCE;
+  }
   /* ------------------------------------------------------------------------ */
 }
 
@@ -402,6 +405,7 @@ void OptaAnalog::update() {
   updateLedStatus();
 #endif
   setup_channels();
+  Module::update();
   // unsigned long time = millis();
 
   // MEMO: always first update DAC and then rtd
@@ -409,20 +413,24 @@ void OptaAnalog::update() {
   for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
     updateDac(i);
   }
+  Module::update();
   if (update_dac_using_LDAC) {
     update_dac_using_LDAC = false;
     toggle_ldac();
   }
+  Module::update();
 
   static unsigned long last_rtd_update = millis();
   if (millis() - last_rtd_update > rtd_update_time) {
     last_rtd_update = millis();
     updateRtd();
   }
+  Module::update();
 
   for (int i = 0; i < OA_PWM_CHANNELS_NUM; i++) {
     updatePwm(i);
   }
+  Module::update();
 
   /* handle start and stop of adc on device 0*/
   if (adc_ch_mask_0_last != adc_ch_mask_0) {
@@ -430,6 +438,7 @@ void OptaAnalog::update() {
     stop_adc(0, false);
     start_adc(0, false);
   }
+  Module::update();
 
   /* handle start and stop of adc on device 1 */
   if (adc_ch_mask_1_last != adc_ch_mask_1) {
@@ -437,6 +446,7 @@ void OptaAnalog::update() {
     stop_adc(1, false);
     start_adc(1, false);
   }
+  Module::update();
 
   updateDinReadings();
   updateAdc(false);
@@ -444,6 +454,7 @@ void OptaAnalog::update() {
   updateLedStatus();
   update_live_status();
 
+  Module::update();
   // Serial.println("Update time: " + String(millis() - time));
 }
 
@@ -609,29 +620,30 @@ bool OptaAnalog::read_direct_reg(uint8_t device, uint8_t addr,
 void OptaAnalog::configureFunction(uint8_t ch, CfgFun_t f) {
   if (ch < OA_AN_CHANNELS_NUM) {
     CfgFun_t current_fun = fun[ch];
-    if (current_fun == CH_FUNC_VOLTAGE_OUTPUT ||
-        current_fun == CH_FUNC_CURRENT_OUTPUT ||
-        current_fun == CH_FUNC_RESISTANCE_MEASUREMENT) {
-      configureDacValue(ch, 0);
-      updateDacValue(ch, true);
-      if (ch == 0) {
-        digitalWrite(DIO_RTD_SWITCH_2, LOW);
+    if (current_fun != f) {
+      if (current_fun == CH_FUNC_VOLTAGE_OUTPUT ||
+          current_fun == CH_FUNC_CURRENT_OUTPUT ||
+          current_fun == CH_FUNC_RESISTANCE_MEASUREMENT) {
+        configureDacValue(ch, 0);
+        updateDacValue(ch, true);
+        if (ch == 0) {
+          digitalWrite(DIO_RTD_SWITCH_2, LOW);
+        }
+        if (ch == 1) {
+          digitalWrite(DIO_RTD_SWITCH_2, LOW);
+        }
       }
-      if (ch == 1) {
-        digitalWrite(DIO_RTD_SWITCH_2, LOW);
+
+      if (current_fun != CH_FUNC_HIGH_IMPEDENCE) {
+        // to switch function first go in high impedence
+        uint8_t v = CH_HIGH_IMP;
+        write_reg(OA_REG_FUNC_SETUP, v, ch);
+        delay(1);
       }
-    }
 
-    if (current_fun != CH_FUNC_HIGH_IMPEDENCE) {
-      // to switch function first go in high impedence
-      uint8_t v = CH_HIGH_IMP;
-      write_reg(OA_REG_FUNC_SETUP, v, ch);
-      delay(1);
+      set_channel_setup(ch);
+      fun[ch] = f;
     }
-
-    // Serial.println("Configure function: ch " + String(ch) + " function " +
-    // String((int)f));
-    fun[ch] = f;
   }
 }
 
@@ -1099,7 +1111,7 @@ float OptaAnalog::getRtdValue(uint8_t ch) {
 void OptaAnalog::updateRtd() {
 
   // 3 wires RTD calculation
-
+  Module::update();
   if ((rtd[0].is_rtd && rtd[0].use_3_wires) ||
       (rtd[1].is_rtd && rtd[1].use_3_wires)) {
 #ifdef RTD_SET_SWTICH_AT_BEGIN
@@ -1127,8 +1139,10 @@ void OptaAnalog::updateRtd() {
       updateDacValue(1, true);
     }
     delay(2);
+    Module::update();
     // 4. stop the ADC to program a new ADC configuration
     stopAdc();
+    Module::update();
 
     // 5. program new ADC configuration
     if (rtd[0].is_rtd) {
@@ -1151,9 +1165,11 @@ void OptaAnalog::updateRtd() {
 
     // 6. start ADC
     startAdc();
+    Module::update();
     // 7. update ADC value and wait for the conversion to be finished
     updateAdc(true);
 
+    Module::update();
     // 8. store the measurement
     if (rtd[0].is_rtd) {
       rtd[0].set_i_excite(adc[0].conversion);
@@ -1164,6 +1180,7 @@ void OptaAnalog::updateRtd() {
 
     // 9. stop adc to program a new configuration
     stopAdc();
+    Module::update();
 
     // 10. program new ADC configuration
     if (rtd[0].is_rtd) {
@@ -1185,6 +1202,7 @@ void OptaAnalog::updateRtd() {
     }
     // 11. start ADC
     startAdc();
+    Module::update();
     // 12. update ADC value and wait for the conversion to be finished
     updateAdc(true);
 
@@ -1221,6 +1239,7 @@ void OptaAnalog::updateRtd() {
     // 15. stop adc to program a new configuration
     stopAdc();
 
+    Module::update();
     // 16. program new ADC configuration
     if (rtd[0].is_rtd) {
       configureAdcMux(0, CFG_ADC_INPUT_NODE_100OHM_R);
@@ -1254,6 +1273,7 @@ void OptaAnalog::updateRtd() {
     // finished
     updateAdc(true);
 
+    Module::update();
     // (19. from 3 wires) store the measurement
     if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       rtd[0].set_adc_RTD_RL(adc[0].conversion);
@@ -1286,6 +1306,7 @@ void OptaAnalog::updateRtd() {
     if (rtd[7].is_rtd) {
       rtd[7].set(adc[7].conversion);
     }
+    Module::update();
   }
 
   // this section of 3 wires RTD is just to reset the current and turn
@@ -1307,6 +1328,7 @@ void OptaAnalog::updateRtd() {
     }
 #endif
   }
+  Module::update();
 }
 
 /* ###################################################################### */
@@ -1912,7 +1934,6 @@ bool OptaAnalog::parse_setup_di_channel() {
 
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
 
-    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -1996,7 +2017,6 @@ bool OptaAnalog::parse_setup_dac_channel() {
       configureDacDisableSlew(ch);
     }
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
-    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -2018,7 +2038,6 @@ bool OptaAnalog::parse_setup_rtd_channel() {
       configureRtd(ch, false, v.value);
     }
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
-    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -2032,7 +2051,6 @@ bool OptaAnalog::parse_setup_high_imp_channel() {
     uint8_t ch = rx_buffer[OA_HIGH_IMPEDENCE_CH_POS];
     configureFunction(ch, CH_FUNC_HIGH_IMPEDENCE);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
-    set_channel_setup(ch);
     return true;
   }
   return false;
@@ -2093,7 +2111,6 @@ bool OptaAnalog::parse_setup_adc_channel() {
     configureAdcEnable(ch, true);
 
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
-    set_channel_setup(ch);
 
     return true;
   }
@@ -2410,8 +2427,15 @@ void OptaAnalog::setup_channels() {
     stopAdc();
     for (uint8_t ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
       if ((channel_setup & (1 << ch)) != 0) {
-        sendFunction(ch);
+
         CfgFun_t f = fun[ch];
+        /* avoid to send High impedance since each channel has already be
+         * reset to High impedance when a new channel function is requested
+         * see configureFunction()*/
+        if (f != CH_FUNC_HIGH_IMPEDENCE) {
+          sendFunction(ch);
+        }
+
         switch (f) {
         case CH_FUNC_HIGH_IMPEDENCE:
           // Serial.println("HI");
