@@ -271,31 +271,35 @@ void watchExpansion(uint8_t device, bool change) {
      if(e) {
         for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
 
-            if(e.isChVoltageDac(ch) && change) {
+            if(e.isChVoltageDac(ch)) {
               Serial.println("Channel " + String(ch) + " is DAC VOLTAGE");
-              Serial.println("  Enter the new value in Volts [0-11]: ");
-              float v = getFloatFromSerial();
-              Serial.println("  -> Entered voltage: " + String(v) + " V");
+              if(change) {
+                Serial.println("  Enter the new value in Volts [0-11]: ");
+                float v = getFloatFromSerial();
+                Serial.println("  -> Entered voltage: " + String(v) + " V");
 
-              if(v > 0 && v < 11.0) {
-                Serial.println("     setting new value...");
-                e.pinVoltage(ch,v);
-              }
-              else {
-                Serial.println("ERROR: wrong value");
+                if(v > 0 && v < 11.0) {
+                  Serial.println("     setting new value...");
+                  e.pinVoltage(ch,v);
+                }
+                else {
+                  Serial.println("ERROR: wrong value");
+                }
               }
             }
-            else if(e.isChCurrentDac(ch) && change) {
+            else if(e.isChCurrentDac(ch)) {
               Serial.println("Channel " + String(ch) + " is DAC CURRENT");
-              Serial.println("  Enter the new value in milli-Ampere [0-25]: ");
-              float v = getFloatFromSerial();
-              Serial.println("  -> Entered current: " + String(v) + " mA");
-              if(v > 0 && v < 25.0) {
-                Serial.println("      setting new value...");
-                e.pinCurrent(ch,v);
-              }
-              else {
-                Serial.println("ERROR: wrong value");
+              if(change) {
+                Serial.println("  Enter the new value in milli-Ampere [0-25]: ");
+                float v = getFloatFromSerial();
+                Serial.println("  -> Entered current: " + String(v) + " mA");
+                if(v > 0 && v < 25.0) {
+                  Serial.println("      setting new value...");
+                  e.pinCurrent(ch,v);
+                }
+                else {
+                  Serial.println("ERROR: wrong value");
+                }
               }
             }
             else if(e.isChVoltageAdc(ch) && !change) {
