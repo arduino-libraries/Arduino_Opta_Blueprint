@@ -19,6 +19,40 @@
 #define PERIODIC_UPDATE_TIME 5000
 #define DELAY_AFTER_SETUP 200
 
+
+/* given an expansion type it prints the type of expansion*/
+void printExpansionType(ExpansionType_t t);
+
+/* print a little summary for each expansions found 
+ * - index
+ * - type
+ * - I2C address */
+void printExpansionInfo();
+
+/* get an integer value from serial in blocking way (it waits for 
+ * the user to enter something)*/
+int getIntegerFromSerial();
+
+/* get the first char entered in the serial line */
+char getCharFromSerial();
+
+/* get a real number from serial line (use . as decimal separator) 
+ * in a blocking way */
+float getFloatFromSerial();
+
+/* given the index of a certain device it asks the user to select
+ * the configuration for each channel (if the device is an ANALOG expansion)*/
+void configureChannels(uint8_t device);
+
+/* given the index of an Analog expansion it shows the status 
+ * of each channel of that device */
+void watchExpansion(uint8_t device);
+
+/* given the index of an Analog expansion it allows the user to
+ * change the values of its outputs (DAC channels) */
+void changeExpansion(uint8_t device);
+
+
 /* -------------------------------------------------------------------------- */
 void printExpansionType(ExpansionType_t t) {
 /* -------------------------------------------------------------------------- */
@@ -63,18 +97,20 @@ void printExpansionInfo() {
   }  
 }
 
-
-
+/* -------------------------------------------------------------------------- */
 int getIntegerFromSerial() {
+/* -------------------------------------------------------------------------- */
   /* basic function that get a integer from serial 
    * (can be improved....)*/
-
+  
+  /* this function returns -1 if the user just hit return without entering 
+   * any number */
   int rv = -1;
   /* wait for user to write something on the serial line */
   while(!Serial.available()) {
   }
   
-  /* */
+  /* get the number (everything is not a number is ignored) */
   while(Serial.available()) {
     
     int num = Serial.read();
@@ -90,9 +126,12 @@ int getIntegerFromSerial() {
   return rv;
 }
 
+/* -------------------------------------------------------------------------- */
 int getIntegerNonBlocking() {
+/* -------------------------------------------------------------------------- */
    /* basic function that get a integer from serial 
-   * (can be improved....)*/
+   * (can be improved....)
+   * it does not wait for input from serial and return -1 if*/
   int rv = -1;
   if(Serial.available()) {
     rv = 0;
@@ -110,7 +149,9 @@ int getIntegerNonBlocking() {
 }
 
 
+/* -------------------------------------------------------------------------- */
 char getCharFromSerial() {
+/* -------------------------------------------------------------------------- */
   char rv = 255;
   while(!Serial.available()) {
   }
@@ -129,7 +170,9 @@ char getCharFromSerial() {
   return rv;
 }
 
+/* -------------------------------------------------------------------------- */
 float getFloatFromSerial() {
+/* -------------------------------------------------------------------------- */
   /* basic function that get a float from serial 
    * (can be improved....)*/
 
@@ -168,15 +211,19 @@ float getFloatFromSerial() {
   return rv;
 }
 
-
+/* -------------------------------------------------------------------------- */
+/* given a certain Analog expansion 'device' index this function ask 
+ * the user to configure the 8 channels of the analog expansion by
+ * choosing from a menu */
+/* -------------------------------------------------------------------------- */
 void configureChannels(uint8_t device) {
-  
-    if(device >= 0 && device < 5) {
+/* -------------------------------------------------------------------------- */
+    if(device >= 0 && device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
 
       AnalogExpansion e = OptaController.getExpansion(device);
 
       if(e) {
-        Serial.println("ANALOG expansion at index " + String(device) + " found!");
+        Serial.println("\n# Configure ANALOG expansion at index " + String(device));
 
         for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
             Serial.println();
@@ -188,9 +235,18 @@ void configureChannels(uint8_t device) {
             Serial.println("  6-> RTD 3 WIRES");
             Serial.println("  7-> Digital Input");
             Serial.println("  8-> HIGH IMPEDENCE");
-            Serial.println("Select function for CHANNEL  n. " + String(ch) + ":>");
 
+            Serial.println("Hit return to skip this channel configuration or...");
+            Serial.println("Select function for CHANNEL  n. " + String(ch) + ":>");
+            
+            /* ask user for a choice */
             int sel = getIntegerFromSerial();
+
+            if(sel == -1) {
+              continue;
+            }
+            
+            /* configure the channel  as requested by user */
             Serial.print(" CHANNEL " + String(ch) + " set as");
             if(sel == 1) {
               Serial.println(" DAC VOLTAGE");
@@ -223,15 +279,15 @@ void configureChannels(uint8_t device) {
             }
             else if(sel == 8) {
               Serial.println("  High Impedence");
-              e.beginChannelAsHighImpedence(ch);
+              e.beginChannelAsHighImpedance(ch);
             }
             else {
-              Serial.println("ERROR: invalid choice, channel " + String(ch) + " will not be configured");
+              Serial.println("\nERROR: invalid choice, channel " + String(ch) + "will configured as High Impedance");
             }
         }
       }
       else {
-       Serial.println("ERROR: could not find an Analog Expansion at index " + String(device));
+       Serial.println("\nERROR: could not find an Analog Expansion at index " + String(device));
       }
    }
 
@@ -251,82 +307,113 @@ void setup() {
 
   Serial.println("*** Generic Analog interactive example ***");
   Serial.println();
-  Serial.println("Make sure that your Opta Analog are connected and powered up!");
+  Serial.println("WARNING: Make sure that your Opta Analog are connected and powered up!");
+  Serial.println();
 
   int go = 1000;
+  
+  /* the setup function will ask the user to select an expansion and to
+   * configure it */
 
   do {
-    configureChannels(go);
     Serial.println("Select the Analog expansion to be configured [0-4] or just hit return to finish: ");
     go = getIntegerFromSerial();
-    Serial.println("Selected expansion at index " + String(go));
-
+    if(go >= 0 && go < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+      Serial.println("Selected expansion at index " + String(go));
+    }
+    configureChannels(go);
   } while(go != -1);
 }
 
-void watchExpansion(uint8_t device, bool change) {
-  if(device >= 0 && device < 5) {
-     Serial.println(" Selected expansion at index " + String(device));
+
+/* -------------------------------------------------------------------------- */
+void watchExpansion(uint8_t device) {
+/* -------------------------------------------------------------------------- */
+  if(device >= 0 && device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+     
+     Serial.println("+ Selected Analog Expansion at index " + String(device));
      AnalogExpansion e = OptaController.getExpansion(device);
+     
      if(e) {
         for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
 
             if(e.isChVoltageDac(ch)) {
               Serial.println("Channel " + String(ch) + " is DAC VOLTAGE");
-              if(change) {
-                Serial.println("  Enter the new value in Volts [0-11]: ");
-                float v = getFloatFromSerial();
-                Serial.println("  -> Entered voltage: " + String(v) + " V");
-
-                if(v > 0 && v < 11.0) {
-                  Serial.println("     setting new value...");
-                  e.pinVoltage(ch,v);
-                }
-                else {
-                  Serial.println("ERROR: wrong value");
-                }
+              
+              /* since we can "add" an adc to a certain channel the is no
+               * contraction in having a channel which is a DAC but also an ADC */
+  
+              if(e.isChVoltageAdc(ch)) {
+                Serial.print("  Channel has additional voltage ADC -> ");
+                Serial.println("Measured Voltage: " + String(e.pinVoltage(ch)) + " V");
+              }
+              else if(e.isChCurrentAdc(ch)) {
+                Serial.print("  Channel has additional current ADC -> ");
+                Serial.println("Measured Current: " + String(e.pinCurrent(ch)) + " mA");
               }
             }
             else if(e.isChCurrentDac(ch)) {
               Serial.println("Channel " + String(ch) + " is DAC CURRENT");
-              if(change) {
-                Serial.println("  Enter the new value in milli-Ampere [0-25]: ");
-                float v = getFloatFromSerial();
-                Serial.println("  -> Entered current: " + String(v) + " mA");
-                if(v > 0 && v < 25.0) {
-                  Serial.println("      setting new value...");
-                  e.pinCurrent(ch,v);
-                }
-                else {
-                  Serial.println("ERROR: wrong value");
-                }
+              /* since we can "add" an adc to a certain channel the is no
+               * contraction in having a channel which is a DAC but also an ADC */
+  
+              if(e.isChVoltageAdc(ch)) {
+                Serial.print("  Channel has additional voltage ADC ->  ");
+                Serial.println("Measured Voltage: " + String(e.pinVoltage(ch)) + " V");
+              }
+              else if(e.isChCurrentAdc(ch)) {
+                Serial.print("  Channel has additional current ADC ->  ");
+                Serial.println("Measured Current: " + String(e.pinCurrent(ch)) + " mA");
               }
             }
-            else if(e.isChVoltageAdc(ch) && !change) {
-              Serial.print("Channel " + String(ch) + " is ADC VOLTAGE");
-              Serial.println("  Measured Voltage: " + String(e.pinVoltage(ch)) +
-              " Volts");
+            else if(e.isChRtd(ch)) {
+              Serial.print("Channel " + String(ch) + " is RTD -> ");
+              Serial.println("Measured Resistance: " + String(e.getRtd(ch)) +
+              " Ohms");
             }
-            else if(e.isChCurrentAdc(ch)&& !change) {
-              Serial.print("Channel " + String(ch) + " is ADC CURRENT");
-              Serial.println("  Measured Current: " + String(e.pinCurrent(ch)) +
-              " milliAmpere");
-            }
-            else if(e.isChRtd(ch) && !change) {
-              Serial.print("Channel " + String(ch) + " is RTD");
-              Serial.println("  Measured Resistance: " + String(e.getRtd(ch)));
-            }
-            else if(e.isChDigitalInput(ch) && !change) {
-              Serial.print("Channel " + String(ch) + " is DIGITAL INPUT");
+            else if(e.isChDigitalInput(ch)) {
+              Serial.print("Channel " + String(ch) + " is DIGITAL INPUT -> ");
               if(e.digitalRead(ch,true) == HIGH) {
-                Serial.println("  Status is HIGH");
+                Serial.println("in HIGH status");
               }
               else {
-                Serial.println("  Status is LOW");
+                Serial.println("in LOW status");
+              }
+              /* since we can "add" an adc to a certain channel the is no
+               * contraction in having a channel which is a Digital Input but also an ADC */
+  
+              if(e.isChVoltageAdc(ch)) {
+                Serial.print("  Channel has additional voltage ADC -> ");
+                Serial.println("Measured Voltage: " + String(e.pinVoltage(ch)) + " V");
+              }
+              else if(e.isChCurrentAdc(ch)) {
+                Serial.print("  Channel has additional current ADC -> ");
+                Serial.println("Measured Current: " + String(e.pinCurrent(ch)) + " mA");
               }
             }
-            else if(e.isChHighImpedence(ch) && !change) {
-              Serial.println("Channel " + String(ch) + " is HIGH IMPEDENCE");
+            else if(e.isChHighImpedance(ch)) {
+              Serial.println("Channel " + String(ch) + " is HIGH IMPEDANCE");
+              /* since we can "add" an adc to a certain channel the is no
+               * contraction in having a channel which is in HIGH impedence but also an ADC */
+  
+              if(e.isChVoltageAdc(ch)) {
+                Serial.print("  Channel has additional voltage ADC -> ");
+                Serial.println("Measured Voltage: " + String(e.pinVoltage(ch)) + " V");
+              }
+              else if(e.isChCurrentAdc(ch)) {
+                Serial.print("  Channel has additional current ADC ->  ");
+                Serial.println("Measured Current: " + String(e.pinCurrent(ch)) + " mA");
+              }
+            }
+            else if(e.isChVoltageAdc(ch)) {
+              Serial.print("Channel " + String(ch) + " is ADC VOLTAGE -> ");
+              Serial.println("Measured Voltage: " + String(e.pinVoltage(ch)) +
+              " V");
+            }
+            else if(e.isChCurrentAdc(ch)) {
+              Serial.print("Channel " + String(ch) + " is ADC CURRENT -> ");
+              Serial.println("Measured Current: " + String(e.pinCurrent(ch)) +
+              " mA");
             }
             else {
               Serial.println("ERROR: Unknown channel function " + String(ch));
@@ -339,6 +426,182 @@ void watchExpansion(uint8_t device, bool change) {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+void addAdcToConfiguration(uint8_t device) {
+/* -------------------------------------------------------------------------- */
+  if(device >= 0 && device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+     
+     Serial.println("+ Selected Analog Expansion at index " + String(device));
+     AnalogExpansion e = OptaController.getExpansion(device);
+     
+     if(e) {
+        for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
+            bool addable = false; 
+            if(e.isChVoltageDac(ch)) {
+              addable = true;
+              Serial.println("Channel " + String(ch) + " is DAC VOLTAGE");
+            }
+            else if(e.isChCurrentDac(ch)) {
+              addable = true;
+              Serial.println("Channel " + String(ch) + " is DAC CURRENT");
+            }
+            else if(e.isChDigitalInput(ch)) {
+              addable = true;
+              Serial.print("Channel " + String(ch) + " is DIGITAL INPUT -> ");
+            }
+            else if(e.isChHighImpedance(ch)) {
+              addable = true;
+              Serial.println("Channel " + String(ch) + " is HIGH IMPEDANCE");
+            }
+
+            if(addable) {
+              Serial.println("Add an ADC measurement to channel " + String(ch) + "? [N/y]");
+              char s = getCharFromSerial();
+              if(s == 'y' || s == 'Y') {
+                  Serial.println("Select the kind of channel:    1. VOLTAGE    2. CURRENT");
+                  uint32_t st = 0;
+                  st = getIntegerFromSerial();
+                  if(st == 1) {
+                    e.addVoltageAdcOnChannel(ch);
+                  }
+                  else if(st == 2) {
+                    e.addCurrentAdcOnChannel(ch);
+                  }
+                  else {
+                    Serial.println("ERROR: invalid option!");
+                  }
+              }
+              
+            }
+        } 
+     }
+     else {
+      Serial.println("ERROR: could not find an Analog Expansion at index " + String(device));
+     }
+  }
+}
+/* -------------------------------------------------------------------------- */
+void changeExpansion(uint8_t device) {
+/* -------------------------------------------------------------------------- */
+  if(device >= 0 && device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+     Serial.println(" Selected expansion at index " + String(device));
+     AnalogExpansion e = OptaController.getExpansion(device);
+     if(e) {
+        /* setting DAC values */
+        for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
+
+            if(e.isChVoltageDac(ch)) {
+              Serial.println("Channel " + String(ch) + " is DAC VOLTAGE");
+              
+              Serial.println("  Enter the new value in Volts [0-11]: ");
+              float v = getFloatFromSerial();
+              Serial.println("  -> Entered voltage: " + String(v) + " V");
+
+              if(v > 0 && v < 11.0) {
+                Serial.println("     setting new value...");
+                e.pinVoltage(ch,v);
+              }
+              else {
+                Serial.println("ERROR: wrong value");
+              }
+            
+            }
+            else if(e.isChCurrentDac(ch)) {
+              Serial.println("Channel " + String(ch) + " is DAC CURRENT");
+              Serial.println("  Enter the new value in milli-Ampere [0-25]: ");
+              float v = getFloatFromSerial();
+              Serial.println("  -> Entered current: " + String(v) + " mA");
+              if(v > 0 && v < 25.0) {
+                Serial.println("      setting new value...");
+                e.pinCurrent(ch,v);
+              }
+              else {
+                Serial.println("ERROR: wrong value");
+              }
+            }
+        }
+        
+        Serial.println("Changing PWM channels? [N/y]");
+        char p = getCharFromSerial();
+        
+        if(p == 'y' || p == 'Y') {
+          for(int ch = OA_PWM_CH_FIRST; ch <= OA_PWM_CH_LAST; ch++) {
+              Serial.println("Configure PWM " + String(ch - OA_PWM_CH_FIRST) + "? [N/y]");
+              char s = getCharFromSerial();
+              if(s == 'y' || s == 'Y') {
+                  uint32_t period = 0;
+                  uint32_t pulse = 0;
+                  Serial.println("Enter the new period [in micro seconds]: ");
+                  period = getIntegerFromSerial();
+                  Serial.println("Entered period is " + String(period) + "micro seconds");
+
+                  Serial.println("Enter the new pulse [in micro seconds]: ");
+                  period = getIntegerFromSerial();
+                  Serial.println("Entered pulse is " + String(period) + "micro seconds");
+
+                  e.setPwm(ch, period, pulse);
+              }
+          }
+        }
+
+        Serial.println("Changing LED status? [N/y]");
+        p = getCharFromSerial();
+
+        if(p == 'y' || p == 'Y') {
+          for(int led = OA_LED_1; led < OA_LED_NUM; led++) {
+            Serial.println("Changing LED number " + String(led) + "? [N/y]");
+              char s = getCharFromSerial();
+              if(s == 'y' || s == 'Y') {
+                  Serial.println("Select the new status:    1. ON       2. OFF");
+                  uint32_t st = 0;
+                  st = getIntegerFromSerial();
+                  if(st == 1) {
+                    e.switchLedOn(led);
+                  }
+                  else if(st == 2) {
+                    e.switchLedOff(led);
+                  }
+                  else {
+                    Serial.println("ERROR: invalid option!");
+                  }
+              }
+          }
+        }
+     }
+     else {
+      Serial.println("ERROR: could not find an Analog Expansion at index " + String(device));
+     }
+  }
+}
+
+void showExpansionInformation() {
+  Serial.print("Number of expansions: ");
+  Serial.println(OptaController.getExpansionNum());
+
+  for(int i = 0; i < OptaController.getExpansionNum(); i++) {
+    Serial.print("Expansion n. ");
+    Serial.print(i);
+    Serial.print(" type ");
+    printExpansionType(OptaController.getExpansionType(i));
+    Serial.print(" I2C address ");
+    Serial.print(OptaController.getExpansionI2Caddress(i));
+    uint8_t M,m,r;
+    if(OptaController.getFwVersion(i,M,m,r)) {
+      Serial.print(" FW version: ");
+      Serial.print(M);
+      Serial.print('.');
+      Serial.print(m);
+      Serial.print('.');
+      Serial.print(r);
+      Serial.println();
+    }
+    else {
+      Serial.println(" Unable to get FW version");
+    }
+  }
+  delay(2000);
+}
+
 
 /* -------------------------------------------------------------------------- */
 /*                                  LOOP                                      */
@@ -347,38 +610,49 @@ void loop() {
 /* -------------------------------------------------------------------------- */    
   OptaController.update();
   
-  static unsigned long start = millis();
+  static unsigned long start = millis() + 11000;
   if(millis() - start > 10000) {
+    /* main menu is printed every 10 second */
     start = millis();
-    Serial.println("\n* Main menu: ");
+    Serial.println("\n****** Main menu: *******");
     Serial.println("  1.  WATCH an Analog Expansion (see input values)");
-    Serial.println("  2.  CHANGE an Analog Expansion (set output values)");
+    Serial.println("  2.  CHANGE Analog Expansion outputs (set output values)");
     Serial.println("  3   UPDATE an Analog Expansion Configuration (change what channels do)");
+    Serial.println("  4.  ADD ADC to certain channel (already set up with a different function)");
+    Serial.println("  5.  SHOW Expansions information");
   }
 
   int go = getIntegerNonBlocking();
   static int device = -1;
-
+  
+  /* if the user select something... */
   if(go != -1) {
-    if(go >= 1 && go <= 3) {
-      Serial.println("    -> Select the expansion: > ");
-      int dev = getIntegerFromSerial();
-      device = dev;
-      if(dev >= 0 && dev < OptaController.getExpansionNum()) {
+    if(go >= 1 && go <= 5) {
+      if(go < 5) {
+        Serial.println("    -> Select the expansion: > ");
+        int dev = getIntegerFromSerial();
+        device = dev;
+      }
+      if((device >= 0 && device < OptaController.getExpansionNum()) || go == 5) {
          if(go == 1)
-            watchExpansion(dev, false);
+            watchExpansion(device);
          else if(go == 2)
-            watchExpansion(dev, true);
+            changeExpansion(device);
+         else if(go == 3)
+            configureChannels(device);
+         else if(go == 4)
+            addAdcToConfiguration(device);
+         else if(go == 5) 
+            showExpansionInformation();
          else
-            configureChannels(dev);
-            
-        
+            Serial.println("UNRECOGNIZED Option");
       }
     }
   }
+  /* otherwise watch the selected expansion */
   else {
     if(device != -1) {
-        watchExpansion(device, false);
+        watchExpansion(device);
         delay(1000);
     }
   }
