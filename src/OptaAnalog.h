@@ -71,6 +71,10 @@ private:
 
   bool update_dac_using_LDAC = false;
 
+  /* used to avoid change of function while "adding" adc to
+   * a certain channel */
+  bool write_function_configuration = true;
+
   uint8_t channel_setup = 0;
 
   void set_channel_setup(uint8_t ch);

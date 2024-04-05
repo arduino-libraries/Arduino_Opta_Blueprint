@@ -60,7 +60,6 @@ public:
   bool en_pull_down;
   bool en_conversion_diagnostic;
   bool en_conversion;
-  bool conversion_enabled;
   uint16_t conversion;
   uint16_t diag_conversion;
 
@@ -73,9 +72,8 @@ public:
   CfgAdc()
       : mux(CFG_ADC_INPUT_NODE_IOP_AGND_SENSE), range(CFG_ADC_RANGE_10V),
         en_rejection(true), en_pull_down(false),
-        en_conversion_diagnostic(false), en_conversion(false),
-        conversion_enabled(false), average(0.0), average_samples(0),
-        mov_average_req(0) {}
+        en_conversion_diagnostic(false), en_conversion(false), average(0.0),
+        average_samples(0), mov_average_req(0) {}
 };
 
 /* ###################### DIGITAL IN configuration ########################## */

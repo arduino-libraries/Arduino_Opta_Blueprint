@@ -71,10 +71,13 @@ public:
       if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
           *(cfg[ch] + OA_CH_ADC_TYPE_POS) == OA_VOLTAGE_ADC) {
         return true;
-      } else if (*(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + BP_ARG_POS) ==
-                     ARG_OA_CH_ADC &&
-                 *(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + OA_CH_ADC_TYPE_POS) ==
-                     OA_VOLTAGE_ADC) {
+      }
+    }
+
+    if (is_cfg(ch + OFFSET_ADD_ADC_MESSAGE)) {
+      if (*(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
+          *(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + OA_CH_ADC_TYPE_POS) ==
+              OA_VOLTAGE_ADC) {
         return true;
       }
     }
@@ -86,14 +89,25 @@ public:
       if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
           *(cfg[ch] + OA_CH_ADC_TYPE_POS) == OA_CURRENT_ADC) {
         return true;
-      } else if (*(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + BP_ARG_POS) ==
-                     ARG_OA_CH_ADC &&
-                 *(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + OA_CH_ADC_TYPE_POS) ==
-                     OA_CURRENT_ADC) {
+      }
+    }
+
+    if (is_cfg(ch + OFFSET_ADD_ADC_MESSAGE)) {
+      if (*(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
+          *(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + OA_CH_ADC_TYPE_POS) ==
+              OA_CURRENT_ADC) {
         return true;
       }
     }
     return false;
+  }
+
+  void resetAdditionalAdcCh(uint8_t ch) {
+    if (is_cfg(ch + OFFSET_ADD_ADC_MESSAGE)) {
+      delete[] cfg[ch + OFFSET_ADD_ADC_MESSAGE];
+      cfg[ch + OFFSET_ADD_ADC_MESSAGE] = nullptr;
+      size[ch + OFFSET_ADD_ADC_MESSAGE] = -1;
+    }
   }
 
   bool isVoltageDacCh(uint8_t ch) {
@@ -134,7 +148,7 @@ public:
     return false;
   }
 
-  bool isHighImpedenceCh(uint8_t ch) {
+  bool isHighImpedanceCh(uint8_t ch) {
     if (!is_cfg(ch)) {
       return true;
     } else if (is_cfg(ch)) {
@@ -142,6 +156,7 @@ public:
         return true;
       }
     }
+    return false;
   }
 
   void backup(uint8_t *src, uint8_t ch, uint8_t s) {
