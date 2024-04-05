@@ -211,6 +211,15 @@ float getFloatFromSerial() {
   return rv;
 }
 
+/* this callback will be called every time an expansion does not
+ * answer to an I2C transaction */
+void comm_timeout_cb(int index, int code) {
+	Serial.println("FAILED COMMUNICATION with expansion: " + String(index));
+	Serial.println("FAILED message code: " + String(code));
+
+	/* handle the problem ....*/
+}
+ 
 /* -------------------------------------------------------------------------- */
 /* given a certain Analog expansion 'device' index this function ask 
  * the user to configure the 8 channels of the analog expansion by
@@ -223,6 +232,8 @@ void configureChannels(uint8_t device) {
       AnalogExpansion e = OptaController.getExpansion(device);
 
       if(e) {
+        e.setFailedCommCb(comm_timeout_cb);
+
         Serial.println("\n# Configure ANALOG expansion at index " + String(device));
 
         for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
@@ -290,9 +301,9 @@ void configureChannels(uint8_t device) {
        Serial.println("\nERROR: could not find an Analog Expansion at index " + String(device));
       }
    }
-
-
 }
+
+
 
 
 /* -------------------------------------------------------------------------- */
@@ -331,7 +342,7 @@ void watchExpansion(uint8_t device) {
 /* -------------------------------------------------------------------------- */
   if(device >= 0 && device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
      
-     Serial.println("+ Selected Analog Expansion at index " + String(device));
+     Serial.println("\n+ Watching Analog Expansion at index " + String(device));
      AnalogExpansion e = OptaController.getExpansion(device);
      
      if(e) {
@@ -497,7 +508,7 @@ void changeExpansion(uint8_t device) {
               float v = getFloatFromSerial();
               Serial.println("  -> Entered voltage: " + String(v) + " V");
 
-              if(v > 0 && v < 11.0) {
+              if(v >= 0 && v < 11.0) {
                 Serial.println("     setting new value...");
                 e.pinVoltage(ch,v);
               }
@@ -511,7 +522,7 @@ void changeExpansion(uint8_t device) {
               Serial.println("  Enter the new value in milli-Ampere [0-25]: ");
               float v = getFloatFromSerial();
               Serial.println("  -> Entered current: " + String(v) + " mA");
-              if(v > 0 && v < 25.0) {
+              if(v >= 0 && v < 25.0) {
                 Serial.println("      setting new value...");
                 e.pinCurrent(ch,v);
               }
