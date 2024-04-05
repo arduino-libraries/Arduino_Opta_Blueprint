@@ -79,10 +79,12 @@
 #define OA_CH_11 11
 #define OA_CH_NUM 12
 
+#define OA_PWM_CH_FIRST OA_CH_8
 #define OA_PWM_CH_0 OA_CH_8
 #define OA_PWM_CH_1 OA_CH_9
 #define OA_PWM_CH_2 OA_CH_10
 #define OA_PWM_CH_3 OA_CH_11
+#define OA_PWM_CH_LAST OA_CH_11
 
 #define OA_LED_1 0
 #define OA_LED_2 1
