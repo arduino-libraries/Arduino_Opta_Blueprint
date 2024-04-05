@@ -73,7 +73,8 @@ private:
 
   /* used to avoid change of function while "adding" adc to
    * a certain channel */
-  bool write_function_configuration = true;
+  bool write_function_configuration[OA_AN_CHANNELS_NUM] = {
+      true, true, true, true, true, true, true, true};
 
   uint8_t channel_setup = 0;
 

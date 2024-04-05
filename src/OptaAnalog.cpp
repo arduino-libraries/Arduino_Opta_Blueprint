@@ -538,7 +538,7 @@ void OptaAnalog::configureFunction(uint8_t ch, CfgFun_t f) {
        * avoid to reset the function to High impedance because
        * we are not actually changing the function */
       if (current_fun != CH_FUNC_HIGH_IMPEDENCE &&
-          write_function_configuration) {
+          write_function_configuration[ch]) {
         // to switch function first go in high impedance
         uint8_t v = CH_HIGH_IMP;
         write_reg(OA_REG_FUNC_SETUP, v, ch);
@@ -1798,9 +1798,8 @@ void OptaAnalog::configureAlertMaskRegister(uint8_t device, uint16_t alert) {
 bool OptaAnalog::parse_setup_di_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_DI, LEN_OA_CH_DI,
                           OA_CH_DI_LEN)) {
-    write_function_configuration = true;
     uint8_t ch = rx_buffer[OA_CH_DI_CHANNEL_POS];
-
+    write_function_configuration[ch] = true;
     if (ch < OA_AN_CHANNELS_NUM) {
       rtd[ch].is_rtd = false;
     }
@@ -1848,8 +1847,8 @@ bool OptaAnalog::parse_setup_di_channel() {
 bool OptaAnalog::parse_setup_dac_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_DAC, LEN_OA_CH_DAC,
                           OA_CH_DAC_LEN)) {
-    write_function_configuration = true;
     uint8_t ch = rx_buffer[OA_CH_DAC_CHANNEL_POS];
+    write_function_configuration[ch] = true;
 
     if (ch < OA_AN_CHANNELS_NUM) {
       rtd[ch].is_rtd = false;
@@ -1932,8 +1931,8 @@ bool OptaAnalog::parse_setup_dac_channel() {
 bool OptaAnalog::parse_setup_rtd_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_RTD, LEN_OA_CH_RTD,
                           OA_CH_RTD_LEN)) {
-    write_function_configuration = true;
     uint8_t ch = rx_buffer[OA_CH_RTD_CHANNEL_POS];
+    write_function_configuration[ch] = true;
     Float_u v;
     for (int i = 0; i < 4; i++) {
       v.bytes[i] = rx_buffer[OA_CH_RTD_CURRENT_POS + i];
@@ -1955,7 +1954,7 @@ bool OptaAnalog::parse_setup_high_imp_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_HIGH_IMPEDENCE,
                           LEN_OA_CH_HIGH_IMPEDENCE, OA_CH_HIGH_IMPEDENCE_LEN)) {
     uint8_t ch = rx_buffer[OA_HIGH_IMPEDENCE_CH_POS];
-    write_function_configuration = true;
+    write_function_configuration[ch] = true;
     configureFunction(ch, CH_FUNC_HIGH_IMPEDENCE);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
     return true;
@@ -1968,12 +1967,11 @@ bool OptaAnalog::parse_setup_adc_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_ADC, LEN_OA_CH_ADC,
                           OA_CH_ADC_LEN)) {
 
-    write_function_configuration = true;
-    if (rx_buffer[OA_CH_ADC_ADDING_ADC_POS] == OA_ENABLE) {
-      write_function_configuration = false;
-    }
-
     uint8_t ch = rx_buffer[OA_CH_ADC_CHANNEL_POS];
+    write_function_configuration[ch] = true;
+    if (rx_buffer[OA_CH_ADC_ADDING_ADC_POS] == OA_ENABLE) {
+      write_function_configuration[ch] = false;
+    }
 
     if (ch < OA_AN_CHANNELS_NUM) {
       rtd[ch].is_rtd = false;
@@ -2332,8 +2330,9 @@ void OptaAnalog::setup_channels() {
         /* avoid to send High impedance since each channel has already be
          * reset to High impedance when a new channel function is requested
          * see configureFunction()*/
-        if (f != CH_FUNC_HIGH_IMPEDENCE && write_function_configuration) {
-          write_function_configuration = false;
+        if (f != CH_FUNC_HIGH_IMPEDENCE && write_function_configuration[ch]) {
+          write_function_configuration[ch] = false;
+
           sendFunction(ch);
         }
 
@@ -2365,6 +2364,7 @@ void OptaAnalog::setup_channels() {
           // Serial.println("ADC C 1");
           break;
         case CH_FUNC_RESISTANCE_MEASUREMENT:
+          configureAdcEnable(ch, true);
           // Serial.println("RES");
           break;
         case CH_FUNC_DIGITAL_INPUT:
