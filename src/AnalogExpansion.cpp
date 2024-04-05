@@ -29,8 +29,9 @@ OaChannelCfg AnalogExpansion::cfgs[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-AnalogExpansion::AnalogExpansion() : add_adc_on_channel_flag(false) {
+AnalogExpansion::AnalogExpansion() {
   iregs[ADD_OA_LED_VALUE] = 0;
+  iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -99,7 +100,7 @@ void AnalogExpansion::startUp(Controller *ptr) {
 uint8_t AnalogExpansion::msg_begin_adc() {
   if (ctrl != nullptr) {
     if (adc_registers_defined()) {
-      
+
       ctrl->setTx(iregs[ADD_OA_PIN], OA_CH_ADC_CHANNEL_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_TYPE], OA_CH_ADC_TYPE_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_USE_PULL_DOWN], OA_CH_ADC_PULL_DOWN_POS);
@@ -107,14 +108,13 @@ uint8_t AnalogExpansion::msg_begin_adc() {
       ctrl->setTx(iregs[ADD_OA_ADC_USE_DIAGNOSTIC], OA_CH_ADC_DIAGNOSTIC_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_MOVE_AVERAGE], OA_CH_ADC_MOVING_AVE_POS);
       int offset_add_adc_messages = 0;
-      if (add_adc_on_channel_flag) {
+      if (iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] == 1) {
         ctrl->setTx(OA_ENABLE, OA_CH_ADC_ADDING_ADC_POS);
         offset_add_adc_messages = OFFSET_ADD_ADC_MESSAGE;
       } else {
         ctrl->setTx(OA_DISABLE, OA_CH_ADC_ADDING_ADC_POS);
       }
-      add_adc_on_channel_flag = false;
-
+      iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_ADC,
                                  LEN_OA_CH_ADC, OA_CH_ADC_LEN);
 #ifdef DEBUG_BEGIN_ADC
@@ -126,10 +126,11 @@ uint8_t AnalogExpansion::msg_begin_adc() {
       Serial.println();
 #endif
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        #ifdef DEBUG_BEGIN_ADC
+#ifdef DEBUG_BEGIN_ADC
         Serial.println("BACKUP ADC begin " + String(offset_add_adc_messages) +
                        " " + String(iregs[ADD_OA_PIN]));
-        #endif
+#endif
+        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
         cfgs[index].backup(ctrl->getTxBuffer(),
                            iregs[ADD_OA_PIN] + offset_add_adc_messages, rv);
       }
@@ -158,6 +159,7 @@ uint8_t AnalogExpansion::msg_begin_di() {
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_DI,
                                  LEN_OA_CH_DI, OA_CH_DI_LEN);
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
         cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN],
                            CFG_OA_CH_DI_LEN);
       }
@@ -201,13 +203,12 @@ void AnalogExpansion::beginChannelAsAdc(uint8_t ch, OaAdcType_t type,
   iregs[ADD_OA_ADC_USE_DIAGNOSTIC] = (diagnostic) ? OA_ENABLE : OA_DISABLE;
   iregs[ADD_OA_ADC_MOVE_AVERAGE] = ma;
 
-  add_adc_on_channel_flag = false;
-  #ifdef DEBUG_BEGIN_ADC
+#ifdef DEBUG_BEGIN_ADC
   unsigned int err = execute(BEGIN_CHANNEL_AS_ADC);
   Serial.println("BEGIN CHANNEL AS ADC err = " + String(err));
-  #else
+#else
   execute(BEGIN_CHANNEL_AS_ADC);
-  #endif
+#endif
 
   iregs.erase(ADD_OA_PIN);
   iregs.erase(ADD_OA_ADC_TYPE);
@@ -220,8 +221,18 @@ void AnalogExpansion::beginChannelAsAdc(uint8_t ch, OaAdcType_t type,
 void AnalogExpansion::addAdcOnChannel(uint8_t ch, OaAdcType_t type,
                                       bool pull_down, bool rejection,
                                       bool diagnostic, uint8_t ma) {
-  add_adc_on_channel_flag = true;
+  if (isChVoltageAdc(ch) || isChCurrentAdc(ch) || isChRtd(ch)) {
+    return;
+  }
+
+  iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 1;
   beginChannelAsAdc(ch, type, pull_down, rejection, diagnostic, ma);
+}
+void AnalogExpansion::addVoltageAdcOnChannel(uint8_t ch) {
+  addAdcOnChannel(ch, OA_VOLTAGE_ADC, true, true, false, 0);
+}
+void AnalogExpansion::addCurrentAdcOnChannel(uint8_t ch) {
+  addAdcOnChannel(ch, OA_CURRENT_ADC, false, true, false, 0);
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -335,6 +346,7 @@ uint8_t AnalogExpansion::msg_begin_dac() {
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_DAC,
                                  LEN_OA_CH_DAC, OA_CH_DAC_LEN);
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
         cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN], rv);
       }
       return rv;
@@ -351,6 +363,7 @@ uint8_t AnalogExpansion::msg_begin_high_imp() {
         prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_HIGH_IMPEDENCE,
                       LEN_OA_CH_HIGH_IMPEDENCE, OA_CH_HIGH_IMPEDENCE_LEN);
     if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+      cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
       cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN], rv);
     }
     return rv;
@@ -368,7 +381,7 @@ bool AnalogExpansion::dac_registers_defined() {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-void AnalogExpansion::beginChannelAsHighImpedence(uint8_t ch) {
+void AnalogExpansion::beginChannelAsHighImpedance(uint8_t ch) {
   iregs[ADD_OA_PIN] = ch;
   int32_t err = execute(BEGIN_CHANNEL_AS_HIGH_IMP);
 }
@@ -434,6 +447,7 @@ uint8_t AnalogExpansion::msg_begin_rtd() {
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_RTD,
                                  LEN_OA_CH_RTD, OA_CH_RTD_LEN);
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
         cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN], rv);
       }
       return rv;
@@ -1106,10 +1120,25 @@ void AnalogExpansion::addAdcOnChannel(Controller &ctrl, uint8_t device,
                                       uint8_t ch, OaAdcType_t type,
                                       bool pull_down, bool rejection,
                                       bool diagnostic, uint8_t ma) {
-  //
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
     AnalogExpansion exp = ctrl.getExpansion(device);
     exp.addAdcOnChannel(ch, type, pull_down, rejection, diagnostic, ma);
+  }
+}
+void AnalogExpansion::addVoltageAdcOnChannel(Controller &ctrl, uint8_t device,
+                                             uint8_t ch) {
+  //
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
+    AnalogExpansion exp = ctrl.getExpansion(device);
+    exp.addVoltageAdcOnChannel(ch);
+  }
+}
+
+void AnalogExpansion::addCurrentAdcOnChannel(Controller &ctrl, uint8_t device,
+                                             uint8_t ch) {
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
+    AnalogExpansion exp = ctrl.getExpansion(device);
+    exp.addCurrentAdcOnChannel(ch);
   }
 }
 void AnalogExpansion::beginChannelAsVoltageAdc(Controller &ctrl, uint8_t device,
@@ -1220,7 +1249,6 @@ bool AnalogExpansion::isChAdc(uint8_t ch) {
   return false;
 }
 
-
 bool AnalogExpansion::isChVoltageDac(uint8_t ch) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
@@ -1269,11 +1297,11 @@ bool AnalogExpansion::isChRtd(uint8_t ch) {
   return false;
 }
 
-bool AnalogExpansion::isChHighImpedence(uint8_t ch) {
+bool AnalogExpansion::isChHighImpedance(uint8_t ch) {
 
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
 
-    return (AnalogExpansion::cfgs[index].isHighImpedenceCh(ch));
+    return (AnalogExpansion::cfgs[index].isHighImpedanceCh(ch));
   }
   return false;
 }

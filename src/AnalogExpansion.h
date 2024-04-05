@@ -57,9 +57,16 @@ public:
                          bool rejection, bool diagnostic, uint8_t ma);
   void addAdcOnChannel(uint8_t ch, OaAdcType_t type, bool pull_down,
                        bool rejection, bool diagnostic, uint8_t ma);
+  void addVoltageAdcOnChannel(uint8_t ch);
+  void addCurrentAdcOnChannel(uint8_t ch);
   static void addAdcOnChannel(Controller &ctrl, uint8_t device, uint8_t ch,
                               OaAdcType_t type, bool pull_down, bool rejection,
                               bool diagnostic, uint8_t ma);
+
+  static void addVoltageAdcOnChannel(Controller &ctrl, uint8_t device,
+                                     uint8_t ch);
+  static void addCurrentAdcOnChannel(Controller &ctrl, uint8_t device,
+                                     uint8_t ch);
   void beginChannelAsVoltageAdc(uint8_t ch);
   void beginChannelAsCurrentAdc(uint8_t ch);
 
@@ -125,7 +132,7 @@ public:
   static void beginChannelAsCurrentDac(Controller &ctrl, uint8_t device,
                                        uint8_t ch);
 
-  void beginChannelAsHighImpedence(uint8_t ch);
+  void beginChannelAsHighImpedance(uint8_t ch);
 
   /*
    * Set /get channel functions
@@ -189,7 +196,7 @@ public:
   bool isChCurrentAdc(uint8_t ch);
   bool isChDigitalInput(uint8_t ch);
   bool isChRtd(uint8_t ch);
-  bool isChHighImpedence(uint8_t ch);
+  bool isChHighImpedance(uint8_t ch);
 
 protected:
   bool verify_address(unsigned int add) override;
@@ -223,9 +230,6 @@ protected:
 
   uint8_t msg_get_all_ai();
   bool parse_ans_get_all_ai();
-
-private:
-  bool add_adc_on_channel_flag;
 };
 
 } // namespace Opta
