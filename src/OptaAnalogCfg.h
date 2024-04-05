@@ -18,7 +18,7 @@
 #ifndef DEBUG_UPDATE_FW
 #define OA_FW_VERSION_MAJOR 0
 #define OA_FW_VERSION_MINOR 0
-#define OA_FW_VERSION_RELEASE 21
+#define OA_FW_VERSION_RELEASE 22
 #else
 #define OA_FW_VERSION_MAJOR 0
 #define OA_FW_VERSION_MINOR 0
@@ -368,5 +368,5 @@
 #define CH_CFG_CUR (0x2 << 5)
 #define CH_CFG_BICUR (0x3 << 5)
 
-#define DEBUG_ANALOG_PARSE_MESSAGE
+// #define DEBUG_ANALOG_PARSE_MESSAGE
 #endif
