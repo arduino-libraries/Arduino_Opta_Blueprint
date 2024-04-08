@@ -516,9 +516,10 @@ void OptaAnalog::configureFunction(uint8_t ch, CfgFun_t f) {
   if (ch < OA_AN_CHANNELS_NUM) {
     CfgFun_t current_fun = fun[ch];
     if (current_fun != f) {
-      if (current_fun == CH_FUNC_VOLTAGE_OUTPUT ||
-          current_fun == CH_FUNC_CURRENT_OUTPUT ||
-          current_fun == CH_FUNC_RESISTANCE_MEASUREMENT) {
+      if ((current_fun == CH_FUNC_VOLTAGE_OUTPUT ||
+           current_fun == CH_FUNC_CURRENT_OUTPUT ||
+           current_fun == CH_FUNC_RESISTANCE_MEASUREMENT) &&
+          write_function_configuration[ch]) {
         configureDacValue(ch, 0);
         updateDacValue(ch, true);
         if (ch == 0) {
