@@ -1978,7 +1978,22 @@ bool OptaAnalog::parse_setup_adc_channel() {
       rtd[ch].is_rtd = false;
     }
 
-    if (rx_buffer[OA_CH_ADC_TYPE_POS] == OA_VOLTAGE_ADC) {
+    if (fun[ch] == CH_FUNC_VOLTAGE_OUTPUT &&
+        write_function_configuration[ch] == false &&
+        rx_buffer[OA_CH_ADC_TYPE_POS] == OA_CURRENT_ADC) {
+      /* this is a special case:
+       * we have DAC voltage output on that channel but we are adding an ADC
+       * current measurement on the same channel */
+      
+      /* note that the function here is not really used since it will
+      not sent to the Analog Device chip (write_function_configuration[ch] 
+      is false indeed) */
+      configureFunction(ch, CH_FUNC_CURRENT_INPUT_LOOP_POWER);
+      configureAdcMux(ch, CFG_ADC_INPUT_NODE_100OHM_R);
+      configureAdcRange(ch, CFG_ADC_RANGE_2_5V_BI);
+      configureAdcPullDown(ch, false);
+    }
+    else if (rx_buffer[OA_CH_ADC_TYPE_POS] == OA_VOLTAGE_ADC) {
       configureFunction(ch, CH_FUNC_VOLTAGE_INPUT);
       configureAdcMux(ch, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
       configureAdcRange(ch, CFG_ADC_RANGE_10V);
@@ -1987,7 +2002,6 @@ bool OptaAnalog::parse_setup_adc_channel() {
       } else if (rx_buffer[OA_CH_ADC_PULL_DOWN_POS] == OA_DISABLE) {
         configureAdcPullDown(rx_buffer[OA_CH_ADC_CHANNEL_POS], false);
       }
-
     } else if (rx_buffer[OA_CH_ADC_TYPE_POS] == OA_CURRENT_ADC) {
       configureFunction(ch, CH_FUNC_CURRENT_INPUT_EXT_POWER);
       configureAdcMux(ch, CFG_ADC_INPUT_NODE_100OHM_R);
@@ -2339,42 +2353,33 @@ void OptaAnalog::setup_channels() {
 
         switch (f) {
         case CH_FUNC_HIGH_IMPEDENCE:
-          // Serial.println("HI");
           break;
         case CH_FUNC_VOLTAGE_OUTPUT:
           sendDacConfiguration(ch);
-          // Serial.println("DAC V");
           break;
         case CH_FUNC_CURRENT_OUTPUT:
           sendDacConfiguration(ch);
-          // Serial.println("DAC C");
           break;
         case CH_FUNC_VOLTAGE_INPUT:
           configureAdcEnable(ch, true);
           sendAdcConfiguration(ch);
-          // Serial.println("ADC V");
           break;
         case CH_FUNC_CURRENT_INPUT_EXT_POWER:
           configureAdcEnable(ch, true);
           sendAdcConfiguration(ch);
-          // Serial.println("ADC C");
           break;
         case CH_FUNC_CURRENT_INPUT_LOOP_POWER:
           configureAdcEnable(ch, true);
           sendAdcConfiguration(ch);
-          // Serial.println("ADC C 1");
           break;
         case CH_FUNC_RESISTANCE_MEASUREMENT:
           configureAdcEnable(ch, true);
-          // Serial.println("RES");
           break;
         case CH_FUNC_DIGITAL_INPUT:
           sendDinConfiguration(ch);
-          // Serial.println("DIGITAL");
           break;
         case CH_FUNC_DIGITAL_INPUT_LOOP_POWER:
           sendDinConfiguration(ch);
-          // Serial.println("DIGITAL 1");
           break;
         default:
           break;
