@@ -605,7 +605,13 @@ float AnalogExpansion::pinVoltage(uint8_t ch, bool update /*= true*/) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 float AnalogExpansion::pinCurrent(uint8_t ch, bool update /*= true*/) {
-  if (cfgs[index].isCurrentAdcCh(ch)) {
+  if (cfgs[index].isVoltageDacCh(ch) && cfgs[index].isCurrentAdcCh(ch)) {
+    float code = (float)getAdc(ch, update);
+    float current = (code / 65535.0) * 5.0;
+    current = current - 2.5;
+    current = current / 100.0;
+    return current * 1000.0; // convert to mA
+  } else if (cfgs[index].isCurrentAdcCh(ch)) {
     uint16_t v = getAdc(ch, update);
     return 25.0 * (float)v / 65535.0;
   }
