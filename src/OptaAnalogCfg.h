@@ -15,7 +15,9 @@
 #define OPTA_ANALOG_BLUE_CONFIGURATION
 #include "CommonCfg.h"
 
+#ifdef ARDUINO_OPTA_ANALOG
 #define COMPILE_BASE_MODULE_EXPANSION
+#endif
 
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 0
@@ -365,5 +367,20 @@
 #define CH_CFG_CUR (0x2 << 5)
 #define CH_CFG_BICUR (0x3 << 5)
 
+#define OPTA_AN_ALERT_VI_ERR_MASK_A (1 << 0)
+#define OPTA_AN_ALERT_VI_ERR_MASK_B (1 << 1)
+#define OPTA_AN_ALERT_VI_ERR_MASK_C (1 << 2)
+#define OPTA_AN_ALERT_VI_ERR_MASK_D (1 << 3)
+#define OPTA_AN_HI_TEMP_ERR_MASK (1 << 4)
+#define OPTA_AN_CHARGE_PUMP_ERR_MASK (1 << 5)
+#define OPTA_AN_ALDO5V_ERR_MASK (1 << 6)
+#define OPTA_AN_AVDD_ERR_MASK (1 << 7)
+#define OPTA_AN_DVCC_ERR_MASK (1 << 8)
+#define OPTA_AN_ALDO1V8_ERR_MASK (1 << 9)
+#define OPTA_AN_ADC_CONV_ERR_MASK (1 << 10)
+#define OPTA_AN_ADC_SAT_ERR_MAK (1 << 11)
+#define OPTA_AN_SPI_SCLK_CNT_ERR_MASK (1 << 12)
+#define OPTA_AN_SPI_CRC_ERR_MASK (1 << 13)
+#define OPTA_AN_CAL_MEM_ERR_MASK (1 << 14)
 // #define DEBUG_ANALOG_PARSE_MESSAGE
 #endif

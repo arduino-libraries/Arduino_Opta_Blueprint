@@ -14,6 +14,8 @@
 #ifndef OPTA_BLUE_MODULE
 #define OPTA_BLUE_MODULE
 
+#ifndef ARDUINO_OPTA
+
 #include "Arduino.h"
 #include "CommonCfg.h"
 #include "EEPROM.h"
@@ -122,5 +124,7 @@ protected:
 };
 
 extern Module *OptaExpansion;
+
+#endif
 #endif
 #endif //

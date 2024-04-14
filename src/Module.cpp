@@ -10,6 +10,7 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
+#ifndef ARDUINO_OPTA
 #include "Arduino.h"
 
 #include "Module.h"
@@ -578,4 +579,5 @@ void Module::setAddress(uint8_t add) {
   Wire.begin(add);
   i2c_address = add;
 }
+#endif
 #endif

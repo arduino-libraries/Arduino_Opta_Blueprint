@@ -22,6 +22,103 @@
 
 namespace Opta {
 
+typedef enum {
+  OA_ADC_RANGE_10V,
+  OA_ADC_RANGE_2_5V,
+  OA_ADC_RANGE_2_5V_SELF_POWERED,
+  OA_ADC_RANGE_2_5_BIPOLAR
+} OaAdcRange_t;
+
+typedef enum {
+  OA_SLEW_RATE_0,  /* max vertical step 64 bit, update rate 4 kHz */
+  OA_SLEW_RATE_1,  /* max vertical step 120 bit, update rate 4 kHz */
+  OA_SLEW_RATE_2,  /* max vertical step 500 bit, update rate 4 kHz */
+  OA_SLEW_RATE_3,  /* max vertical step 1820 bit, update rate 4 kHz */
+  OA_SLEW_RATE_4,  /* max vertical step 64 bit, update rate 64 kHz */
+  OA_SLEW_RATE_5,  /* max vertical step 120 bit, update rate 64 kHz */
+  OA_SLEW_RATE_6,  /* max vertical step 500 bit, update rate 64 kHz */
+  OA_SLEW_RATE_7,  /* max vertical step 1280 bit, update rate 64 kHz */
+  OA_SLEW_RATE_8,  /* max vertical step 64 bit, update rate 150 kHz */
+  OA_SLEW_RATE_9,  /* max vertical step 120 bit, update rate 150 kHz */
+  OA_SLEW_RATE_10, /* max vertical step 500 bit, update rate 150 kHz */
+  OA_SLEW_RATE_11, /* max vertical step 1280 bit, update rate 150 kHz */
+  OA_SLEW_RATE_12, /* max vertical step 64 bit, update rate 240 kHz */
+  OA_SLEW_RATE_13, /* max vertical step 120 bit, update rate 240 kHz */
+  OA_SLEW_RATE_14, /* max vertical step 500 bit, update rate 240 kHz */
+  OA_SLEW_RATE_15  /* max vertical step 1280 bit, update rate 240 kHz */
+} OaDacSlewRate_t;
+
+typedef enum {
+  OA_DI_DEB_TIME_0,  /* No debounce time */
+  OA_DI_DEB_TIME_1,  /* 0.0130 ms */
+  OA_DI_DEB_TIME_2,  /* 0.0187 ms */
+  OA_DI_DEB_TIME_3,  /* 0.0244 ms */
+  OA_DI_DEB_TIME_4,  /* 0.0325 ms */
+  OA_DI_DEB_TIME_5,  /* 0.0423 ms */
+  OA_DI_DEB_TIME_6,  /* 0.0561 ms */
+  OA_DI_DEB_TIME_7,  /* 0.0756 ms */
+  OA_DI_DEB_TIME_8,  /* 0.1008 ms */
+  OA_DI_DEB_TIME_9,  /* 0.1301 ms */
+  OA_DI_DEB_TIME_10, /* 0.1805 ms */
+  OA_DI_DEB_TIME_11, /* 0.2406 ms */
+  OA_DI_DEB_TIME_12, /* 0.3203 ms */
+  OA_DI_DEB_TIME_13, /* 0.4203 ms */
+  OA_DI_DEB_TIME_14, /* 0.5602 ms */
+  OA_DI_DEB_TIME_15, /* 0.7504 ms */
+  OA_DI_DEB_TIME_16, /* 1.0008 ms */
+  OA_DI_DEB_TIME_17, /* 1.3008 ms */
+  OA_DI_DEB_TIME_18, /* 1.8008 ms */
+  OA_DI_DEB_TIME_19, /* 2.4008 ms */
+  OA_DI_DEB_TIME_20, /* 3.2008 ms */
+  OA_DI_DEB_TIME_21, /* 4.2008 ms */
+  OA_DI_DEB_TIME_22, /* 5.6008 ms */
+  OA_DI_DEB_TIME_23, /* 7.5007 ms */
+  OA_DI_DEB_TIME_24, /* 10.0007 ms */
+  OA_DI_DEB_TIME_25, /* 13.0007 ms */
+  OA_DI_DEB_TIME_26, /* 18.0007 ms */
+  OA_DI_DEB_TIME_27, /* 24.0006 ms */
+  OA_DI_DEB_TIME_28, /* 32.0005 ms */
+  OA_DI_DEB_TIME_29, /* 42.0004 ms */
+  OA_DI_DEB_TIME_30, /* 56.0003 ms */
+  OA_DI_DEB_TIME_31, /* 75.0000 ms */
+} OaDebounceTime_t;
+/* step of 120 uA (although the manual says from 0 to 1.8mA in 0.120 uA steps
+ * but with 4 bytes...)*/
+typedef enum {
+  OA_DI_SINK_0, /* No sink current */
+  OA_DI_SINK_1, /* 120 uA */
+  OA_DI_SINK_2,
+  OA_DI_SINK_3,
+  OA_DI_SINK_4,
+  OA_DI_SINK_5,
+  OA_DI_SINK_6,
+  OA_DI_SINK_7,
+  OA_DI_SINK_8,
+  OA_DI_SINK_9,
+  OA_DI_SINK_10,
+  OA_DI_SINK_11,
+  OA_DI_SINK_12,
+  OA_DI_SINK_13,
+  OA_DI_SINK_14,
+  OA_DI_SINK_15,
+  OA_DI_SINK_16,
+  OA_DI_SINK_17,
+  OA_DI_SINK_18,
+  OA_DI_SINK_19,
+  OA_DI_SINK_20,
+  OA_DI_SINK_21,
+  OA_DI_SINK_22,
+  OA_DI_SINK_23,
+  OA_DI_SINK_24,
+  OA_DI_SINK_25,
+  OA_DI_SINK_26,
+  OA_DI_SINK_27,
+  OA_DI_SINK_28,
+  OA_DI_SINK_29,
+  OA_DI_SINK_30,
+  OA_DI_SINK_31, /* 1.8 mA */
+} OaDiSinkCurrent_t;
+
 class AnalogExpansion : public Expansion {
 public:
   AnalogExpansion();

@@ -11,6 +11,7 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
+#ifndef ARDUINO_OPTA
 #include "CommonCfg.h"
 #include "MsgCommon.h"
 #include "Protocol.h"
@@ -1869,52 +1870,52 @@ bool OptaAnalog::parse_setup_dac_channel() {
     }
     if (rx_buffer[OA_CH_DAC_ENABLE_SLEW_POS] == OA_ENABLE) {
       switch (rx_buffer[OA_CH_DAC_SLEW_RATE_POS]) {
-      case OA_SLEW_RATE_0:
+      case 0: // OA_SLEW_RATE_0:
         configureDacUseSlew(ch, OUT_SLEW_RATE_4k, OUT_SLEW_STEP_64);
         break;
-      case OA_SLEW_RATE_1:
+      case 1: // OA_SLEW_RATE_1:
         configureDacUseSlew(ch, OUT_SLEW_RATE_4k, OUT_SLEW_STEP_120);
         break;
-      case OA_SLEW_RATE_2:
+      case 2: // OA_SLEW_RATE_2:
         configureDacUseSlew(ch, OUT_SLEW_RATE_4k, OUT_SLEW_STEP_500);
         break;
-      case OA_SLEW_RATE_3:
+      case 3: // OA_SLEW_RATE_3:
         configureDacUseSlew(ch, OUT_SLEW_RATE_4k, OUT_SLEW_STEP_1820);
         break;
-      case OA_SLEW_RATE_4:
+      case 4: // OA_SLEW_RATE_4:
         configureDacUseSlew(ch, OUT_SLEW_RATE_64k, OUT_SLEW_STEP_64);
         break;
-      case OA_SLEW_RATE_5:
+      case 5: // OA_SLEW_RATE_5:
         configureDacUseSlew(ch, OUT_SLEW_RATE_64k, OUT_SLEW_STEP_120);
         break;
-      case OA_SLEW_RATE_6:
+      case 6: // OA_SLEW_RATE_6:
         configureDacUseSlew(ch, OUT_SLEW_RATE_64k, OUT_SLEW_STEP_500);
         break;
-      case OA_SLEW_RATE_7:
+      case 7: // OA_SLEW_RATE_7:
         configureDacUseSlew(ch, OUT_SLEW_RATE_64k, OUT_SLEW_STEP_1820);
         break;
-      case OA_SLEW_RATE_8:
+      case 8: // OA_SLEW_RATE_8:
         configureDacUseSlew(ch, OUT_SLEW_RATE_150k, OUT_SLEW_STEP_64);
         break;
-      case OA_SLEW_RATE_9:
+      case 9: // OA_SLEW_RATE_9:
         configureDacUseSlew(ch, OUT_SLEW_RATE_150k, OUT_SLEW_STEP_120);
         break;
-      case OA_SLEW_RATE_10:
+      case 10: // OA_SLEW_RATE_10:
         configureDacUseSlew(ch, OUT_SLEW_RATE_150k, OUT_SLEW_STEP_500);
         break;
-      case OA_SLEW_RATE_11:
+      case 11: // OA_SLEW_RATE_11:
         configureDacUseSlew(ch, OUT_SLEW_RATE_150k, OUT_SLEW_STEP_1820);
         break;
-      case OA_SLEW_RATE_12:
+      case 12: // OA_SLEW_RATE_12:
         configureDacUseSlew(ch, OUT_SLEW_RATE_240k, OUT_SLEW_STEP_64);
         break;
-      case OA_SLEW_RATE_13:
+      case 13: // OA_SLEW_RATE_13:
         configureDacUseSlew(ch, OUT_SLEW_RATE_240k, OUT_SLEW_STEP_120);
         break;
-      case OA_SLEW_RATE_14:
+      case 14: // OA_SLEW_RATE_14:
         configureDacUseSlew(ch, OUT_SLEW_RATE_240k, OUT_SLEW_STEP_500);
         break;
-      case OA_SLEW_RATE_15:
+      case 15: // OA_SLEW_RATE_15:
         configureDacUseSlew(ch, OUT_SLEW_RATE_240k, OUT_SLEW_STEP_1820);
         break;
       }
@@ -1984,16 +1985,15 @@ bool OptaAnalog::parse_setup_adc_channel() {
       /* this is a special case:
        * we have DAC voltage output on that channel but we are adding an ADC
        * current measurement on the same channel */
-      
+
       /* note that the function here is not really used since it will
-      not sent to the Analog Device chip (write_function_configuration[ch] 
+      not sent to the Analog Device chip (write_function_configuration[ch]
       is false indeed) */
       configureFunction(ch, CH_FUNC_CURRENT_INPUT_LOOP_POWER);
       configureAdcMux(ch, CFG_ADC_INPUT_NODE_100OHM_R);
       configureAdcRange(ch, CFG_ADC_RANGE_2_5V_BI);
       configureAdcPullDown(ch, false);
-    }
-    else if (rx_buffer[OA_CH_ADC_TYPE_POS] == OA_VOLTAGE_ADC) {
+    } else if (rx_buffer[OA_CH_ADC_TYPE_POS] == OA_VOLTAGE_ADC) {
       configureFunction(ch, CH_FUNC_VOLTAGE_INPUT);
       configureAdcMux(ch, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
       configureAdcRange(ch, CFG_ADC_RANGE_10V);
@@ -2761,5 +2761,6 @@ void OptaAnalog::displayOaDebugInformation() {
   print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_0);
 #endif
 }
+#endif
 #endif
 #endif

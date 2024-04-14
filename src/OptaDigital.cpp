@@ -12,6 +12,7 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
+#ifndef ARDUINO_OPTA
 #if defined ARDUINO_OPTA_DIGITAL
 #include "OptaDigital.h"
 
@@ -562,4 +563,5 @@ void OptaDigital::_updateDigitalOut() {
   }
 }
 
+#endif
 #endif

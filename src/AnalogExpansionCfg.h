@@ -18,7 +18,6 @@
 #include "Protocol.h"
 #include <cstdint>
 #include <cstring>
-
 #define OA_CFG_MSG_NUM                                                         \
   (OA_AN_CHANNELS_NUM + OA_PWM_CHANNELS_NUM + 1 + OA_AN_CHANNELS_NUM)
 #define OA_RTD_UTIME_POS (OA_AN_CHANNELS_NUM + OA_PWM_CHANNELS_NUM)
