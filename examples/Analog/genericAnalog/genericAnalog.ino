@@ -20,6 +20,18 @@
 
 #define INC_DAC_INDEX(x) (x = ((++x) % DAC_VALUE_NUM))
 
+typedef enum {
+  OA_HIGH_IMPEDENCE,
+  OA_DIGITAL_INPUT,
+  OA_DAC_CURRENT,
+  OA_DAC_VOLTAGE,
+  OA_ADC_CURRENT,
+  OA_ADC_VOLTAGE,
+  OA_RTD_3_WIRES,
+  OA_RTD_2_WIRES,
+  OA_PWM_FUNC
+} OaChFunction_t;
+
 /* current are in mA */
 float currents[DAC_VALUE_NUM] = { 10.2, 4.7, 8.3, 9.4, 1.2, 1.36, 1.54, 4.75, 8.65, 9.4};
 /* voltages are in V */

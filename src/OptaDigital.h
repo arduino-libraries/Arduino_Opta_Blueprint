@@ -14,13 +14,13 @@
 #ifndef OPTA_DIGITAL_BLUE_MODULE
 #define OPTA_DIGITAL_BLUE_MODULE
 
-// #ifdef ARDUINO_OPTA_DIGITAL
-#if defined ARDUINO_OPTA_DIGITAL
+#include "EEPROM.h"
 #include "FspTimer.h"
 #include "Module.h"
-#include "OptaDigitalCfg.h"
+#include "MsgCommon.h"
 #include "analog.h"
 #include <map>
+#include <stdint.h>
 
 #define MAX_ADC_CHANNELS 29
 
@@ -104,5 +104,4 @@ private:
   std::map<int, int> out_map;
 };
 
-#endif
 #endif

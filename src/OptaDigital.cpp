@@ -14,10 +14,6 @@
 
 #if defined ARDUINO_OPTA_DIGITAL
 #include "OptaDigital.h"
-#include "EEPROM.h"
-#include "MsgCommon.h"
-#include "Protocol.h"
-#include <stdint.h>
 
 // #ifdef ARDUINO_OPTA_DIGITAL
 

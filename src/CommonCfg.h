@@ -14,8 +14,6 @@
 #ifndef COMMONCFG_H
 #define COMMONCFG_H
 
-#include "pinCfg.h"
-
 #define OPTA_CONTROLLER_MAX_EXPANSION_NUM 5
 /* the first addressed assigned to a MODULE */
 #define OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS 0x0B

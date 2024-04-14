@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* FILE NAME:   pinCfg.h
+/* FILE NAME:   OptaDevicesCfg.h
    AUTHOR:      Daniele Aimo
    EMAIL:       d.aimo@arduino.cc
    DATE:        20231117
@@ -11,8 +11,14 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
-#ifndef PINCFG
-#define PINCFG
+#ifndef OPTA_DEVICES_CONFIGURATION_H
+#define OPTA_DEVICES_CONFIGURATION_H
+
+#ifdef ARDUINO_OPTA_DIGITAL
+#include "OptaDigitalCfg.h"
+#elif defined ARDUINO_OPTA_ANALOG
+#include "OptaAnalogCfg.h"
+#endif
 
 #if defined ARDUINO_UNOR4_MINIMA
 

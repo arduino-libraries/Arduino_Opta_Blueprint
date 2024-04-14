@@ -17,6 +17,7 @@
 #include "Arduino.h"
 #include "CommonCfg.h"
 #include "OptaCrc.h"
+#include "OptaDevicesCfg.h"
 #include "Protocol.h"
 #include "Wire.h"
 #include <stdint.h>
