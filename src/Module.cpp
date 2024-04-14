@@ -11,19 +11,11 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 #include "Arduino.h"
-#include "CommonCfg.h"
-#include "cmsis_gcc.h"
-#include <stdint.h>
-#if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_OPTA_DIGITAL ||             \
-    defined ARDUINO_UNOR4_MINIMA
-#include "EEPROM.h"
+
 #include "Module.h"
-#include "MsgCommon.h"
-#include "Protocol.h"
 #include "boot.h"
 
-#include "OptaAnalogCfg.h"
-#include "OptaDigitalCfg.h"
+#ifdef COMPILE_BASE_MODULE_EXPANSION
 
 Module *OptaExpansion = nullptr;
 
@@ -270,24 +262,17 @@ bool Module::parse_reset_controller() {
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_version() {
   /* ---------------------------------------------------------------------- */
-  if (expansion_type == EXPANSION_OPTA_DIGITAL_MEC ||
-      expansion_type == EXPANSION_OPTA_DIGITAL_STS ||
-      expansion_type == EXPANSION_DIGITAL_INVALID) {
-    tx_buffer[GET_VERSION_MAJOR_POS] = OD_FW_VERSION_MAJOR;
-    tx_buffer[GET_VERSION_MINOR_POS] = OD_FW_VERSION_MINOR;
-    tx_buffer[GET_VERSION_RELEASE_POS] = OD_FW_VERSION_RELEASE;
-  } else if (expansion_type == EXPANSION_OPTA_ANALOG) {
-    tx_buffer[GET_VERSION_MAJOR_POS] = OA_FW_VERSION_MAJOR;
-    tx_buffer[GET_VERSION_MINOR_POS] = OA_FW_VERSION_MINOR;
-    tx_buffer[GET_VERSION_RELEASE_POS] = OA_FW_VERSION_RELEASE;
-  }
+  tx_buffer[GET_VERSION_MAJOR_POS] = FW_VERSION_MAJOR;
+  tx_buffer[GET_VERSION_MINOR_POS] = FW_VERSION_MINOR;
+  tx_buffer[GET_VERSION_RELEASE_POS] = FW_VERSION_RELEASE;
   return prepareGetAns(tx_buffer, ANS_ARG_GET_VERSION, ANS_LEN_GET_VERSION,
                        ANS_GET_VERSION_LEN);
 }
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_get_version() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   if (checkGetMsgReceived(rx_buffer, ARG_GET_VERSION, LEN_GET_VERSION,
                           GET_VERSION_LEN)) {
     return true;
@@ -297,7 +282,8 @@ bool Module::parse_get_version() {
 
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_reboot() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   tx_buffer[ANS_REBOOT_CODE_POS] = ANS_REBOOT_CODE;
   return prepareSetAns(tx_buffer, ANS_ARG_REBOOT, ANS_LEN_REBOOT,
                        ANS_REBOOT_LEN);
@@ -305,7 +291,8 @@ int Module::prepare_ans_reboot() {
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_reboot() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   if (checkSetMsgReceived(rx_buffer, ARG_REBOOT, LEN_REBOOT, REBOOT_LEN)) {
     if (rx_buffer[REBOOT_1_POS] == REBOOT_1_VALUE &&
         rx_buffer[REBOOT_2_POS] == REBOOT_2_VALUE) {
@@ -317,7 +304,8 @@ bool Module::parse_reboot() {
 
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_address_and_type() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   tx_buffer[BP_PAYLOAD_START_POS] = address;
   tx_buffer[BP_PAYLOAD_START_POS + 1] = expansion_type;
   return prepareGetAns(tx_buffer, ANS_ARG_ADDRESS_AND_TYPE,
@@ -335,7 +323,8 @@ __WEAK void new_i2c_address_obtained(void *ptr) {}
    order to manage correctly the addressing process */
 /* ------------------------------------------------------------------------ */
 int Module::parse_rx() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   /* set address message */
   if (parse_set_address()) {
     pinMode(DETECT_OUT, INPUT_PULLUP);
@@ -388,7 +377,8 @@ int Module::parse_rx() {
 
 /* ------------------------------------------------------------------------ */
 bool Module::is_detect_in_low() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   pinMode(DETECT_IN, INPUT_PULLUP);
   delay(1);
   PinStatus dtcin = digitalRead(DETECT_IN);
@@ -410,7 +400,8 @@ bool Module::is_detect_in_low() {
 
 /* ------------------------------------------------------------------------ */
 bool Module::is_detect_out_low() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
 
   pinMode(DETECT_OUT, INPUT_PULLUP);
   delay(1);
@@ -436,7 +427,8 @@ bool Module::is_detect_out_low() {
 
 /* ------------------------------------------------------------------------ */
 bool Module::is_detect_out_high() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
 
   pinMode(DETECT_OUT, INPUT_PULLUP);
   delay(1);
@@ -455,7 +447,8 @@ bool Module::is_detect_out_high() {
 }
 /* ------------------------------------------------------------------------ */
 void Module::updatePinStatus() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
   Serial.print("- UPDATE PIN ");
 #endif
@@ -496,7 +489,8 @@ void Module::updatePinStatus() {
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_set_flash() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   if (checkSetMsgReceived(rx_buffer, ARG_SAVE_IN_DATA_FLASH,
                           LEN_SAVE_IN_DATA_FLASH, SAVE_DATA_LEN)) {
 
@@ -529,7 +523,8 @@ bool Module::parse_set_flash() {
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_get_flash() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   if (checkGetMsgReceived(rx_buffer, ARG_GET_DATA_FROM_FLASH,
                           LEN_GET_DATA_FROM_FLASH, READ_DATA_LEN)) {
     flash_add = rx_buffer[READ_ADDRESS_1_POS];
@@ -542,7 +537,8 @@ bool Module::parse_get_flash() {
 
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_flash() {
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   */
   uint8_t data[32];
 
   EEPROM.get(flash_add, data);

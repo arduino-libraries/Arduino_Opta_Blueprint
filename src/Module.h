@@ -16,11 +16,16 @@
 
 #include "Arduino.h"
 #include "CommonCfg.h"
+#include "EEPROM.h"
+#include "MsgCommon.h"
 #include "OptaCrc.h"
 #include "OptaDevicesCfg.h"
 #include "Protocol.h"
 #include "Wire.h"
 #include <stdint.h>
+
+#ifdef COMPILE_BASE_MODULE_EXPANSION
+
 /* when DETECT IN goes low it wait OPTA_CONTROLLER_DEBOUNCE_TIME *
    OPTA_CONTROLLER_DEBOUNCE_NUMBER ms before to consider the PIN really low */
 #define OPTA_MODULE_DEBOUNCE_TIME_IN 1
@@ -117,5 +122,5 @@ protected:
 };
 
 extern Module *OptaExpansion;
-
+#endif
 #endif //
