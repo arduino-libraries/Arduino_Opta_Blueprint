@@ -19,22 +19,4 @@
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
-#include "Expansion.h"
-#include "Module.h"
-#include "OptaAnalog.h"
-#include "OptaAnalogCfg.h"
-#include "OptaAnalogTypes.h"
-#include "OptaDigital.h"
-#include "Protocol.h"
-typedef enum {
-  OA_HIGH_IMPEDENCE,
-  OA_DIGITAL_INPUT,
-  OA_DAC_CURRENT,
-  OA_DAC_VOLTAGE,
-  OA_ADC_CURRENT,
-  OA_ADC_VOLTAGE,
-  OA_RTD_3_WIRES,
-  OA_RTD_2_WIRES,
-  OA_PWM_FUNC
-} OaChFunction_t;
 #endif

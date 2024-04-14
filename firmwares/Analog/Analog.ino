@@ -8,7 +8,7 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
-#include "OptaBlue.h"
+#include "OptaAnalog.h"
 
 
 OptaAnalog *oa; 
