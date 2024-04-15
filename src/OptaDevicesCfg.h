@@ -15,12 +15,13 @@
 #define OPTA_DEVICES_CONFIGURATION_H
 
 #ifdef ARDUINO_OPTA_DIGITAL
+
 #include "OptaDigitalCfg.h"
 #elif defined ARDUINO_OPTA_ANALOG
 #include "OptaAnalogCfg.h"
 #endif
 
-#if defined ARDUINO_UNOR4_MINIMA
+#if defined ARDUINO_UNO_TESTALOG_SHIELD
 
 #define DIO_RESET A0
 

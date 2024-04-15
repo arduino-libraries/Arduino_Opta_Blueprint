@@ -12,18 +12,10 @@
 /* -------------------------------------------------------------------------- */
 
 #ifndef ARDUINO_OPTA
-#include "CommonCfg.h"
-#include "MsgCommon.h"
-#include "Protocol.h"
-#include <cstdint>
-#if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNOR4_MINIMA
-#include "Controller.h"
-#include "OptaAnalogTypes.h"
-#include "OptaCrc.h"
-#include "sys/_stdint.h"
+
+#if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNO_TESTALOG_SHIELD
 
 #include "OptaAnalog.h"
-#include "OptaAnalogCfg.h"
 
 #define FRAME_SIZE 4
 
@@ -364,7 +356,7 @@ void OptaAnalog::update() {
 uint8_t OptaAnalog::get_add_offset(uint8_t ch) {
   uint8_t rv = 0;
   if (ch < OA_AN_CHANNELS_NUM) {
-#ifdef ARDUINO_UNOR4_MINIMA
+#ifdef ARDUINO_UNO_TESTALOG_SHIELD
     rv = ch;
 #else
     if (ch == 0) {
@@ -459,7 +451,7 @@ void OptaAnalog::write_direct_reg(uint8_t device, uint8_t addr,
   Serial.println();
 #endif
 
-#ifdef ARDUINO_UNOR4_MINIMA
+#ifdef ARDUINO_UNO_TESTALOG_SHIELD
   digitalWrite(CS, LOW);
 #else
   if (device == 0) {
@@ -485,7 +477,7 @@ void OptaAnalog::write_direct_reg(uint8_t device, uint8_t addr,
   Serial.println();
 #endif
 
-#ifdef ARDUINO_UNOR4_MINIMA
+#ifdef ARDUINO_UNO_TESTALOG_SHIELD
   digitalWrite(CS, HIGH);
 
 #else
@@ -979,7 +971,7 @@ void OptaAnalog::configureRtd(uint8_t ch, bool use_3_w, float current_mA) {
     rtd[ch].is_rtd = true;
     rtd[ch].set_measure_current(current_mA);
 
-#ifdef ARDUINO_UNOR4_MINIMA
+#ifdef ARDUINO_UNO_TESTALOG_SHIELD
     rtd[ch].use_3_wires = false;
     configureFunction(ch, CH_FUNC_RESISTANCE_MEASUREMENT);
 #else
@@ -1546,7 +1538,7 @@ void OptaAnalog::updateDinReadings() {
    */
 
   read_reg(OA_REG_DIN_COMP_OUT, read_value, OA_DUMMY_CHANNEL_DEVICE_0);
-#ifdef ARDUINO_UNOR4_MINIMA
+#ifdef ARDUINO_UNO_TESTALOG_SHIELD
   digital_ins |= (read_value & 0x0F);
 #else
   digital_ins |= (read_value & 0x2) >> 1;
@@ -1731,7 +1723,7 @@ void OptaAnalog::update_live_status(uint8_t ch) {
 
 void OptaAnalog::update_live_status() {
   update_live_status(OA_DUMMY_CHANNEL_DEVICE_0);
-#ifndef ARDUINO_UNOR4_MINIMA
+#ifndef ARDUINO_UNO_TESTALOG_SHIELD
   update_live_status(OA_DUMMY_CHANNEL_DEVICE_1);
 #endif
 }
@@ -1780,7 +1772,7 @@ void OptaAnalog::update_alert_mask(int8_t ch) {
 
 void OptaAnalog::update_alert_status() {
   read_reg(OA_ALERT_STATUS, state[OA_AN_DEVICE_0], OA_DUMMY_CHANNEL_DEVICE_0);
-#ifndef ARDUINO_UNOR4_MINIMA
+#ifndef ARDUINO_UNO_TESTALOG_SHIELD
   read_reg(OA_ALERT_STATUS, state[OA_AN_DEVICE_1], OA_DUMMY_CHANNEL_DEVICE_1);
 #endif
 }

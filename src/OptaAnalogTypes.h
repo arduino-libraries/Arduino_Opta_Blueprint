@@ -17,7 +17,7 @@
 #define OPTA_ANALOG_TYPES_BLUE_MODULE
 
 #include <cstdint>
-#if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNOR4_MINIMA
+#if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNO_TESTALOG_SHIELD
 #include "OptaAnalogCfg.h"
 #include "pwm.h"
 #include "sys/_stdint.h"

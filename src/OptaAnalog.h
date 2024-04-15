@@ -14,11 +14,14 @@
 #ifndef OPTA_ANALOG_BLUE_MODULE
 #define OPTA_ANALOG_BLUE_MODULE
 
-#if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNOR4_MINIMA
+#if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNO_TESTALOG_SHIELD
 #include "Arduino.h"
+#include "CommonCfg.h"
 #include "Module.h"
+#include "MsgCommon.h"
 #include "OptaAnalogTypes.h"
 #include "OptaCrc.h"
+#include "Protocol.h"
 #include "SPI.h"
 #include "sys/_stdint.h"
 #include <cstdint>
