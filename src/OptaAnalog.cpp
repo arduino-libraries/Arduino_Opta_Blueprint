@@ -975,6 +975,13 @@ void OptaAnalog::configureRtd(uint8_t ch, bool use_3_w, float current_mA) {
     rtd[ch].use_3_wires = false;
     configureFunction(ch, CH_FUNC_RESISTANCE_MEASUREMENT);
 #else
+    if (ch == 0) {
+      digitalWrite(DIO_RTD_SWITCH_1, HIGH);
+    }
+    if (ch == 1) {
+      digitalWrite(DIO_RTD_SWITCH_2, HIGH);
+    }
+
     if ((ch == 0 || ch == 1) && use_3_w) {
       rtd[ch].use_3_wires = true;
       configureFunction(ch, CH_FUNC_CURRENT_OUTPUT);
@@ -1686,6 +1693,12 @@ void OptaAnalog::swAnalogDevReset() {
   // write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_1);
   // write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_2);
 #endif
+  for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
+    fun[i] = CH_FUNC_HIGH_IMPEDENCE;
+    adc[i].en_conversion = false;
+    rtd[i].is_rtd = false;
+    rtd[i].use_3_wires = false;
+  }
 }
 
 void OptaAnalog::sychLDAC() {

@@ -27,6 +27,9 @@
 #include <cstdint>
 
 // #define DEBUG_ENABLE_SPI
+// #define DEBUG_SERIAL
+// #define DEBUG_ANALOG_PARSE_MESSAGE
+//
 #define BUFF_DIM 4
 
 /* definition of "fake" channel for those register that have a SINGLE REGISTER

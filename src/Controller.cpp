@@ -629,7 +629,7 @@ void Controller::checkForExpansions() {
     delay(1000);
 #endif
     /* give some time to analog to reset Analog Devices */
-    delay(200);
+    delay(250);
 
     /* at this point all the expansion have the final address, time to
        make room for data from and to each expansion */
