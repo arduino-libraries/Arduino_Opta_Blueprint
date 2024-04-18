@@ -13,20 +13,7 @@
 /* -------------------------------------------------------------------------- */
 
 #include "Controller.h"
-#include "AnalogExpansion.h"
-#include "Arduino.h"
-#include "CommonCfg.h"
-#include "ControllerCfg.h"
-#include "DigitalExpansion.h"
-#include "DigitalMechExpansion.h"
-#include "DigitalStSolidExpansion.h"
-#include "Expansion.h"
-#include "MsgCommon.h"
-#include "Protocol.h"
-#include "sys/_stdint.h"
-#include <cstdint>
 
-#include <cstring>
 
 #ifdef ARDUINO_OPTA
 // #define DEBUG_COMM_TIMEOUT
@@ -119,7 +106,7 @@ uint8_t Controller::getRx(uint8_t pos) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 Expansion *Controller::getExpansionPtr(int device) {
-
+  
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     if (expansions[device] != nullptr) {
       return expansions[device];
@@ -142,6 +129,10 @@ Expansion *Controller::getExpansionPtr(int device) {
         expansions[device] = new DigitalExpansion();
         setExpStartUpCb(DigitalExpansion::startUp);
         break;
+      case EXPANSION_UNOR4_DISPLAY:
+        expansions[device] = new R4DisplayExpansion();
+        break;
+
       }
       if (expansions[device] != nullptr) {
         expansions[device]->setIndex(device);
@@ -795,7 +786,7 @@ bool Controller::parse_address_and_type(int slave_address) {
         if (num_of_exp < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
           exp_add[num_of_exp] = slave_address;
           exp_type[num_of_exp] =
-              (ExpansionType_t)rx_buffer[BP_PAYLOAD_START_POS + 1];
+              (ExpansionType_t)rx_buffer[BP_PAYLOAD_START_POS + 1];  
           num_of_exp++;
         }
         DEC_WITH_MAX(tmp_num_of_exp, OPTA_CONTROLLER_MAX_EXPANSION_NUM);
