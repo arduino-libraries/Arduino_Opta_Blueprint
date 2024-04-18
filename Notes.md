@@ -1,37 +1,35 @@
-# Controller - Analog Read
+# Add a new device to Opta Blueprint
 
-int analogReadOpta(device,pin,update)
-return the analog value of the 'pin' for the 'device'.
-If update is true the value is actually read from the expansion using an I2C
-transaction, otherwise the local copy is of the last value is returned.
-When 'update' is true the analog value is updated only for "that" pin.
+## CommonCfg.h
+Add new expansion type to ExpansionType_t
 
-To update all the analog input at once it is possible to use the function
-updateAnalogsIn() that updates only the Analog Inputs, or updateAnalogs() that
-updates both analog inputs (ADC) and analog output (DAC or PWM)
+## Controller.cpp
+Add new expansion type to getExpansionPtr()
 
-On Analog Expansion
+## OptaBlue.h
+Add new Expansion file include 
 
-# About PIN definition
+## OptaDevicesCfg.h
+Add new Expansion Configuration file
 
-Pin can be accessed as "channels" (this just means that for analog device
-purpose there is not really a single pin function such as "digital input" but 2
-pin are almost always involved).
 
-There are 8 "analog" channels (handled by Analog Device chip).
-There are 4 "pwm" channels.
+## add new expansion FW
+OptaUnoR4Display.h
+OptaUnoR4Display.cpp
+OptaUnoR4DisplayCfg.h
++ sketch in firmware folder
 
-Channels goes from 0 to 11 first 8 are "analog", last 4 are pwm.
+## add new Expansion subclass
+R4DisplayExpansion.cpp
+R4DisplayExpansion.h
+R4DisplayAddress.h
 
-# ADC functions
+## add file with definition common between FW and application
++ CommonOptaUnoR4Display.h
 
-When 50/60 Hz rejection is enable, conversion takes about 50 ms per channel
+## add opta  uno r4 display in OptaDeviceInclude
+This is necessary to have the possibility
+to "segregate" the FW into a subfolder
 
-1. VOLTAGE ADC -> ADC 0-10V, with or without pull-down
-2. CURRENT ADC -> ADC -2
 
-# TODO
-
-Analog wave
-ADC on top of other functions
 
