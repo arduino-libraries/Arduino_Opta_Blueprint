@@ -14,6 +14,7 @@
 #ifndef OPTA_BLUEPRINT_H
 #define OPTA_BLUEPRINT_H
 
+#include "./OptaUnoR4Display/R4DisplayExpansion.h"
 #include "AnalogExpansion.h"
 #include "Controller.h"
 #include "DigitalExpansion.h"
