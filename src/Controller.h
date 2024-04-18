@@ -13,8 +13,20 @@
 
 #ifndef OPTA_BLUE_CONTROLLER
 #define OPTA_BLUE_CONTROLLER
-
+#include "OptaBlue.h"
+#include "Arduino.h"
+#include "CommonCfg.h"
+#include "ControllerCfg.h"
 #include "DigitalExpansion.h"
+
+
+#include "Expansion.h"
+#include "MsgCommon.h"
+#include "Protocol.h"
+#include "sys/_stdint.h"
+#include <cstdint>
+
+#include <cstring>
 #define SEND_RESULT_OK 0
 #define SEND_RESULT_WRONG_EXPANSION_INDEX 1
 #define SEND_RESULT_WRONG_EXPANSION_ATTRIBUTES 2
@@ -24,12 +36,10 @@
 /* since this library can be used both for OPTA and OPTA DIGITAL then the code
    for controller (which is used only for OPTA) use this define to avoid
    compilig when OPTA DIGITAL is used*/
-#include "Arduino.h"
-#include "CommonCfg.h"
-#include "ControllerCfg.h"
+
 #include "Expansion.h"
 #include "OptaCrc.h"
-#include "Protocol.h"
+
 #include "Wire.h"
 #include "sys/_stdint.h"
 #include <cstdint>
