@@ -18,7 +18,7 @@
 
 #include "Arduino.h"
 #include "CommonCfg.h"
-#include "EEPROM.h"
+
 #include "MsgCommon.h"
 #include "OptaCrc.h"
 #include "OptaDevicesCfg.h"
@@ -28,6 +28,8 @@
 
 #ifdef COMPILE_BASE_MODULE_EXPANSION
 
+// #define DEBUG_SERIAL
+// #define DEBUG_RX_MODULE_ENABLE
 /* when DETECT IN goes low it wait OPTA_CONTROLLER_DEBOUNCE_TIME *
    OPTA_CONTROLLER_DEBOUNCE_NUMBER ms before to consider the PIN really low */
 #define OPTA_MODULE_DEBOUNCE_TIME_IN 1
@@ -84,9 +86,15 @@ public:
   int prepare_ans_get_version();
   int prepare_ans_reboot();
   int prepare_ans_get_flash();
-  uint8_t getI2CAddress() { return i2c_address; }
+  // uint8_t getI2CAddress() { return i2c_address; }
 
 protected:
+  uint8_t address;
+  uint8_t rx_num;
+  volatile bool reboot_required;
+  volatile bool reset_required;
+  uint8_t *ans_buffer;
+  ExpansionType_t expansion_type;
   unsigned long int reboot_sent;
   void updatePinStatus();
 
@@ -96,9 +104,6 @@ protected:
      3. reset due digital out of a controller on the left that goes LOW */
   virtual void reset();
 
-  volatile bool reset_required;
-  volatile bool reboot_required;
-
   bool is_detect_in_low();
 
   bool is_detect_out_low();
@@ -106,21 +111,17 @@ protected:
 
   void setAddress(uint8_t add);
   /* this variable need to be set in every constructor of the derived class */
-  ExpansionType_t expansion_type;
   uint8_t rx_buffer[OPTA_I2C_BUFFER_DIM];
   uint8_t tx_buffer[OPTA_I2C_BUFFER_DIM];
-  uint8_t address;
-  uint8_t rx_num;
   uint8_t tx_num;
   uint16_t flash_add;
   uint8_t flash_dim;
-  uint8_t i2c_address;
+  // uint8_t i2c_address;
   /* to answer "faster" instead of using a single tx_buffer there will be
      multiple answer buffers (one for each request the controller can make)
      tx_buffer defined here (a few rows above will be used to handle messages
      related to assign address, this because assign address is suppose to
      be independent from the different module attached to the Controller */
-  uint8_t *ans_buffer;
 };
 
 extern Module *OptaExpansion;

@@ -15,7 +15,9 @@
 
 #include "Module.h"
 #include "boot.h"
-
+#ifdef MODULE_USE_FLASH_MEMORY
+#include "EEPROM.h"
+#endif
 #ifdef COMPILE_BASE_MODULE_EXPANSION
 
 Module *OptaExpansion = nullptr;
@@ -130,9 +132,11 @@ uint8_t *Module::txPrt() { return ans_buffer; }
 void Module::reset() {
   Wire.end();
 
+#ifdef MODULE_USE_RGB_STATUS_LED
   digitalWrite(OPTA_LED_BLUE, LED_RGB_ON);
   digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
   digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
+#endif
 
   /* put address to invalid */
   address = OPTA_MODULE_INVALID_ADDRESS;
@@ -152,7 +156,9 @@ void Module::reset() {
   while (is_detect_out_low()) {
   }
 
+#ifdef MODULE_USE_RGB_STATUS_LED
   digitalWrite(OPTA_LED_BLUE, LED_RGB_OFF);
+#endif
   /* put I2C address to the default one */
   Wire.begin(OPTA_DEFAULT_SLAVE_I2C_ADDRESS);
 }
@@ -163,7 +169,7 @@ void Module::reset() {
 Module::Module()
     : address(OPTA_MODULE_INVALID_ADDRESS), rx_num(0), reboot_required(false),
       reset_required(false), ans_buffer(nullptr),
-      expansion_type(EXPANSION_NOT_VALID), reboot_sent(0), i2c_address(0x0A) {}
+      expansion_type(EXPANSION_NOT_VALID), reboot_sent(0) {}
 
 /* -------------------------------------------------------------------------- */
 /* Return true if the module has obtained an address from the controller      */
@@ -176,13 +182,14 @@ bool Module::addressAcquired() {
 /* Module begin                                                               */
 /* -------------------------------------------------------------------------- */
 void Module::begin() {
-
+#ifdef MODULE_USE_RGB_STATUS_LED
   pinMode(OPTA_LED_RED, OUTPUT);
   pinMode(OPTA_LED_BLUE, OUTPUT);
   pinMode(OPTA_LED_GREEN, OUTPUT);
   digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
   digitalWrite(OPTA_LED_BLUE, LED_RGB_OFF);
   digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
+#endif
 
 #ifdef DEBUG_SERIAL
   Serial.begin(115200);
@@ -313,7 +320,7 @@ int Module::prepare_ans_get_address_and_type() {
                        ANS_LEN_ADDRESS_AND_TYPE, ANS_MSG_ADDRESS_AND_TYPE_LEN);
 }
 
-__WEAK void new_i2c_address_obtained(void *ptr) {}
+__WEAK void new_i2c_address_obtained(void *ptr) { (void)ptr; }
 
 /* ------------------------------------------------------------------------ */
 /* Parse the content of the rx_buffer
@@ -383,12 +390,10 @@ bool Module::is_detect_in_low() {
   pinMode(DETECT_IN, INPUT_PULLUP);
   delay(1);
   PinStatus dtcin = digitalRead(DETECT_IN);
-  bool debug = false;
   if (dtcin == LOW) {
     int num = 0;
     while (dtcin == LOW && num < OPTA_MODULE_DEBOUNCE_NUMBER_IN) {
       dtcin = digitalRead(DETECT_IN);
-      debug = true;
       if (dtcin == HIGH) {
         break;
       }
@@ -454,16 +459,14 @@ void Module::updatePinStatus() {
   Serial.print("- UPDATE PIN ");
 #endif
 
-  static PinStatus previous_detect_out = LOW;
-
-  PinStatus rv = HIGH;
-
   if (!addressAcquired()) {
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
     Serial.println("ADDRESS not ACQUIRED");
 #endif
+#ifdef MODULE_USE_RGB_STATUS_LED
     digitalWrite(OPTA_LED_RED, LED_RGB_ON);
     digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
+#endif
     /* DETECT_IN (toward Controller) as Output */
     pinMode(DETECT_IN, OUTPUT);
     /* put detect in pin to LOW -> signal the MODULE wants an address */
@@ -474,8 +477,10 @@ void Module::updatePinStatus() {
     Serial.println(address, HEX);
 #endif
 
+#ifdef MODULE_USE_RGB_STATUS_LED
     digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
     digitalWrite(OPTA_LED_GREEN, LED_RGB_ON);
+#endif
 
     if (is_detect_in_low()) {
       reset_required = true;
@@ -495,6 +500,7 @@ bool Module::parse_set_flash() {
   if (checkSetMsgReceived(rx_buffer, ARG_SAVE_IN_DATA_FLASH,
                           LEN_SAVE_IN_DATA_FLASH, SAVE_DATA_LEN)) {
 
+#ifdef MODULE_USE_FLASH_MEMORY
     uint16_t add = rx_buffer[SAVE_ADDRESS_1_POS];
     add += (rx_buffer[SAVE_ADDRESS_2_POS] << 8);
     uint8_t d = rx_buffer[SAVE_DIMENSION_POS];
@@ -516,6 +522,7 @@ bool Module::parse_set_flash() {
     Serial.println();
 #endif
     EEPROM.put(add, data);
+#endif
     return true;
   } else {
     return false;
@@ -540,9 +547,11 @@ bool Module::parse_get_flash() {
 int Module::prepare_ans_get_flash() {
   /* ----------------------------------------------------------------------
    */
-  uint8_t data[32];
+  uint8_t data[32] = {0};
 
+#ifdef MODULE_USE_FLASH_MEMORY
   EEPROM.get(flash_add, data);
+#endif
   tx_buffer[ANS_GET_DATA_ADDRESS_1_POS] = (uint8_t)(flash_add & 0xFF);
   tx_buffer[ANS_GET_DATA_ADDRESS_2_POS] = (uint8_t)((flash_add & 0xFF00) >> 8);
   tx_buffer[ANS_GET_DATA_DIMENSION_POS] = flash_dim;
@@ -564,6 +573,7 @@ int Module::prepare_ans_get_flash() {
 #ifdef DEBUG_FLASH
   Serial.println();
 #endif
+
   return prepareGetAns(tx_buffer, ANS_ARG_GET_DATA_FROM_FLASH,
                        ANS_LEN_GET_DATA_FROM_FLASH, ANS_GET_DATA_LEN);
 }
@@ -577,7 +587,6 @@ void Module::end() {}
 void Module::setAddress(uint8_t add) {
   Wire.end();
   Wire.begin(add);
-  i2c_address = add;
 }
 #endif
 #endif
