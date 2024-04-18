@@ -19,6 +19,10 @@
 #include "OptaDigitalCfg.h"
 #elif defined ARDUINO_OPTA_ANALOG
 #include "OptaAnalogCfg.h"
+
+#elif defined ARDUINO_UNOR4_MINIMA
+#include "./OptaUnoR4Display/OptaUnoR4DisplayCfg.h"
+
 #endif
 
 #if defined ARDUINO_UNO_TESTALOG_SHIELD
