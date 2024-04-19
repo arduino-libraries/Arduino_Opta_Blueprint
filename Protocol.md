@@ -99,7 +99,7 @@ initialized if the DETECT IN, DETECT OUT pins are in the correct state)
 Apply to: All expansion types
 
 When an expansion receive this message it sets its own I2C address to the
-one (0x0A) specified in the payload.
+one specified in the payload.
 
 - Controller request
   - Header:
@@ -136,8 +136,11 @@ When an expansion receive this message it answers with its own address and type.
   - CRC
 
 Type of expansion values:
-Opta Digital -> 0x01
-Opta Analog -> 0x02
+Opta Digital Invalid -> 0x01
+Opta Digital Mechanical -> 0x02
+Opta Digital State Solid -> 0x03
+Opta Analog -> 0x04
+UNO R4 MINIMA -> 0x05
 
 ### GET DIGITAL VALUES
 

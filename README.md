@@ -20,6 +20,12 @@ Each expansion (Arduino Digital) has 2 PIN connected on the expansion bus.
 - DETECT IN goes toward the OPTA controller
 - DETECT OUT goes toward other Arduino DIGITAL possibly connected
 
+The Serial bus is used only to upgrade the FW on the expansions (they do not have 
+a USB connector mounted). Basically the controller send an I2C message to expansion 
+asking to go in bootloader mode, once the bootloader is active the Serial Line 
+is used to download the new FW into the expansion. Then the controller tells the 
+bootloader to reset the board and the upgrade is done.
+
 ### I2C
 
 **Arduino OPTA** is always the master of the I2C, while the other expansions as
