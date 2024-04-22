@@ -149,7 +149,7 @@ void print_menu() {
 		  }
 	  }
 	  Serial.println("*** MAIN MENU: (at any moment type 'm' to see the menu)");
-	  Serial.println("1. Select the DIGITAL expansion to read input from"); 
+	  Serial.println("1. Select the ANALOG expansion to read input from"); 
 	  Serial.println("2. Toggle read continuously"); 
 	  Serial.println("3. Read once"); 
 	  Serial.println(":> ");

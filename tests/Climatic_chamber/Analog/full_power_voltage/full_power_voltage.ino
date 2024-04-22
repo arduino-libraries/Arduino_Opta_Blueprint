@@ -1,8 +1,8 @@
 /* -------------------------------------------------------------------------- */
-/* FILE NAME:   current_measurement.ino
+/* FILE NAME:   full_power_voltage.ino
    AUTHOR:      Daniele Aimo
    EMAIL:       d.aimo@arduino.cc
-   DATE:        20240419
+   DATE:        20240422
    DESCRIPTION: 
    LICENSE:     Copyright (c) 2024 Arduino SA
                 his Source Code Form is subject to the terms fo the Mozilla 
@@ -10,8 +10,6 @@
                 at http://mozilla.org/MPL/2.0/. 
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-
-
 
 
 #include "OptaBlue.h"
@@ -150,45 +148,47 @@ void print_menu() {
 		  }
 	  }
 	  Serial.println("*** MAIN MENU: (at any moment type 'm' to see the menu)");
-	  Serial.println("1. Select the ANALOG expansion to read input from"); 
-	  Serial.println("2. Toggle read continuously"); 
-	  Serial.println("3. Read once"); 
+	  Serial.println("1. Select the ANALOG expansion"); 
+	  Serial.println("2. Toggle output 10 V / 0 V"); 
 	  Serial.println(":> ");
 	  print_menu_flag = false;
   }
 }
 
+
+bool output_on[5] = {false,false,false,false,false};
+
 /* -------------------------------------------------------------------------- */
-void print_input_status(int exp_index) {
+void toggle(int exp_index) {
 /* -------------------------------------------------------------------------- */
   static unsigned long start = millis() + UPDATE_TIME + 1;
   AnalogExpansion ae = OptaController.getExpansion(exp_index);
   if(millis() - start > UPDATE_TIME) {
+    Serial.println("----");
     start = millis();
     if(ae) {
+	if(!output_on[ae.getIndex()]) {
+	  // turn on
+	  output_on[ae.getIndex()] = true;
+	  for(int k = 0; k < 8; k++) {
+            ae.pinVoltage(k, 10.00, true);
+	  }
+	  Serial.print("Expansion n. ");
+	  Serial.print(exp_index);
+	  Serial.println(" -> All channels on 10 V");
+	}
+	else {
+	  // turn off
+	  for(int k = 0; k < 8; k++) {
+            ae.pinVoltage(k, 0.0, true);
+	  }
+	  output_on[ae.getIndex()] = false;
+	  Serial.print("Expansion n. ");
+	  Serial.print(exp_index);
+	  Serial.println(" -> All channels switched off (0 V)");
+
+	}
         
-        for(int k = 0; k < 8; k++) {
-          /* this will return the ad converter bits 
-          * no need to get value from expansion since we used 
-          * updateAnalogInputs() so use false as the last parameter */
-          float v = ae.analogRead(k);
-          Serial.print("[");
-          if(k < 10) {
-            Serial.print("0");
-          } 
-          Serial.print(String(k) + "]:");
-          Serial.print(v);
-          Serial.print(" ");
-          /* this will return the voltage at the pin k in Volts
-          * we pass false as the last argument since we have
-          * updated the values with updateAnalogInputs() */
-          float V = ae.pinCurrent(k);
-          Serial.print("(" + String(V) + "mA) ");
-          if(k == 7) {
-            Serial.println();
-          }
-        }
-        Serial.println();
     }
     else {
       Serial.println("Expansion is not digital");
@@ -197,8 +197,7 @@ void print_input_status(int exp_index) {
 }
 
 uint8_t selected_expansion = 255;
-bool print_status_flag = false;
-bool print_status_once = false;
+bool toggle_output = false;
 
 bool configured[5] = {false,false,false,false,false};
 
@@ -216,7 +215,7 @@ void loop() {
 			if(ae) {
 				 configured[i] = true;
 				 for(int i = 0; i < 8; i++) {
-					ae.beginChannelAsCurrentAdc(i);
+					ae.beginChannelAsVoltageDac(i);
 				}
 			}
 		}
@@ -239,21 +238,23 @@ void loop() {
 		else if(result == 1) {
 			Serial.println(" - Select expansion:> ");
 			selected_expansion = getIntegerFromSerial();
-			Serial.println(" -> Selected expansion " + String(selected_expansion));
-         delay(1000);
+			Serial.println(" -> Selected expansion " +
+			String(selected_expansion));
 			print_menu_flag = true;
 		}
 		else if(result == 2) {
-			print_status_flag = !print_status_flag;
+			toggle_output = true;
 		}
 		else if(result == 3) {
-			print_status_once = true;
 		}
   }
 
-  if(selected_expansion < 5 && (print_status_flag || print_status_once)) {
-	  print_status_once = false;
-     print_input_status(selected_expansion);
+  if(selected_expansion < 5 &&  toggle_output) {
+     toggle_output = false;
+     toggle(selected_expansion);
   }
 }
+
+
+
 
