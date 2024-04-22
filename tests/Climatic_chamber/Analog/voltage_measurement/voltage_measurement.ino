@@ -170,13 +170,13 @@ void print_input_status(int exp_index) {
           /* this will return the ad converter bits 
           * no need to get value from expansion since we used 
           * updateAnalogInputs() so use false as the last parameter */
-          float v = ae.analogRead(v);
+          uint16_t v = ae.analogRead(k);
           Serial.print("[");
           if(k < 10) {
             Serial.print("0");
           } 
           Serial.print(String(k) + "]:");
-          Serial.print(v,4);
+          Serial.print(v);
           Serial.print(" ");
           /* this will return the voltage at the pin k in Volts
           * we pass false as the last argument since we have
@@ -239,7 +239,6 @@ void loop() {
 			Serial.println(" - Select expansion:> ");
 			selected_expansion = getIntegerFromSerial();
 			Serial.println(" -> Selected expansion " + String(selected_expansion));
-         delay(1000);
 			print_menu_flag = true;
 		}
 		else if(result == 2) {
