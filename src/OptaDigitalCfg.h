@@ -15,16 +15,19 @@
 #define OPTADIGITALCFG_H
 
 #include "CommonCfg.h"
-/* VARSION of the Digital Firmware */
-#ifndef DEBUG_UPDATE_FW
-#define OD_FW_VERSION_MAJOR 0
-#define OD_FW_VERSION_MINOR 0
-#define OD_FW_VERSION_RELEASE 10
-#else
-#define OD_FW_VERSION_MAJOR 0
-#define OD_FW_VERSION_MINOR 0
-#define OD_FW_VERSION_RELEASE 6
-#endif // !DEBUG_UPDATE_FW
+
+#ifdef ARDUINO_OPTA_DIGITAL
+#define COMPILE_BASE_MODULE_EXPANSION
+#endif
+
+#define MODULE_USE_RGB_STATUS_LED
+#define MODULE_USE_FLASH_MEMORY
+
+/* VERSION of the Digital Firmware */
+#define FW_VERSION_MAJOR 0
+#define FW_VERSION_MINOR 0
+#define FW_VERSION_RELEASE 10
+
 /* all analog input are supposed to be grouped all together in variant pin table
  */
 
