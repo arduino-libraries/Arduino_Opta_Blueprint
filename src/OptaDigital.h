@@ -42,6 +42,7 @@ public:
   void _resetTimerCallNum() { timer_call_num = 0; }
   bool _timeIsNotForever() { return (timer_elapsed_ms < 0xFFFF); }
   bool _timerElapsed() { return (timer_call_num >= timer_elapsed_ms); }
+  unsigned int _timerCallNum() { return timer_call_num; }
   void _resetOutputs();
 
   /* this 2 functions are intended to be used when Opta Digital is used
@@ -50,7 +51,7 @@ public:
   bool _getDigitalOut(int n);
   void _updateDigitalOut();
   void _avoidTimeout() { timer_elapsed_ms = 0xFFFF; }
-
+  
   static void adcCb(adc_callback_args_t *p_args);
   adc_ctrl_t *getAdcCtrl() { return &(opta_adc.ctrl); }
 
@@ -78,7 +79,7 @@ private:
 
   FspTimer timer;
   void set_up_timer();
-  unsigned int timer_call_num = 0;
+  volatile unsigned int timer_call_num = 0;
   unsigned int timer_elapsed_ms = OPTA_DIGITAL_WATCHTDOG_TIME_ms;
   static void timer_callback(timer_callback_args_t *arg);
 

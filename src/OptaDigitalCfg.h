@@ -19,7 +19,7 @@
 #ifndef DEBUG_UPDATE_FW
 #define OD_FW_VERSION_MAJOR 0
 #define OD_FW_VERSION_MINOR 0
-#define OD_FW_VERSION_RELEASE 9
+#define OD_FW_VERSION_RELEASE 10
 #else
 #define OD_FW_VERSION_MAJOR 0
 #define OD_FW_VERSION_MINOR 0
@@ -79,7 +79,7 @@
 #define MODULE_TX_BUFFER_DIM 10
 #endif
 
-#define OPTA_DIGITAL_WATCHTDOG_TIME_ms 10000
+#define OPTA_DIGITAL_WATCHTDOG_TIME_ms 0xFFFF
 
 /* enable the use of Opta Digital as standalone module (Without OPTA controller
  * this feature is not fully tested) */
