@@ -79,7 +79,7 @@
 #define MODULE_TX_BUFFER_DIM 10
 #endif
 
-#define OPTA_DIGITAL_WATCHTDOG_TIME_ms 10000
+#define OPTA_DIGITAL_WATCHTDOG_TIME_ms 0xFFFF
 
 /* enable the use of Opta Digital as standalone module (Without OPTA controller
  * this feature is not fully tested) */
