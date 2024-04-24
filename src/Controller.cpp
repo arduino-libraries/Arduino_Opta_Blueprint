@@ -14,7 +14,6 @@
 
 #include "Controller.h"
 
-
 #ifdef ARDUINO_OPTA
 // #define DEBUG_COMM_TIMEOUT
 
@@ -106,7 +105,7 @@ uint8_t Controller::getRx(uint8_t pos) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 Expansion *Controller::getExpansionPtr(int device) {
-  
+
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     if (expansions[device] != nullptr) {
       return expansions[device];
@@ -132,7 +131,6 @@ Expansion *Controller::getExpansionPtr(int device) {
       case EXPANSION_UNOR4_DISPLAY:
         expansions[device] = new R4DisplayExpansion();
         break;
-
       }
       if (expansions[device] != nullptr) {
         expansions[device]->setIndex(device);
@@ -786,7 +784,7 @@ bool Controller::parse_address_and_type(int slave_address) {
         if (num_of_exp < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
           exp_add[num_of_exp] = slave_address;
           exp_type[num_of_exp] =
-              (ExpansionType_t)rx_buffer[BP_PAYLOAD_START_POS + 1];  
+              (ExpansionType_t)rx_buffer[BP_PAYLOAD_START_POS + 1];
           num_of_exp++;
         }
         DEC_WITH_MAX(tmp_num_of_exp, OPTA_CONTROLLER_MAX_EXPANSION_NUM);
@@ -895,12 +893,33 @@ bool Controller::wait_for_device_answer(uint8_t device, uint8_t wait_for) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+void Controller::getFlashData(uint8_t device, uint8_t *buf, uint8_t &dbuf,
+                              uint16_t &add) {
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    if (exp_type[device] == EXPANSION_OPTA_DIGITAL_MEC ||
+        exp_type[device] == EXPANSION_OPTA_DIGITAL_STS ||
+        exp_type[device] == EXPANSION_DIGITAL_INVALID ||
+        exp_type[device] == EXPANSION_OPTA_ANALOG) {
+      Expansion *ptr = (Expansion *)getExpansionPtr(device);
+      if (ptr != nullptr) {
+        return ptr->getFlashData(buf, dbuf, add);
+      }
+    }
+  }
+}
+
 void Controller::setProductionData(uint8_t device, uint8_t *data,
                                    uint8_t dlen) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     if (exp_type[device] == EXPANSION_OPTA_DIGITAL_MEC ||
-        exp_type[device] == EXPANSION_OPTA_DIGITAL_STS) {
+        exp_type[device] == EXPANSION_OPTA_DIGITAL_STS ||
+        exp_type[device] == EXPANSION_DIGITAL_INVALID) {
       DigitalExpansion *ptr = (DigitalExpansion *)getExpansionPtr(device);
+      if (ptr != nullptr) {
+        return ptr->setProductData(data, dlen);
+      }
+    } else if (exp_type[device] == EXPANSION_OPTA_ANALOG) {
+      AnalogExpansion *ptr = (AnalogExpansion *)getExpansionPtr(device);
       if (ptr != nullptr) {
         return ptr->setProductData(data, dlen);
       }
@@ -910,7 +929,8 @@ void Controller::setProductionData(uint8_t device, uint8_t *data,
 void Controller::setOdMechanical(uint8_t device) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     if (exp_type[device] == EXPANSION_OPTA_DIGITAL_MEC ||
-        exp_type[device] == EXPANSION_OPTA_DIGITAL_STS) {
+        exp_type[device] == EXPANSION_OPTA_DIGITAL_STS ||
+        exp_type[device] == EXPANSION_DIGITAL_INVALID) {
       DigitalExpansion *ptr = (DigitalExpansion *)getExpansionPtr(device);
       if (ptr != nullptr) {
         return ptr->setIsMechanical();
@@ -921,7 +941,8 @@ void Controller::setOdMechanical(uint8_t device) {
 void Controller::setOdStateSolid(uint8_t device) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     if (exp_type[device] == EXPANSION_OPTA_DIGITAL_MEC ||
-        exp_type[device] == EXPANSION_OPTA_DIGITAL_STS) {
+        exp_type[device] == EXPANSION_OPTA_DIGITAL_STS ||
+        exp_type[device] == EXPANSION_DIGITAL_INVALID) {
       DigitalExpansion *ptr = (DigitalExpansion *)getExpansionPtr(device);
       if (ptr != nullptr) {
         return ptr->setIsStateSolid();

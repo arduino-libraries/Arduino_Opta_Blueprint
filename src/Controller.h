@@ -13,12 +13,11 @@
 
 #ifndef OPTA_BLUE_CONTROLLER
 #define OPTA_BLUE_CONTROLLER
-#include "OptaBlue.h"
 #include "Arduino.h"
 #include "CommonCfg.h"
 #include "ControllerCfg.h"
 #include "DigitalExpansion.h"
-
+#include "OptaBlue.h"
 
 #include "Expansion.h"
 #include "MsgCommon.h"
@@ -155,6 +154,7 @@ public:
   /* set opta digital mechanical */
   void setOdMechanical(uint8_t device);
   void setOdStateSolid(uint8_t device);
+  void getFlashData(uint8_t device, uint8_t *buf, uint8_t &dbuf, uint16_t &add);
 
 private:
   /* controller receiving buffer */
