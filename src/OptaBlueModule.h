@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* FILENAME:    Module.h
+/* FILENAME:    OptaBlueModule.h
    AUTHOR:      Daniele Aimo (d.aimo@arduino.cc)
    DATE:        20230801
    REVISION:    0.0.1

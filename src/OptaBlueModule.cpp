@@ -13,7 +13,7 @@
 #ifndef ARDUINO_OPTA
 #include "Arduino.h"
 
-#include "Module.h"
+#include "OptaBlueModule.h"
 #include "boot.h"
 #ifdef MODULE_USE_FLASH_MEMORY
 #include "EEPROM.h"

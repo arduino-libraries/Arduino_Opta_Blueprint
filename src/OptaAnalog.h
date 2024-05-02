@@ -17,9 +17,9 @@
 #if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNO_TESTALOG_SHIELD
 #include "Arduino.h"
 #include "CommonCfg.h"
-#include "Module.h"
 #include "MsgCommon.h"
 #include "OptaAnalogTypes.h"
+#include "OptaBlueModule.h"
 #include "OptaCrc.h"
 #include "Protocol.h"
 #include "SPI.h"

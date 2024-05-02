@@ -16,8 +16,8 @@
 
 #include "EEPROM.h"
 #include "FspTimer.h"
-#include "Module.h"
 #include "MsgCommon.h"
+#include "OptaBlueModule.h"
 #include "OptaDigitalCfg.h"
 #include "analog.h"
 #include <map>
