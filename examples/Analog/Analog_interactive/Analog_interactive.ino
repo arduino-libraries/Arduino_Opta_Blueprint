@@ -544,11 +544,11 @@ void changeExpansion(uint8_t device) {
                   uint32_t pulse = 0;
                   Serial.println("Enter the new period [in micro seconds]: ");
                   period = getIntegerFromSerial();
-                  Serial.println("Entered period is " + String(period) + "micro seconds");
+                  Serial.println("Entered period is " + String(period) + " micro seconds");
 
                   Serial.println("Enter the new pulse [in micro seconds]: ");
-                  period = getIntegerFromSerial();
-                  Serial.println("Entered pulse is " + String(period) + "micro seconds");
+                  pulse = getIntegerFromSerial();
+                  Serial.println("Entered pulse is " + String(pulse) + " micro seconds");
 
                   e.setPwm(ch, period, pulse);
               }
