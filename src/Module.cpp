@@ -18,7 +18,6 @@
 #ifdef MODULE_USE_FLASH_MEMORY
 #include "EEPROM.h"
 #endif
-#ifdef COMPILE_BASE_MODULE_EXPANSION
 
 Module *OptaExpansion = nullptr;
 
@@ -270,9 +269,9 @@ bool Module::parse_reset_controller() {
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_version() {
   /* ---------------------------------------------------------------------- */
-  tx_buffer[GET_VERSION_MAJOR_POS] = FW_VERSION_MAJOR;
-  tx_buffer[GET_VERSION_MINOR_POS] = FW_VERSION_MINOR;
-  tx_buffer[GET_VERSION_RELEASE_POS] = FW_VERSION_RELEASE;
+  tx_buffer[GET_VERSION_MAJOR_POS] = getMajorFw();
+  tx_buffer[GET_VERSION_MINOR_POS] = getMinorFw();
+  tx_buffer[GET_VERSION_RELEASE_POS] = getReleaseFw();
   return prepareGetAns(tx_buffer, ANS_ARG_GET_VERSION, ANS_LEN_GET_VERSION,
                        ANS_GET_VERSION_LEN);
 }
@@ -588,5 +587,4 @@ void Module::setAddress(uint8_t add) {
   Wire.end();
   Wire.begin(add);
 }
-#endif
 #endif

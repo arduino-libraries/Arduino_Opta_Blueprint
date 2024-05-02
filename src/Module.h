@@ -21,12 +21,9 @@
 
 #include "MsgCommon.h"
 #include "OptaCrc.h"
-#include "OptaDevicesCfg.h"
 #include "Protocol.h"
 #include "Wire.h"
 #include <stdint.h>
-
-#ifdef COMPILE_BASE_MODULE_EXPANSION
 
 // #define DEBUG_SERIAL
 // #define DEBUG_RX_MODULE_ENABLE
@@ -52,6 +49,10 @@ public:
   virtual void end();
   /* must be public because is called in the RX callback */
   virtual int parse_rx();
+
+  virtual uint8_t getMajorFw() = 0;
+  virtual uint8_t getMinorFw() = 0;
+  virtual uint8_t getReleaseFw() = 0;
 
   /* set the tx_buffer @ position pos with value v */
   void tx(uint8_t v, int pos);
@@ -128,4 +129,3 @@ extern Module *OptaExpansion;
 
 #endif
 #endif
-#endif //

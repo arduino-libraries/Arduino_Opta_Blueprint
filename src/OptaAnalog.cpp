@@ -2396,6 +2396,10 @@ void OptaAnalog::setup_channels() {
   }
 }
 
+uint8_t OptaAnalog::getMajorFw() { return FW_VERSION_MAJOR; }
+uint8_t OptaAnalog::getMinorFw() { return FW_VERSION_MINOR; }
+uint8_t OptaAnalog::getReleaseFw() { return FW_VERSION_RELEASE; }
+
 #ifdef DEBUG_SERIAL
 void print_function(uint8_t v) {
   switch (v) {

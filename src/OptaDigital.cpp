@@ -563,5 +563,8 @@ void OptaDigital::_updateDigitalOut() {
   }
 }
 
+uint8_t OptaDigital::getMajorFw() { return FW_VERSION_MAJOR; }
+uint8_t OptaDigital::getMinorFw() { return FW_VERSION_MINOR; }
+uint8_t OptaDigital::getReleaseFw() { return FW_VERSION_RELEASE; }
 #endif
 #endif

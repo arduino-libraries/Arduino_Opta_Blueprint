@@ -18,6 +18,7 @@
 #include "FspTimer.h"
 #include "Module.h"
 #include "MsgCommon.h"
+#include "OptaDigitalCfg.h"
 #include "analog.h"
 #include <map>
 #include <stdint.h>
@@ -38,6 +39,9 @@ public:
   virtual void update() override;
   virtual int parse_rx() override;
 
+  uint8_t getMajorFw();
+  uint8_t getMinorFw();
+  uint8_t getReleaseFw();
   void _incrementTimerCallNum() { timer_call_num++; }
   void _resetTimerCallNum() { timer_call_num = 0; }
   bool _timeIsNotForever() { return (timer_elapsed_ms < 0xFFFF); }
@@ -51,7 +55,7 @@ public:
   bool _getDigitalOut(int n);
   void _updateDigitalOut();
   void _avoidTimeout() { timer_elapsed_ms = 0xFFFF; }
-  
+
   static void adcCb(adc_callback_args_t *p_args);
   adc_ctrl_t *getAdcCtrl() { return &(opta_adc.ctrl); }
 

@@ -189,8 +189,11 @@ public:
   void begin() override;
   void update() override;
   int parse_rx() override;
-   
-  uint8_t getI2CAddress() {return address;}
+
+  uint8_t getMajorFw();
+  uint8_t getMinorFw();
+  uint8_t getReleaseFw();
+  uint8_t getI2CAddress() { return address; }
   /* NAMING CONVENTION:
    * ------------------
    *  All functions start with the following prefix (each prefix has certain
