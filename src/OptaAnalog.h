@@ -193,7 +193,6 @@ public:
   uint8_t getMajorFw();
   uint8_t getMinorFw();
   uint8_t getReleaseFw();
-  uint8_t getI2CAddress() { return address; }
   /* NAMING CONVENTION:
    * ------------------
    *  All functions start with the following prefix (each prefix has certain

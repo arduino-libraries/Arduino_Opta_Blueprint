@@ -87,7 +87,7 @@ public:
   int prepare_ans_get_version();
   int prepare_ans_reboot();
   int prepare_ans_get_flash();
-  // uint8_t getI2CAddress() { return i2c_address; }
+  uint8_t getI2CAddress() { return address; }
 
 protected:
   uint8_t address;
@@ -117,12 +117,6 @@ protected:
   uint8_t tx_num;
   uint16_t flash_add;
   uint8_t flash_dim;
-  // uint8_t i2c_address;
-  /* to answer "faster" instead of using a single tx_buffer there will be
-     multiple answer buffers (one for each request the controller can make)
-     tx_buffer defined here (a few rows above will be used to handle messages
-     related to assign address, this because assign address is suppose to
-     be independent from the different module attached to the Controller */
 };
 
 extern Module *OptaExpansion;
