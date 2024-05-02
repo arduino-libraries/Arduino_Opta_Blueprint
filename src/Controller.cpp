@@ -128,9 +128,6 @@ Expansion *Controller::getExpansionPtr(int device) {
         expansions[device] = new DigitalExpansion();
         setExpStartUpCb(DigitalExpansion::startUp);
         break;
-      case EXPANSION_UNOR4_DISPLAY:
-        expansions[device] = new R4DisplayExpansion();
-        break;
       }
       if (expansions[device] != nullptr) {
         expansions[device]->setIndex(device);
