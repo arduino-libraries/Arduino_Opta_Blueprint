@@ -24,6 +24,7 @@
 #include "Protocol.h"
 #include "Wire.h"
 #include <stdint.h>
+#include <vector>
 
 // #define DEBUG_SERIAL
 // #define DEBUG_RX_MODULE_ENABLE
@@ -53,6 +54,7 @@ public:
   virtual uint8_t getMajorFw() = 0;
   virtual uint8_t getMinorFw() = 0;
   virtual uint8_t getReleaseFw() = 0;
+  virtual std::vector<uint8_t> getProduct() = 0;
 
   /* set the tx_buffer @ position pos with value v */
   void tx(uint8_t v, int pos);
