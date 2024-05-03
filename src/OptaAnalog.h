@@ -17,6 +17,7 @@
 #if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNO_TESTALOG_SHIELD
 #include "Arduino.h"
 #include "CommonCfg.h"
+#include "EEPROM.h"
 #include "MsgCommon.h"
 #include "OptaAnalogTypes.h"
 #include "OptaBlueModule.h"
@@ -196,6 +197,12 @@ public:
   uint8_t getReleaseFw();
   std::vector<uint8_t> getProduct();
   void goInBootloaderMode();
+  void readFromFlash(uint16_t add, uint8_t *buffer, uint8_t dim);
+  void writeInFlash(uint16_t add, uint8_t *buffer, uint8_t dim);
+  void initStatusLED();
+  void setStatusLedReadyForAddress();
+  void setStatusLedWaitingForAddress();
+  void setStatusLedHasAddress();
   /* NAMING CONVENTION:
    * ------------------
    *  All functions start with the following prefix (each prefix has certain

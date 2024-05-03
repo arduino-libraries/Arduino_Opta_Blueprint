@@ -56,6 +56,13 @@ public:
   virtual uint8_t getReleaseFw() = 0;
   virtual std::vector<uint8_t> getProduct() = 0;
   virtual void goInBootloaderMode() = 0;
+  virtual void readFromFlash(uint16_t add, uint8_t *buffer, uint8_t dim) = 0;
+  virtual void writeInFlash(uint16_t add, uint8_t *buffer, uint8_t dim) = 0;
+
+  virtual void initStatusLED() = 0;
+  virtual void setStatusLedReadyForAddress() = 0;
+  virtual void setStatusLedWaitingForAddress() = 0;
+  virtual void setStatusLedHasAddress() = 0;
 
   /* set the tx_buffer @ position pos with value v */
   void tx(uint8_t v, int pos);

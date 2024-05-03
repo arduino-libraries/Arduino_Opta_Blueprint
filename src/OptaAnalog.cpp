@@ -2412,6 +2412,56 @@ std::vector<uint8_t> OptaAnalog::getProduct() {
 }
 
 void OptaAnalog::goInBootloaderMode() { goBootloader(); }
+
+void OptaAnalog::writeInFlash(uint16_t add, uint8_t *buffer, uint8_t dim) {
+  if (dim > 32) {
+    dim = 32;
+  }
+  uint8_t data[32];
+  memset((uint8_t *)data, 0, dim);
+  for (int i = 0; i < dim; i++) {
+    data[i] = *(buffer + i);
+  }
+  EEPROM.put(add, data);
+}
+
+void OptaAnalog::readFromFlash(uint16_t add, uint8_t *buffer, uint8_t dim) {
+  if (dim > 32) {
+    dim = 32;
+  }
+  uint8_t data[32];
+  memset((uint8_t *)data, 0, dim);
+  EEPROM.get(add, data);
+  for (int i = 0; i < dim; i++) {
+    *(buffer + i) = *(data + i);
+  }
+}
+void OptaAnalog::initStatusLED() {
+  pinMode(OPTA_LED_RED, OUTPUT);
+  pinMode(OPTA_LED_BLUE, OUTPUT);
+  pinMode(OPTA_LED_GREEN, OUTPUT);
+  digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
+  digitalWrite(OPTA_LED_BLUE, LED_RGB_OFF);
+  digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
+}
+
+void OptaAnalog::setStatusLedReadyForAddress() {
+  digitalWrite(OPTA_LED_BLUE, LED_RGB_OFF);
+  digitalWrite(OPTA_LED_RED, LED_RGB_ON);
+  digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
+}
+
+void OptaAnalog::setStatusLedWaitingForAddress() {
+  digitalWrite(OPTA_LED_BLUE, LED_RGB_ON);
+  digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
+  digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
+}
+
+void OptaAnalog::setStatusLedHasAddress() {
+  digitalWrite(OPTA_LED_BLUE, LED_RGB_OFF);
+  digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
+  digitalWrite(OPTA_LED_GREEN, LED_RGB_ON);
+}
 #ifdef DEBUG_SERIAL
 void print_function(uint8_t v) {
   switch (v) {

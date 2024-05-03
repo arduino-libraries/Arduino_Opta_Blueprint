@@ -20,9 +20,6 @@
 #define COMPILE_BASE_MODULE_EXPANSION
 #endif
 
-#define MODULE_USE_RGB_STATUS_LED
-#define MODULE_USE_FLASH_MEMORY
-
 /* VERSION of the Digital Firmware */
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 0

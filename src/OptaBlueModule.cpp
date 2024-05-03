@@ -10,13 +10,11 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
+#include "Protocol.h"
 #ifndef ARDUINO_OPTA
 #include "Arduino.h"
 
 #include "OptaBlueModule.h"
-#ifdef MODULE_USE_FLASH_MEMORY
-#include "EEPROM.h"
-#endif
 
 Module *OptaExpansion = nullptr;
 
@@ -130,12 +128,7 @@ uint8_t *Module::txPrt() { return ans_buffer; }
 void Module::reset() {
   Wire.end();
 
-#ifdef MODULE_USE_RGB_STATUS_LED
-  digitalWrite(OPTA_LED_BLUE, LED_RGB_ON);
-  digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
-  digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
-#endif
-
+  setStatusLedWaitingForAddress();
   /* put address to invalid */
   address = OPTA_MODULE_INVALID_ADDRESS;
 
@@ -154,9 +147,6 @@ void Module::reset() {
   while (is_detect_out_low()) {
   }
 
-#ifdef MODULE_USE_RGB_STATUS_LED
-  digitalWrite(OPTA_LED_BLUE, LED_RGB_OFF);
-#endif
   /* put I2C address to the default one */
   Wire.begin(OPTA_DEFAULT_SLAVE_I2C_ADDRESS);
 }
@@ -180,15 +170,7 @@ bool Module::addressAcquired() {
 /* Module begin                                                               */
 /* -------------------------------------------------------------------------- */
 void Module::begin() {
-#ifdef MODULE_USE_RGB_STATUS_LED
-  pinMode(OPTA_LED_RED, OUTPUT);
-  pinMode(OPTA_LED_BLUE, OUTPUT);
-  pinMode(OPTA_LED_GREEN, OUTPUT);
-  digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
-  digitalWrite(OPTA_LED_BLUE, LED_RGB_OFF);
-  digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
-#endif
-
+  initStatusLED();
 #ifdef DEBUG_SERIAL
   Serial.begin(115200);
   delay(2000);
@@ -461,10 +443,7 @@ void Module::updatePinStatus() {
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
     Serial.println("ADDRESS not ACQUIRED");
 #endif
-#ifdef MODULE_USE_RGB_STATUS_LED
-    digitalWrite(OPTA_LED_RED, LED_RGB_ON);
-    digitalWrite(OPTA_LED_GREEN, LED_RGB_OFF);
-#endif
+    setStatusLedReadyForAddress();
     /* DETECT_IN (toward Controller) as Output */
     pinMode(DETECT_IN, OUTPUT);
     /* put detect in pin to LOW -> signal the MODULE wants an address */
@@ -474,11 +453,7 @@ void Module::updatePinStatus() {
     Serial.print("ADDRESS ACQUIRED ");
     Serial.println(address, HEX);
 #endif
-
-#ifdef MODULE_USE_RGB_STATUS_LED
-    digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
-    digitalWrite(OPTA_LED_GREEN, LED_RGB_ON);
-#endif
+    setStatusLedHasAddress();
 
     if (is_detect_in_low()) {
       reset_required = true;
@@ -498,29 +473,11 @@ bool Module::parse_set_flash() {
   if (checkSetMsgReceived(rx_buffer, ARG_SAVE_IN_DATA_FLASH,
                           LEN_SAVE_IN_DATA_FLASH, SAVE_DATA_LEN)) {
 
-#ifdef MODULE_USE_FLASH_MEMORY
     uint16_t add = rx_buffer[SAVE_ADDRESS_1_POS];
     add += (rx_buffer[SAVE_ADDRESS_2_POS] << 8);
     uint8_t d = rx_buffer[SAVE_DIMENSION_POS];
 
-#ifdef DEBUG_FLASH
-    Serial.println("SAVE Flash: address " + String(add) + " dim " + String(d));
-#endif
-
-    uint8_t data[32];
-    memset((uint8_t *)data, 0, 32);
-    for (int i = 0; i < d; i++) {
-#ifdef DEBUG_FLASH
-      Serial.print(rx_buffer[SAVE_DATA_INIT_POS + i], HEX);
-      Serial.print(" ");
-#endif
-      data[i] = rx_buffer[SAVE_DATA_INIT_POS + i];
-    }
-#ifdef DEBUG_FLASH
-    Serial.println();
-#endif
-    EEPROM.put(add, data);
-#endif
+    writeInFlash(add, rx_buffer + SAVE_DATA_INIT_POS, d);
     return true;
   } else {
     return false;
@@ -529,8 +486,7 @@ bool Module::parse_set_flash() {
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_get_flash() {
-  /* ----------------------------------------------------------------------
-   */
+  /* ---------------------------------------------------------------------- */
   if (checkGetMsgReceived(rx_buffer, ARG_GET_DATA_FROM_FLASH,
                           LEN_GET_DATA_FROM_FLASH, READ_DATA_LEN)) {
     flash_add = rx_buffer[READ_ADDRESS_1_POS];
@@ -543,34 +499,12 @@ bool Module::parse_get_flash() {
 
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_flash() {
-  /* ----------------------------------------------------------------------
-   */
-  uint8_t data[32] = {0};
-
-#ifdef MODULE_USE_FLASH_MEMORY
-  EEPROM.get(flash_add, data);
-#endif
+  /* -------------------------------------------------------------------- */
   tx_buffer[ANS_GET_DATA_ADDRESS_1_POS] = (uint8_t)(flash_add & 0xFF);
   tx_buffer[ANS_GET_DATA_ADDRESS_2_POS] = (uint8_t)((flash_add & 0xFF00) >> 8);
   tx_buffer[ANS_GET_DATA_DIMENSION_POS] = flash_dim;
-#ifdef DEBUG_FLASH
-  Serial.println("READ Flash: address " + String(flash_add) + " dim " +
-                 String(flash_dim));
-#endif
-  for (int i = 0; i < 32; i++) {
-    if (i < flash_dim) {
-      tx_buffer[ANS_GET_DATA_DATA_INIT_POS + i] = data[i];
-#ifdef DEBUG_FLASH
-      Serial.print(tx_buffer[ANS_GET_DATA_DATA_INIT_POS + i], HEX);
-      Serial.print(" ");
-#endif
-    } else {
-      tx_buffer[ANS_GET_DATA_DATA_INIT_POS + i] = 0;
-    }
-  }
-#ifdef DEBUG_FLASH
-  Serial.println();
-#endif
+
+  readFromFlash(flash_add, tx_buffer + ANS_GET_DATA_DATA_INIT_POS, flash_dim);
 
   return prepareGetAns(tx_buffer, ANS_ARG_GET_DATA_FROM_FLASH,
                        ANS_LEN_GET_DATA_FROM_FLASH, ANS_GET_DATA_LEN);

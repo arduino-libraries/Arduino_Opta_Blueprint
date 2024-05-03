@@ -45,6 +45,12 @@ public:
   uint8_t getReleaseFw();
   std::vector<uint8_t> getProduct();
   void goInBootloaderMode();
+  void readFromFlash(uint16_t add, uint8_t *buffer, uint8_t dim);
+  void writeInFlash(uint16_t add, uint8_t *buffer, uint8_t dim);
+  void initStatusLED();
+  void setStatusLedReadyForAddress();
+  void setStatusLedWaitingForAddress();
+  void setStatusLedHasAddress();
 
   void _incrementTimerCallNum() { timer_call_num++; }
   void _resetTimerCallNum() { timer_call_num = 0; }
