@@ -10,13 +10,13 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-#include "Protocol.h"
 #ifndef ARDUINO_OPTA
-#include "Arduino.h"
 
 #include "OptaBlueModule.h"
 
 Module *OptaExpansion = nullptr;
+
+TwoWire *Module::expWire = nullptr;
 
 /* -------------------------------------------------------------------------- */
 /* Module RX event: callback called when Module receive from Controller on I2C*/
@@ -28,10 +28,10 @@ void receive_event(int n) {
   Serial.print("- start RX: ");
 #endif
 
-  if (OptaExpansion != nullptr) {
+  if (OptaExpansion != nullptr && Module::expWire != nullptr) {
     OptaExpansion->setRxNum(0);
     for (int i = 0; i < n && i < OPTA_I2C_BUFFER_DIM; i++) {
-      int r = Wire.read();
+      int r = Module::expWire->read();
 
 #if defined DEBUG_SERIAL && defined DEBUG_RX_MODULE_ENABLE
       Serial.print(r, HEX);
@@ -63,8 +63,8 @@ void request_event() {
   }
 #endif
 
-  if (OptaExpansion != nullptr) {
-    Wire.write(OptaExpansion->txPrt(), OptaExpansion->getTxNum());
+  if (OptaExpansion != nullptr && Module::expWire != nullptr) {
+    Module::expWire->write(OptaExpansion->txPrt(), OptaExpansion->getTxNum());
   }
 
   uint8_t *ck = OptaExpansion->txPrt();
@@ -126,49 +126,69 @@ uint8_t *Module::txPrt() { return ans_buffer; }
 /* Handle reset                                                               */
 /* -------------------------------------------------------------------------- */
 void Module::reset() {
-  Wire.end();
+  if (Module::expWire != nullptr) {
+    Module::expWire->end();
+  }
 
   setStatusLedWaitingForAddress();
   /* put address to invalid */
   address = OPTA_MODULE_INVALID_ADDRESS;
 
-  /* DETECT_IN (toward Controller) as Output */
-  pinMode(DETECT_IN, OUTPUT);
+  /* detect_in (toward Controller) as Output */
+  pinMode(detect_in, OUTPUT);
   /* put detect in pin to LOW -> signal the MODULE wants an address */
-  digitalWrite(DETECT_IN, LOW);
+  digitalWrite(detect_in, LOW);
 
-  /* DETECT_OUT (toward other Module) as output*/
-  pinMode(DETECT_OUT, OUTPUT);
-  digitalWrite(DETECT_OUT, LOW);
+  /* detect_out (toward other Module) as output*/
+  pinMode(detect_out, OUTPUT);
+  digitalWrite(detect_out, LOW);
   delay(OPTA_MODULE_DETECT_OUT_LOW_TIME);
 
-  pinMode(DETECT_OUT, INPUT_PULLUP);
+  pinMode(detect_out, INPUT_PULLUP);
 
   while (is_detect_out_low()) {
   }
 
   /* put I2C address to the default one */
-  Wire.begin(OPTA_DEFAULT_SLAVE_I2C_ADDRESS);
+  if (Module::expWire != nullptr) {
+    Module::expWire->begin(OPTA_DEFAULT_SLAVE_I2C_ADDRESS);
+  }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Module constructor (does nothing)                                          */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------------------------------------------------
+ */
+/* Module constructor (does nothing) */
+/* --------------------------------------------------------------------------
+ */
 Module::Module()
     : address(OPTA_MODULE_INVALID_ADDRESS), rx_num(0), reboot_required(false),
       reset_required(false), ans_buffer(nullptr),
-      expansion_type(EXPANSION_NOT_VALID), reboot_sent(0) {}
+      expansion_type(EXPANSION_NOT_VALID), reboot_sent(0), detect_in(DETECT_IN),
+      detect_out(DETECT_OUT) {
+  Module::expWire = &Wire;
+}
 
-/* -------------------------------------------------------------------------- */
-/* Return true if the module has obtained an address from the controller      */
-/* -------------------------------------------------------------------------- */
+Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
+    : address(OPTA_MODULE_INVALID_ADDRESS), rx_num(0), reboot_required(false),
+      reset_required(false), ans_buffer(nullptr),
+      expansion_type(EXPANSION_NOT_VALID), reboot_sent(0),
+      detect_in(_detect_in), detect_out(_detect_out) {
+  Module::expWire = tw;
+}
+/* --------------------------------------------------------------------------
+ */
+/* Return true if the module has obtained an address from the controller */
+/* --------------------------------------------------------------------------
+ */
 bool Module::addressAcquired() {
   return ((address != OPTA_MODULE_INVALID_ADDRESS));
 }
 
-/* -------------------------------------------------------------------------- */
-/* Module begin                                                               */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------------------------------------------------
+ */
+/* Module begin */
+/* --------------------------------------------------------------------------
+ */
 void Module::begin() {
   initStatusLED();
 #ifdef DEBUG_SERIAL
@@ -180,13 +200,17 @@ void Module::begin() {
   reset();
 
   /* Set up callbacks */
-  Wire.onReceive(receive_event);
-  Wire.onRequest(request_event);
+  if (Module::expWire != nullptr) {
+    Module::expWire->onReceive(receive_event);
+    Module::expWire->onRequest(request_event);
+  }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Module begin                                                               */
-/* -------------------------------------------------------------------------- */
+/* --------------------------------------------------------------------------
+ */
+/* Module begin */
+/* --------------------------------------------------------------------------
+ */
 void Module::update() {
 
   updatePinStatus();
@@ -215,9 +239,11 @@ void Module::update() {
 #endif
 }
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------------------------------------------------
+ */
 bool Module::parse_set_address() {
-  /* ------------------------------------------------------------------------ */
+  /* ------------------------------------------------------------------------
+   */
   if (checkSetMsgReceived(rx_buffer, ARG_ADDRESS, LEN_ADDRESS,
                           MSG_SET_ADDRESS_LEN)) {
     return true;
@@ -315,10 +341,10 @@ int Module::parse_rx() {
    */
   /* set address message */
   if (parse_set_address()) {
-    pinMode(DETECT_OUT, INPUT_PULLUP);
+    pinMode(detect_out, INPUT_PULLUP);
     delay(1);
     /* accept the address only if detect out is HIGH */
-    if (digitalRead(DETECT_OUT) == HIGH) {
+    if (digitalRead(detect_out) == HIGH) {
       address = rx_buffer[BP_PAYLOAD_START_POS];
       setAddress(address);
     }
@@ -367,13 +393,13 @@ int Module::parse_rx() {
 bool Module::is_detect_in_low() {
   /* ----------------------------------------------------------------------
    */
-  pinMode(DETECT_IN, INPUT_PULLUP);
+  pinMode(detect_in, INPUT_PULLUP);
   delay(1);
-  PinStatus dtcin = digitalRead(DETECT_IN);
+  PinStatus dtcin = digitalRead(detect_in);
   if (dtcin == LOW) {
     int num = 0;
     while (dtcin == LOW && num < OPTA_MODULE_DEBOUNCE_NUMBER_IN) {
-      dtcin = digitalRead(DETECT_IN);
+      dtcin = digitalRead(detect_in);
       if (dtcin == HIGH) {
         break;
       }
@@ -389,9 +415,9 @@ bool Module::is_detect_out_low() {
   /* ----------------------------------------------------------------------
    */
 
-  pinMode(DETECT_OUT, INPUT_PULLUP);
+  pinMode(detect_out, INPUT_PULLUP);
   delay(1);
-  PinStatus dtcout = digitalRead(DETECT_OUT);
+  PinStatus dtcout = digitalRead(detect_out);
 
   if (dtcout == LOW) {
     int num = 0;
@@ -400,7 +426,7 @@ bool Module::is_detect_out_low() {
         num <
             OPTA_MODULE_DEBOUNCE_NUMBER_OUT) { // OPTA_DIGITAL_DEBOUNCE_NUMBER)
                                                // {
-      dtcout = digitalRead(DETECT_OUT);
+      dtcout = digitalRead(detect_out);
       if (dtcout == HIGH) {
         break;
       }
@@ -416,13 +442,13 @@ bool Module::is_detect_out_high() {
   /* ----------------------------------------------------------------------
    */
 
-  pinMode(DETECT_OUT, INPUT_PULLUP);
+  pinMode(detect_out, INPUT_PULLUP);
   delay(1);
-  PinStatus dtcout = digitalRead(DETECT_OUT);
+  PinStatus dtcout = digitalRead(detect_out);
 
   int num = 0;
   while (dtcout == HIGH && num < OPTA_MODULE_DEBOUNCE_NUMBER_OUT) {
-    dtcout = digitalRead(DETECT_OUT);
+    dtcout = digitalRead(detect_out);
     if (dtcout == LOW) {
       break;
     }
@@ -444,10 +470,10 @@ void Module::updatePinStatus() {
     Serial.println("ADDRESS not ACQUIRED");
 #endif
     setStatusLedReadyForAddress();
-    /* DETECT_IN (toward Controller) as Output */
-    pinMode(DETECT_IN, OUTPUT);
+    /* detect_in (toward Controller) as Output */
+    pinMode(detect_in, OUTPUT);
     /* put detect in pin to LOW -> signal the MODULE wants an address */
-    digitalWrite(DETECT_IN, LOW);
+    digitalWrite(detect_in, LOW);
   } else {
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
     Serial.print("ADDRESS ACQUIRED ");
@@ -460,16 +486,15 @@ void Module::updatePinStatus() {
     } else if (is_detect_out_low()) {
       reset_required = true;
     } else {
-      pinMode(DETECT_OUT, INPUT_PULLUP);
-      digitalWrite(DETECT_IN, HIGH);
+      pinMode(detect_out, INPUT_PULLUP);
+      digitalWrite(detect_in, HIGH);
     }
   }
 }
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_set_flash() {
-  /* ----------------------------------------------------------------------
-   */
+  /* ---------------------------------------------------------------------- */
   if (checkSetMsgReceived(rx_buffer, ARG_SAVE_IN_DATA_FLASH,
                           LEN_SAVE_IN_DATA_FLASH, SAVE_DATA_LEN)) {
 
@@ -517,7 +542,9 @@ void Module::end() {}
 /* Give the device a new slave address (add) */
 /* ------------------------------------------------------------------------ */
 void Module::setAddress(uint8_t add) {
-  Wire.end();
-  Wire.begin(add);
+  if (Module::expWire != nullptr) {
+    Module::expWire->end();
+    Module::expWire->begin(add);
+  }
 }
 #endif

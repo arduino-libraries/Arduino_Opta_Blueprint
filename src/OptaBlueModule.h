@@ -44,6 +44,7 @@
 class Module {
 public:
   Module();
+  Module(TwoWire *tw, int _detect_in, int _detect_out);
   virtual void begin();
   virtual bool addressAcquired();
   virtual void update();
@@ -63,6 +64,8 @@ public:
   virtual void setStatusLedReadyForAddress() = 0;
   virtual void setStatusLedWaitingForAddress() = 0;
   virtual void setStatusLedHasAddress() = 0;
+
+  static TwoWire *expWire;
 
   /* set the tx_buffer @ position pos with value v */
   void tx(uint8_t v, int pos);
@@ -102,7 +105,6 @@ public:
 protected:
   int detect_in;
   int detect_out;
-  TwoWire *expWire;
 
   uint8_t address;
   uint8_t rx_num;
