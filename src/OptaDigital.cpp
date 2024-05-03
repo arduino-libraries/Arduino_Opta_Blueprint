@@ -574,5 +574,6 @@ std::vector<uint8_t> OptaDigital::getProduct() {
   rv.insert(rv.end(), product_description,
             product_description + sizeof(product_description));
 }
+void OptaDigital::goInBootloaderMode() { goBootloader(); }
 #endif
 #endif

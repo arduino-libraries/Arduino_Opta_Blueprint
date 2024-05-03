@@ -14,7 +14,6 @@
 #include "Arduino.h"
 
 #include "OptaBlueModule.h"
-#include "boot.h"
 #ifdef MODULE_USE_FLASH_MEMORY
 #include "EEPROM.h"
 #endif
@@ -220,7 +219,7 @@ void Module::update() {
     }
     reboot_required = false;
     reboot_sent = 0;
-    goBootloader();
+    goInBootloaderMode();
   }
 
 #if defined DEBUG_SERIAL && defined DEBUG_EXPANSION_PRINT_ADDRESS

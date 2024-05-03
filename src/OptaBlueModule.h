@@ -55,6 +55,7 @@ public:
   virtual uint8_t getMinorFw() = 0;
   virtual uint8_t getReleaseFw() = 0;
   virtual std::vector<uint8_t> getProduct() = 0;
+  virtual void goInBootloaderMode() = 0;
 
   /* set the tx_buffer @ position pos with value v */
   void tx(uint8_t v, int pos);
@@ -92,6 +93,10 @@ public:
   uint8_t getI2CAddress() { return address; }
 
 protected:
+  int detect_in;
+  int detect_out;
+  TwoWire *expWire;
+
   uint8_t address;
   uint8_t rx_num;
   volatile bool reboot_required;

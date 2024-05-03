@@ -20,6 +20,7 @@
 #include "OptaBlueModule.h"
 #include "OptaDigitalCfg.h"
 #include "analog.h"
+#include "boot.h"
 #include <map>
 #include <stdint.h>
 
@@ -43,6 +44,8 @@ public:
   uint8_t getMinorFw();
   uint8_t getReleaseFw();
   std::vector<uint8_t> getProduct();
+  void goInBootloaderMode();
+
   void _incrementTimerCallNum() { timer_call_num++; }
   void _resetTimerCallNum() { timer_call_num = 0; }
   bool _timeIsNotForever() { return (timer_elapsed_ms < 0xFFFF); }

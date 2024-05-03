@@ -23,6 +23,7 @@
 #include "OptaCrc.h"
 #include "Protocol.h"
 #include "SPI.h"
+#include "boot.h"
 #include "sys/_stdint.h"
 #include <cstdint>
 
@@ -194,6 +195,7 @@ public:
   uint8_t getMinorFw();
   uint8_t getReleaseFw();
   std::vector<uint8_t> getProduct();
+  void goInBootloaderMode();
   /* NAMING CONVENTION:
    * ------------------
    *  All functions start with the following prefix (each prefix has certain

@@ -2410,6 +2410,8 @@ std::vector<uint8_t> OptaAnalog::getProduct() {
   rv.insert(rv.end(), product_description,
             product_description + sizeof(product_description));
 }
+
+void OptaAnalog::goInBootloaderMode() { goBootloader(); }
 #ifdef DEBUG_SERIAL
 void print_function(uint8_t v) {
   switch (v) {
