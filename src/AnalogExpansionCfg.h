@@ -14,7 +14,6 @@
 #ifndef ANALOGEXPANSIONCFG
 #define ANALOGEXPANSIONCFG
 
-#include "CommonCfg.h"
 #include "Protocol.h"
 #include <cstdint>
 #include <cstring>

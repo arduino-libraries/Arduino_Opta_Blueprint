@@ -12,9 +12,14 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
-#include "Controller.h"
-
 #ifdef ARDUINO_OPTA
+#include "Controller.h"
+#include "AnalogExpansion.h"
+#include "DigitalCommonCfg.h"
+#include "DigitalExpansion.h"
+#include "DigitalMechExpansion.h"
+#include "DigitalStSolidExpansion.h"
+
 // #define DEBUG_COMM_TIMEOUT
 
 #define INC_WITH_MAX(x, M) (x = (++x >= M) ? 0 : x)
@@ -51,6 +56,28 @@ Controller::~Controller() {
   }
 }
 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void Controller::updateRegs(Expansion &exp) {
+  if (exp.getIndex() < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    if (expansions[exp.getIndex()] != nullptr &&
+        exp.getI2CAddress() == exp_add[exp.getIndex()] &&
+        exp.getType() == exp_type[exp.getIndex()]) {
+      expansions[exp.getIndex()]->updateRegs(exp);
+    }
+  }
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void Controller::beginOdDefaults(uint8_t device, bool d[OPTA_DIGITAL_OUT_NUM],
+                                 uint16_t timeout) {
+  DigitalExpansion::setDefault(*this, device,
+                               DigitalExpansion::calcDefault(d[0], d[1], d[2],
+                                                             d[3], d[4], d[5],
+                                                             d[6], d[7]),
+                               timeout);
+}
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t Controller::send(int add, int device, ExpansionType_t type, int n,

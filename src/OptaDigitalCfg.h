@@ -14,12 +14,6 @@
 #ifndef OPTADIGITALCFG_H
 #define OPTADIGITALCFG_H
 
-#include "CommonCfg.h"
-
-#ifdef ARDUINO_OPTA_DIGITAL
-#define COMPILE_BASE_MODULE_EXPANSION
-#endif
-
 /* VERSION of the Digital Firmware */
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 0
@@ -72,12 +66,6 @@
 /* any analog value under this value will be considered LOW
    the converter works between 0 and 16383  */
 #define OPTA_DIGITAL_TH_FOR_PIN_LOW 3000 // 5.2 Volts
-
-#ifdef OPTA_DIGITAL_ALLOW_ANALOG_USE
-#define MODULE_TX_BUFFER_DIM 0x24
-#else
-#define MODULE_TX_BUFFER_DIM 10
-#endif
 
 #define OPTA_DIGITAL_WATCHTDOG_TIME_ms 0xFFFF
 

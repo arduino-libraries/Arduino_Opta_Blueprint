@@ -14,6 +14,7 @@
 #ifndef OPTA_DIGITAL_BLUE_MODULE
 #define OPTA_DIGITAL_BLUE_MODULE
 
+#include "DigitalCommonCfg.h"
 #include "EEPROM.h"
 #include "FspTimer.h"
 #include "MsgCommon.h"

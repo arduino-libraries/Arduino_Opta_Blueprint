@@ -227,7 +227,7 @@ void comm_timeout_cb(int index, int code) {
 /* -------------------------------------------------------------------------- */
 void configureChannels(uint8_t device) {
 /* -------------------------------------------------------------------------- */
-    if(device >= 0 && device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    if(device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
 
       AnalogExpansion e = OptaController.getExpansion(device);
 

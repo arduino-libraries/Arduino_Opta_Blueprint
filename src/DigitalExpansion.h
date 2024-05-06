@@ -13,10 +13,13 @@
 
 #ifndef DIGITALEXPANSION
 #define DIGITALEXPANSION
-#include "CommonCfg.h"
-#include "ControllerCfg.h"
+#include "Controller.h"
+#include "DigitalCommonCfg.h"
 #include "DigitalExpansionsAddresses.h"
 #include "Expansion.h"
+#include "ExpansionOperations.h"
+#include "OptaBluePrintCfg.h"
+#include "Protocol.h"
 #include <stdint.h>
 namespace Opta {
 

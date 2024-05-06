@@ -11,18 +11,10 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
-#include "AnalogExpansion.h"
-#include "AnalogExpansionAddress.h"
-#include "AnalogExpansionCfg.h"
-#include "Arduino.h"
-#include "CommonCfg.h"
-#include "Controller.h"
-#include "ExpansionOperations.h"
-#include "MsgCommon.h"
-#include "Protocol.h"
-#include <stdint.h>
-
 #ifdef ARDUINO_OPTA
+#include "AnalogExpansion.h"
+#include "Controller.h"
+
 namespace Opta {
 
 OaChannelCfg AnalogExpansion::cfgs[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
@@ -1234,7 +1226,7 @@ void AnalogExpansion::beginChannelAsCurrentDac(Controller &ctrl, uint8_t device,
 }
 
 void AnalogExpansion::setProductData(uint8_t *data, uint8_t len) {
-  Expansion::set_flash_data(data, len, PRODUCTION_OD_DATA_FLASH_ADDRESS);
+  Expansion::set_flash_data(data, len, PRODUCTION_DATA_FLASH_ADDRESS);
 }
 
 bool AnalogExpansion::isChDac(uint8_t ch) {

@@ -13,7 +13,6 @@
 
 #ifndef CONTROLLERCFG_H
 #define CONTROLLERCFG_H
-#include "CommonCfg.h"
 /* the pin used by CONTROLLER to identify if MODULES are connected */
 #define OPTA_CONTROLLER_DETECT_PIN PG_8
 /* the maximum number of opta expansion that can be attached */

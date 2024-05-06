@@ -14,9 +14,6 @@
 
 #ifndef OPTA_PROTOCOL_COMMON
 #define OPTA_PROTOCOL_COMMON
-#include "CommonCfg.h"
-/* This file contains a few common type and macro plus all the define used for
- * the I2C protocol exchange */
 
 /* -----------------------------------------------------------------------------
  * PROTOCOL DEFINES

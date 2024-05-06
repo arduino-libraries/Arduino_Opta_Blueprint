@@ -10,9 +10,8 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-#include "DigitalMechExpansion.h"
-#include "Controller.h"
 #ifdef ARDUINO_OPTA
+#include "DigitalMechExpansion.h"
 namespace Opta {
 DigitalMechExpansion::DigitalMechExpansion() {}
 

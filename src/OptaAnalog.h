@@ -15,8 +15,8 @@
 #define OPTA_ANALOG_BLUE_MODULE
 
 #if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNO_TESTALOG_SHIELD
+#include "AnalogCommonCfg.h"
 #include "Arduino.h"
-#include "CommonCfg.h"
 #include "EEPROM.h"
 #include "MsgCommon.h"
 #include "OptaAnalogTypes.h"

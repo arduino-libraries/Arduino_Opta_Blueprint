@@ -13,9 +13,9 @@
 
 #ifndef ANALOGEXPANSION
 #define ANALOGEXPANSION
+#include "AnalogCommonCfg.h"
 #include "AnalogExpansionAddress.h"
 #include "AnalogExpansionCfg.h"
-#include "CommonCfg.h"
 #include "Expansion.h"
 #include <cstdint>
 #include <stdint.h>

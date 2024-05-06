@@ -11,9 +11,8 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
-#include "DigitalStSolidExpansion.h"
-#include "Controller.h"
 #ifdef ARDUINO_OPTA
+#include "DigitalStSolidExpansion.h"
 namespace Opta {
 DigitalStSolidExpansion::DigitalStSolidExpansion() {}
 

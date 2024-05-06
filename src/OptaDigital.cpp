@@ -16,8 +16,6 @@
 #if defined ARDUINO_OPTA_DIGITAL
 #include "OptaDigital.h"
 
-// #ifdef ARDUINO_OPTA_DIGITAL
-
 volatile bool OptaDigital::conversion_performed = false;
 
 /* -------------------------------------------------------------------------- */

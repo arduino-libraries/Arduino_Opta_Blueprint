@@ -11,15 +11,8 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
-#include "DigitalExpansion.h"
-#include "Controller.h"
-#include "ControllerCfg.h"
-#include "DigitalExpansionsAddresses.h"
-#include "Expansion.h"
-#include "ExpansionOperations.h"
-#include "Protocol.h"
-#include <stdint.h>
 #ifdef ARDUINO_OPTA
+#include "DigitalExpansion.h"
 namespace Opta {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */

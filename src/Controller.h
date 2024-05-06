@@ -14,17 +14,19 @@
 #ifndef OPTA_BLUE_CONTROLLER
 #define OPTA_BLUE_CONTROLLER
 #include "Arduino.h"
-#include "CommonCfg.h"
 #include "ControllerCfg.h"
-#include "DigitalExpansion.h"
-#include "OptaBlue.h"
-
+#include "DigitalCommonCfg.h"
 #include "Expansion.h"
 #include "MsgCommon.h"
+#include "OptaBluePrintCfg.h"
+#include "OptaCrc.h"
 #include "Protocol.h"
+#include "Wire.h"
 #include "sys/_stdint.h"
-#include <cstdint>
 
+#include <vector>
+
+#include <cstdint>
 #include <cstring>
 #define SEND_RESULT_OK 0
 #define SEND_RESULT_WRONG_EXPANSION_INDEX 1
@@ -32,26 +34,13 @@
 #define SEND_RESULT_NO_DATA_TO_TRANSMIT 3
 #define SEND_RESULT_COMM_TIMEOUT 4
 
-/* since this library can be used both for OPTA and OPTA DIGITAL then the code
-   for controller (which is used only for OPTA) use this define to avoid
-   compilig when OPTA DIGITAL is used*/
-
-#include "Expansion.h"
-#include "OptaCrc.h"
-
-#include "Wire.h"
-#include "sys/_stdint.h"
-#include <cstdint>
-#include <sys/types.h>
-#include <vector>
+using namespace Opta;
 
 class Controller;
 
 using CommErr_f = void (*)(int device, int code);
 
 using reset_exp_f = void (*)(Controller *ptr);
-
-using namespace Opta;
 
 class ResetCb {
 public:
@@ -117,15 +106,7 @@ public:
   void setExpStartUpCb(reset_exp_f f);
   void setFailedCommCb(CommErr_f f);
 
-  void updateRegs(Expansion &exp) {
-    if (exp.getIndex() < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-      if (expansions[exp.getIndex()] != nullptr &&
-          exp.getI2CAddress() == exp_add[exp.getIndex()] &&
-          exp.getType() == exp_type[exp.getIndex()]) {
-        expansions[exp.getIndex()]->updateRegs(exp);
-      }
-    }
-  }
+  void updateRegs(Expansion &exp);
 
   /* ----------------------------------------------------------------------- */
   /* DEPRECATED functions: available for DIGITAL expansions                  */
@@ -141,13 +122,7 @@ public:
   void updateAnalogsIn(uint8_t device);
   void updateAnalogs(uint8_t device);
   void beginOdDefaults(uint8_t device, bool d[OPTA_DIGITAL_OUT_NUM],
-                       uint16_t timeout) {
-    DigitalExpansion::setDefault(*this, device,
-                                 DigitalExpansion::calcDefault(d[0], d[1], d[2],
-                                                               d[3], d[4], d[5],
-                                                               d[6], d[7]),
-                                 timeout);
-  }
+                       uint16_t timeout);
 
   /* set at most 32 byte into ROM storage */
   void setProductionData(uint8_t device, uint8_t *data, uint8_t dlen);

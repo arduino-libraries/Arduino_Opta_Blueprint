@@ -168,41 +168,56 @@ that define a Wire object on the right pins and the pin_arduino.h of the
 core/variant contains two `#define` statements that correctly define DETECT_IN
 and DETECT_OUT as the correct integer microcontroller PIN).
 
-## CommonCfg.h
+## OptaNewExpansionCfg.h
 
-Add new expansion type to ExpansionType_t
+This is an optional configuration file that contains all the configuration
+`#define` used to configure the FW.
+If the file is present it must be included only in OptaNewExpansion.h file: this
+means that this file will contain information relevant only to the FW level and
+won't be "export" any information useful at the _application_ level (i.e. on the
+Opta Controller side).
 
-## Controller.cpp
+## Sharing information between FW and the controller
 
-Add new expansion type to getExpansionPtr()
+It might be good to have a place to put configurations or type definition that
+are used both by FW and the Opta Controller application.
+We suggest to call this file NewExpansionCommonCfg.h (always remember to use the
+proper name of your expansion instead of 'NewExpansion' used here for simplicity).
 
-## OptaBlue.h
+This file will be included both in the OptaNewExpansion.h file (and this will
+inform the FW) and in the NewExpansionExpansion.h (that name is ugly but it
+simply means that the expansion class to be provided to the application /
+controller level is <Something>Expansion and since we decided to use
+'NewExpansion' as the name of our made up new expansion the name of the file
+will NewExpansionExpansion.h)
 
-Add new Expansion file include
+So, at this point we can further populate our New Expansion library with the
+files to be used at the controller/application level.
 
-## OptaDevicesCfg.h
+```
+/rood_folder_of_new_expansion_library
+|-firmware/NewExpansion/NewExpansion.ino
+|-src/
+      |-OptaNewExpansion.h
+      |-OptaNewExpansion.cpp
+      |-OptaNewExpansionCfg.h (optional)
+      |-NewExpansionCommonCfg.h (common share configuration between FW and application)
+      |-NewExpansionExpansion.h (header file for the expansion class at application level)
+      |-NewExpansionExpansion.cpp (implementation file for the expansion at the application level)
 
-Add new Expansion Configuration file
+```
 
-## add new expansion FW
+Just for completeness the following expresses the "allocation" of the files to
+FW or application.
 
-OptaUnoR4Display.h
-OptaUnoR4Display.cpp
-OptaUnoR4DisplayCfg.h
-
-- sketch in firmware folder
-
-## add new Expansion subclass
-
-R4DisplayExpansion.cpp
-R4DisplayExpansion.h
-R4DisplayAddress.h
-
-## add file with definition common between FW and application
-
-- CommonOptaUnoR4Display.h
-
-## add opta uno r4 display in OptaDeviceInclude
-
-This is necessary to have the possibility
-to "segregate" the FW into a subfolder
+```
+/rood_folder_of_new_expansion_library
+|-firmware/NewExpansion/NewExpansion.ino
+|-src/
+|-OptaNewExpansion.h     (FW header class)
+|-OptaNewExpansion.cpp   (FW implementation class)
+|-OptaNewExpansionCfg.h  (FW configuration, optional)
+|-NewExpansionCommonCfg.h (FW / APP shared configuration and types)
+|-NewExpansionExpansion.h (APP header class)
+|-NewExpansionExpansion.cpp (APP implementation class)
+```
