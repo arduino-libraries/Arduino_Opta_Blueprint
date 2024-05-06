@@ -31,4 +31,5 @@
 #define FLASH_OD_TYPE_MECHANICAL 0
 #define FLASH_OD_TYPE_STATE_SOLID 1
 
+static const char product_description[] = "ARDUINO OPTA DIGITAL";
 #endif

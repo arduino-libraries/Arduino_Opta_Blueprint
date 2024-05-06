@@ -44,7 +44,7 @@ public:
   uint8_t getMajorFw();
   uint8_t getMinorFw();
   uint8_t getReleaseFw();
-  std::vector<uint8_t> getProduct();
+  std::string getProduct();
   void goInBootloaderMode();
   void readFromFlash(uint16_t add, uint8_t *buffer, uint8_t dim);
   void writeInFlash(uint16_t add, uint8_t *buffer, uint8_t dim);

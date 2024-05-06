@@ -23,8 +23,7 @@
 #include "Protocol.h"
 #include "Wire.h"
 #include <stdint.h>
-#include <vector>
-
+#include <string>
 // #define DEBUG_SERIAL
 // #define DEBUG_RX_MODULE_ENABLE
 /* when DETECT IN goes low it wait OPTA_CONTROLLER_DEBOUNCE_TIME *
@@ -54,7 +53,7 @@ public:
   virtual uint8_t getMajorFw() = 0;
   virtual uint8_t getMinorFw() = 0;
   virtual uint8_t getReleaseFw() = 0;
-  virtual std::vector<uint8_t> getProduct() = 0;
+  virtual std::string getProduct() = 0;
   virtual void goInBootloaderMode() = 0;
   virtual void readFromFlash(uint16_t add, uint8_t *buffer, uint8_t dim) = 0;
   virtual void writeInFlash(uint16_t add, uint8_t *buffer, uint8_t dim) = 0;

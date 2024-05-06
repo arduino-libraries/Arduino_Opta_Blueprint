@@ -2402,13 +2402,9 @@ uint8_t OptaAnalog::getMajorFw() { return FW_VERSION_MAJOR; }
 uint8_t OptaAnalog::getMinorFw() { return FW_VERSION_MINOR; }
 uint8_t OptaAnalog::getReleaseFw() { return FW_VERSION_RELEASE; }
 
-static const uint8_t product_description[] = {'O', 'P', 'T', 'A', ' ', 'A',
-                                              'N', 'A', 'L', 'O', 'G'};
-
-std::vector<uint8_t> OptaAnalog::getProduct() {
-  std::vector<uint8_t> rv;
-  rv.insert(rv.end(), product_description,
-            product_description + sizeof(product_description));
+std::string OptaAnalog::getProduct() {
+  std::string rv(product_description);
+  return rv;
 }
 
 void OptaAnalog::goInBootloaderMode() { goBootloader(); }
