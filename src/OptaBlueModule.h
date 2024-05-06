@@ -17,9 +17,9 @@
 #ifndef ARDUINO_OPTA
 
 #include "Arduino.h"
-#include "MsgCommon.h"
 #include "OptaBluePrintCfg.h"
 #include "OptaCrc.h"
+#include "OptaMsgCommon.h"
 #include "Protocol.h"
 #include "Wire.h"
 #include <stdint.h>

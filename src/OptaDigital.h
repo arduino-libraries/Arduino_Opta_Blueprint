@@ -17,9 +17,9 @@
 #include "DigitalCommonCfg.h"
 #include "EEPROM.h"
 #include "FspTimer.h"
-#include "MsgCommon.h"
 #include "OptaBlueModule.h"
 #include "OptaDigitalCfg.h"
+#include "OptaMsgCommon.h"
 #include "analog.h"
 #include "boot.h"
 #include <map>

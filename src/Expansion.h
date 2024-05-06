@@ -17,8 +17,8 @@
 #include "Arduino.h"
 #include "ControllerCfg.h"
 #include "ExpansionOperations.h"
-#include "MsgCommon.h"
 #include "OptaBluePrintCfg.h"
+#include "OptaMsgCommon.h"
 #include "Protocol.h"
 #include <cstdint>
 #include <map>

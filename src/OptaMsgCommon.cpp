@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* FILE NAME:   MsgCommon.cpp
+/* FILE NAME:   OptaMsgCommon.cpp
    AUTHOR:      Daniele Aimo
    EMAIL:       d.aimo@arduino.cc
    DATE:        20240124
@@ -11,7 +11,7 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-#include "MsgCommon.h"
+#include "OptaMsgCommon.h"
 #include "Arduino.h"
 #include "OptaCrc.h"
 #include "Protocol.h"

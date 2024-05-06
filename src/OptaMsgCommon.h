@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* FILE NAME:   MsgCommon.h
+/* FILE NAME:   OptaMsgCommon.h
    AUTHOR:      Daniele Aimo
    EMAIL:       d.aimo@arduino.cc
    DATE:        20240124
