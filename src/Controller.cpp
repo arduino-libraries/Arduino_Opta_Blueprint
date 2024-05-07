@@ -12,8 +12,11 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
+#include "OptaBlue.h"
 #include "OptaBluePrintCfg.h"
 #include "Protocol.h"
+#include <cstdint>
+#include <stdint.h>
 #ifdef ARDUINO_OPTA
 #include "AnalogExpansion.h"
 #include "Controller.h"
@@ -50,28 +53,28 @@ void Controller::init_exp_type_list() {
   exp_type_list.clear();
   ExpType et;
 
-  et.setType((unsigned int)EXPANSION_NOT_VALID);
+  et.setType((uint8_t)EXPANSION_NOT_VALID);
   et.setMake(DigitalExpansion::makeExpansion);
   et.setProduct(DigitalExpansion::getProduct());
   et.setStart(DigitalExpansion::startUp);
 
   exp_type_list.push_back(et);
 
-  et.setType((unsigned int)EXPANSION_OPTA_DIGITAL_MEC);
+  et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_MEC);
   et.setMake(DigitalMechExpansion::makeExpansion);
   et.setProduct(DigitalMechExpansion::getProduct());
   et.setStart(DigitalExpansion::startUp);
 
   exp_type_list.push_back(et);
 
-  et.setType((unsigned int)EXPANSION_OPTA_DIGITAL_STS);
+  et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_STS);
   et.setMake(DigitalStSolidExpansion::makeExpansion);
   et.setProduct(DigitalStSolidExpansion::getProduct());
   et.setStart(DigitalExpansion::startUp);
 
   exp_type_list.push_back(et);
 
-  et.setType((unsigned int)EXPANSION_OPTA_ANALOG);
+  et.setType((uint8_t)EXPANSION_OPTA_ANALOG);
   et.setMake(AnalogExpansion::makeExpansion);
   et.setProduct(AnalogExpansion::getProduct());
   et.setStart(AnalogExpansion::startUp);
@@ -141,8 +144,7 @@ void Controller::beginOdDefaults(uint8_t device, bool d[OPTA_DIGITAL_OUT_NUM],
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-uint8_t Controller::send(int add, int device, ExpansionType_t type, int n,
-                         int r) {
+uint8_t Controller::send(int add, int device, unsigned int type, int n, int r) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     if (type == exp_type[device] && add == exp_add[device]) {
       if (n > 0) {
@@ -232,7 +234,7 @@ Expansion &Controller::getExpansion(int device) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-ExpansionType_t Controller::getExpansionType(uint8_t i) {
+uint8_t Controller::getExpansionType(uint8_t i) {
   if (i < num_of_exp) {
     return exp_type[i];
   }
@@ -688,7 +690,10 @@ void Controller::checkForExpansions() {
         _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
         if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
                                    CTRL_ANS_MSG_GET_PRODUCT_LEN)) {
-          parse_get_product();
+          if (parse_get_product()) {
+            exp_type[i] = next_available_custom_type;
+            next_available_custom_type++;
+          }
         }
       }
     }
@@ -805,19 +810,16 @@ uint8_t Controller::msg_get_address_and_type() {
 void Controller::resetRxBuffer() { memset(rx_buffer, 0, OPTA_I2C_BUFFER_DIM); }
 
 bool Controller::parse_get_product() {
-  /* this function has a variable payload so it is not possible to use a
-   * "checkAnsGetReceived message */
   if (checkAnsGetReceived(rx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
                           GET_PRODUCT_TYPE_LEN)) {
-    std::string pr((const char *)(rx_buffer + ANS_ARG_GET_PRODUCT_SIZE_POS + 1),
-                   rx_buffer[ANS_ARG_GET_PRODUCT_SIZE_POS]);
+    std::string pr((const char *)(rx_buffer + ANS_GET_PRODUCT_SIZE_POS + 1),
+                   rx_buffer[ANS_GET_PRODUCT_SIZE_POS]);
 
     bool found = false;
     for (unsigned int i = 0; i < exp_type_list.size(); i++) {
       if (exp_type_list[i].isProduct(pr)) {
         found = true;
         exp_type_list[i].setType(next_available_custom_type);
-        next_available_custom_type++;
         break;
       }
     }
@@ -825,7 +827,6 @@ bool Controller::parse_get_product() {
       ExpType et;
 
       et.setType(next_available_custom_type);
-      next_available_custom_type++;
       et.setProduct(pr);
 
       exp_type_list.push_back(et);
@@ -885,8 +886,7 @@ bool Controller::parse_address_and_type(int slave_address) {
         tmp_address++;
 
         tmp_exp_add[tmp_num_of_exp] = slave_address;
-        tmp_exp_type[tmp_num_of_exp] =
-            (ExpansionType_t)rx_buffer[BP_PAYLOAD_START_POS + 1];
+        tmp_exp_type[tmp_num_of_exp] = rx_buffer[BP_PAYLOAD_START_POS + 1];
 
 #if defined DEBUG_SERIAL && defined DEBUG_MSG_PARSE_ADDRESS_AND_TYPE
         Serial.print("        - Type of device attached: ");
@@ -905,8 +905,7 @@ bool Controller::parse_address_and_type(int slave_address) {
       } else if (slave_address == address) {
         if (num_of_exp < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
           exp_add[num_of_exp] = slave_address;
-          exp_type[num_of_exp] =
-              (ExpansionType_t)rx_buffer[BP_PAYLOAD_START_POS + 1];
+          exp_type[num_of_exp] = rx_buffer[BP_PAYLOAD_START_POS + 1];
           num_of_exp++;
         }
         DEC_WITH_MAX(tmp_num_of_exp, OPTA_CONTROLLER_MAX_EXPANSION_NUM);

@@ -51,7 +51,6 @@
 #define OPTA_CONTROLLER_DEBOUNCE_UP_NUMBER 50
 
 #define OPTA_BLUE_UNDEFINED_DEVICE_NUMBER 255
-#define OPTA_CONTROLLER_CUSTOM_MIN_TYPE 100
 /* -----------------------------------------------------------------------------
  * DEBUG CONFIGURATION DEFINES
  * -------------------------------------------------------------------------- */

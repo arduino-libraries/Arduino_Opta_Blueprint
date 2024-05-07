@@ -11,12 +11,13 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
+#include <stdint.h>
 #ifdef ARDUINO_OPTA
-#include "Expansion.h"
 #include "Controller.h"
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
+#include "Expansion.h"
 namespace Opta {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -39,7 +40,7 @@ Expansion::Expansion(Controller *ptr) {
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-Expansion::Expansion(uint8_t device, ExpansionType_t _type, uint8_t _i2c,
+Expansion::Expansion(uint8_t device, uint8_t _type, uint8_t _i2c,
                      Controller *ptr) {
   index = device;
   type = _type;

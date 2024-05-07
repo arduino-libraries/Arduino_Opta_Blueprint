@@ -10,6 +10,8 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
+#include "Protocol.h"
+#include <cstring>
 #ifndef ARDUINO_OPTA
 
 #include "OptaBlueModule.h"
@@ -163,14 +165,14 @@ void Module::reset() {
 Module::Module()
     : address(OPTA_MODULE_INVALID_ADDRESS), rx_num(0), reboot_required(false),
       reset_required(false), ans_buffer(nullptr),
-      expansion_type(EXPANSION_NOT_VALID), reboot_sent(0), detect_in(DETECT_IN),
-      detect_out(DETECT_OUT) {
+      expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
+      detect_in(DETECT_IN), detect_out(DETECT_OUT) {
   Module::expWire = &Wire;
 }
 
 Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
-    : address(OPTA_MODULE_INVALID_ADDRESS), rx_num(0), reboot_required(false),
-      reset_required(false), ans_buffer(nullptr),
+    : address(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), rx_num(0),
+      reboot_required(false), reset_required(false), ans_buffer(nullptr),
       expansion_type(EXPANSION_NOT_VALID), reboot_sent(0),
       detect_in(_detect_in), detect_out(_detect_out) {
   Module::expWire = tw;
@@ -262,6 +264,15 @@ bool Module::parse_get_address_and_type() {
 }
 
 /* ------------------------------------------------------------------------ */
+bool Module::parse_get_product() {
+  /* ---------------------------------------------------------------------- */
+  if (checkGetMsgReceived(rx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
+                          GET_PRODUCT_TYPE_LEN)) {
+    return true;
+  }
+  return false;
+}
+/* ------------------------------------------------------------------------ */
 bool Module::parse_reset_controller() {
   /* ---------------------------------------------------------------------- */
   if (checkSetMsgReceived(rx_buffer, ARG_CONTROLLER_RESET, LEN_CONTROLLER_RESET,
@@ -273,6 +284,16 @@ bool Module::parse_reset_controller() {
   return false;
 }
 
+int Module::prepare_ans_get_product() {
+  std::string pr(getProduct());
+  memset(tx_buffer, 0x0, OPTA_I2C_BUFFER_DIM);
+  tx_buffer[ANS_GET_PRODUCT_SIZE_POS] = pr.size();
+  for (int i = 0; i < pr.size() && i < 32; i++) {
+    tx_buffer[ANS_GET_PRODUCT_SIZE_POS + 1 + i] = pr[i];
+  }
+  return prepareGetAns(tx_buffer, ANS_ARG_GET_PRODUCT_TYPE,
+                       LEN_GET_PRODUCT_TYPE, LEN_ANS_GET_PRODUCT);
+}
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_version() {
   /* ---------------------------------------------------------------------- */
@@ -382,6 +403,10 @@ int Module::parse_rx() {
   /* FLASH READ */
   else if (parse_get_flash()) {
     int rv = prepare_ans_get_flash();
+    ans_buffer = tx_buffer;
+    return rv;
+  } else if (parse_get_product()) {
+    int rv = prepare_ans_get_product();
     ans_buffer = tx_buffer;
     return rv;
   }

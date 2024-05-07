@@ -19,4 +19,8 @@
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
+#include "OptaBluePrintCfg.h"
+
+typedef uint8_t ExpansionType_t;
+
 #endif

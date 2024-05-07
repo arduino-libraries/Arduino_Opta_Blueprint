@@ -45,20 +45,19 @@ class Expansion {
 public:
   Expansion();
   Expansion(Controller *ptr);
-  Expansion(uint8_t index, ExpansionType_t _type, uint8_t _i2c,
-            Controller *ptr);
+  Expansion(uint8_t index, uint8_t _type, uint8_t _i2c, Controller *ptr);
   virtual ~Expansion();
 
   virtual void begin();
 
-  ExpansionType_t getType() const { return type; }
+  uint8_t getType() const { return type; }
   uint8_t getI2CAddress() const { return i2c_address; }
   Controller *getCtrl() const { return ctrl; }
   uint8_t getIndex() const { return index; }
 
   void setIndex(uint8_t i) { index = i; }
   void setI2CAddress(uint8_t add) { i2c_address = add; }
-  void setType(ExpansionType_t t) { type = t; }
+  void setType(unsigned int t) { type = t; }
   void setCtrl(Controller *c) { ctrl = c; }
   virtual operator bool();
 
@@ -91,7 +90,7 @@ protected:
   std::map<unsigned int, unsigned int> iregs;
   std::map<unsigned int, float> fregs;
   uint8_t index;
-  ExpansionType_t type;
+  uint8_t type;
   uint8_t i2c_address;
   Controller *ctrl;
   void set_flash_data(uint8_t *buf, uint8_t dbuf, uint16_t add);

@@ -93,7 +93,8 @@ public:
   bool parse_reboot();
   bool parse_set_flash();
   bool parse_get_flash();
-
+  bool parse_get_product();
+  int prepare_ans_get_product();
   int prepare_ans_get_address_and_type();
   int prepare_ans_get_version();
   int prepare_ans_reboot();
@@ -109,7 +110,7 @@ protected:
   volatile bool reboot_required;
   volatile bool reset_required;
   uint8_t *ans_buffer;
-  ExpansionType_t expansion_type;
+  int expansion_type;
   unsigned long int reboot_sent;
   void updatePinStatus();
 

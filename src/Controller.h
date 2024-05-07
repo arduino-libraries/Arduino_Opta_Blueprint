@@ -111,7 +111,7 @@ public:
   /* return the number of expansion discovered */
   uint8_t getExpansionNum();
   /* return the type of expansion */
-  ExpansionType_t getExpansionType(uint8_t i);
+  uint8_t getExpansionType(uint8_t i);
   /* return the I2C address of the expansion */
   uint8_t getExpansionI2Caddress(uint8_t i);
   bool getFwVersion(uint8_t i, uint8_t &major, uint8_t &minor,
@@ -129,7 +129,7 @@ public:
   /* send the content of the I2C tx buffer
    * send n bytes from the tx_buffer
    * wait for r bytes as answer from the device */
-  uint8_t send(int add, int device, ExpansionType_t type, int n, int r);
+  uint8_t send(int add, int device, unsigned int type, int n, int r);
   uint8_t *getTxBuffer() { return tx_buffer; }
   uint8_t *getRxBuffer() { return rx_buffer; }
   void resetRxBuffer();
@@ -186,7 +186,7 @@ private:
   uint8_t tmp_exp_add[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
   /* used to store the type of expansion during the temporary address
    * assignment */
-  ExpansionType_t tmp_exp_type[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
+  uint8_t tmp_exp_type[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 
   /* used to assign permanent address at the end of assign address process */
   int8_t address;
@@ -195,7 +195,7 @@ private:
   /* expansion addresses */
   uint8_t exp_add[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
   /* expansion types */
-  ExpansionType_t exp_type[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
+  uint8_t exp_type[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
   /* expansions arrays */
   Expansion *expansions[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
   /* vector of expansions callbacks, one for each expansion type */
