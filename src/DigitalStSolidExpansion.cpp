@@ -22,7 +22,7 @@ Expansion *DigitalStSolidExpansion::makeExpansion() {
   return new DigitalStSolidExpansion();
 }
 
-std::string DigitalExpansion::getProduct() {
+std::string DigitalStSolidExpansion::getProduct() {
   std::string rv(OPTA_DIGITAL_STSOLID_DESCRIPTION);
   return rv;
 }

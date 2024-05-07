@@ -61,17 +61,24 @@ class ExpType {
 
 private:
   makeExpansion_f make;
-  startUp_f start;
-  unsigned int type;
+  int type;
   std::string product;
 
 public:
-  ExpType() : make(nullptr), type(0xFFFFFFFF), start(nullptr) {}
-  void setType(unsigned int t) { type = t; }
+  startUp_f startUp;
+  ExpType() : make(nullptr), type(-1), startUp(nullptr) {}
+  void setType(int t) { type = t; }
+  Expansion *allocateExpansion() {
+    if (make != nullptr) {
+      return make();
+    }
+    return nullptr;
+  }
+  int getType() { return type; }
   void setMake(makeExpansion_f f) { make = f; }
   void setProduct(std::string s) { product = s; }
   bool isProduct(std::string s) { return (product == s); }
-  void setStart(startUp_f f) { start = f; }
+  void setStart(startUp_f f) { startUp = f; }
 };
 // namespace Opta {
 
@@ -80,8 +87,15 @@ public:
   Controller();
   ~Controller();
 
-  bool registerCustomExpansion(std::string &pr, makeExpansion_f f,
-                               startUp_f su);
+  /* this function will allow to register a new expansion TYPE to the controller
+   * -1 is returned in case the controller has not any expansion of that type
+   *    currently attached
+   *  a positive integer corresponding to a unique "enumerative" type is
+   *  returned in case an expansion of that type is currently attached to the
+   *  controller
+   *  This positive integer can be retrieved using getType() Expansion function
+   */
+  int registerCustomExpansion(std::string &pr, makeExpansion_f f, startUp_f su);
 
   /* ----------------------------------------------------------- */
 

@@ -76,9 +76,29 @@ Controller::Controller()
 
   next_available_custom_type = EXPANSION_CUSTOM + 20;
 }
-bool Controller::registerCustomExpansion(std::string &pr, makeExpansion_f f,
-                                         startUp_f su) {
-  return false;
+int Controller::registerCustomExpansion(std::string &pr, makeExpansion_f f,
+                                        startUp_f su) {
+
+  int rv = -1;
+  bool found = false;
+  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
+    if (exp_type_list[0].isProduct(pr)) {
+      exp_type_list[0].setMake(f);
+      exp_type_list[0].setStart(su);
+      found = true;
+      rv = exp_type_list[0].getType();
+      break;
+    }
+  }
+  if (!found) {
+    ExpType et;
+
+    et.setMake(DigitalExpansion::makeExpansion);
+    et.setProduct(DigitalExpansion::getProduct());
+    et.setStart(DigitalExpansion::startUp);
+    exp_type_list.push_back(et);
+  }
+  return rv;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -174,25 +194,11 @@ Expansion *Controller::getExpansionPtr(int device) {
     if (expansions[device] != nullptr) {
       return expansions[device];
     } else {
-      // for (int i = 0; i <)
-      switch (exp_type[device]) {
-      case EXPANSION_OPTA_DIGITAL_MEC:
-        expansions[device] = new DigitalMechExpansion();
-        setExpStartUpCb(DigitalExpansion::startUp);
-        break;
-      case EXPANSION_OPTA_DIGITAL_STS:
-        expansions[device] = new DigitalStSolidExpansion();
-        setExpStartUpCb(DigitalExpansion::startUp);
-        break;
-      case EXPANSION_OPTA_ANALOG:
-        expansions[device] = new AnalogExpansion();
-        setExpStartUpCb(AnalogExpansion::startUp);
-        break;
-
-      case EXPANSION_DIGITAL_INVALID:
-        expansions[device] = new DigitalExpansion();
-        setExpStartUpCb(DigitalExpansion::startUp);
-        break;
+      for (unsigned int i = 0; i < exp_type_list.size(); i++) {
+        if (exp_type[device] == exp_type_list[i].getType()) {
+          expansions[device] = exp_type_list[i].allocateExpansion();
+          setExpStartUpCb(exp_type_list[i].startUp);
+        }
       }
       if (expansions[device] != nullptr) {
         expansions[device]->setIndex(device);
