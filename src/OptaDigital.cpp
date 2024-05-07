@@ -567,7 +567,7 @@ uint8_t OptaDigital::getMinorFw() { return FW_VERSION_MINOR; }
 uint8_t OptaDigital::getReleaseFw() { return FW_VERSION_RELEASE; }
 
 std::string OptaDigital::getProduct() {
-  if (expansion_type == OPTA_DIGITAL_INVALID) {
+  if (expansion_type == EXPANSION_DIGITAL_INVALID) {
     std::string rv(OPTA_DIGITAL_DESCRIPTION);
     return rv;
   } else if (expansion_type == EXPANSION_OPTA_DIGITAL_MEC) {
@@ -577,7 +577,7 @@ std::string OptaDigital::getProduct() {
     std::string rv(OPTA_DIGITAL_STSOLID_DESCRIPTION);
     return rv;
   }
-  return string("invalid");
+  return std::string("invalid");
 }
 void OptaDigital::goInBootloaderMode() { goBootloader(); }
 
