@@ -116,7 +116,7 @@ public:
   uint8_t getExpansionI2Caddress(uint8_t i);
   bool getFwVersion(uint8_t i, uint8_t &major, uint8_t &minor,
                     uint8_t &release);
-
+  int getExpansionType(std::string pr);
   /* ----------------------------------------------------------- */
 
   /* Get the i-th expansion by copy */

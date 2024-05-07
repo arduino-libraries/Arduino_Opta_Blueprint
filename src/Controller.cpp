@@ -83,6 +83,17 @@ void Controller::init_exp_type_list() {
   next_available_custom_type = EXPANSION_CUSTOM + 20;
 }
 
+int Controller::getExpansionType(std::string pr) {
+  int rv = -1;
+  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
+    if (exp_type_list[i].isProduct(pr)) {
+      rv = exp_type_list[i].getType();
+      break;
+    }
+  }
+  return rv;
+}
+
 int Controller::registerCustomExpansion(std::string &pr, makeExpansion_f f,
                                         startUp_f su) {
 
