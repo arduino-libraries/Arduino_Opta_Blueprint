@@ -86,15 +86,15 @@ must implement these functions:
 
 - `virtual uint8_t getReleaseFw();` must return the Release FW version
 
-- `virtual std::vector<uint8_t> getProduct();` must return a vector of bytes
+- `virtual std::string getProduct();` must return a string
   containing a description of the new expansion. This description will be used to
-  identify in a univocal way the **_type_** of expansion. It must never happen
+  identify in a unique way the **_type_** of expansion. It must never happen
   that 2 different kind of expansions have the same description. The number of
   byte used is 32 (if the vector has more than 32 bytes, then only the first 32
   are actually used). Product description must be chosen carefully in order to
   avoid the fact that different producers use the same description, so a
   combination of the producer plus a unique identifier for the product should be
-  enough. For example Opta Digital uses "Arduino Opta Digital" as product
+  enough. For example Opta Analog uses "Arduino Opta Analog" as product
   description (and only uses 21 byte).
 
 - `virtual void goInBootloaderMode()` this function must implement a procedure to
@@ -221,3 +221,188 @@ FW or application.
 |-NewExpansionExpansion.h (APP header class)
 |-NewExpansionExpansion.cpp (APP implementation class)
 ```
+
+## The NewExpansion _application_ class
+
+Class `NewExpansionExpansion` must be derived from Expansion class.
+
+It is important to understand that Expansion class implements a very simple
+model valid for (hopefully) every expansion type.
+From the Expansion class perspective each expansion is just a bunch of
+"registers" (there are 2 kind of registers, integer `iregs` and floating point
+`fregs`).
+Those registers are implemented using `maps` so that you can dynamically add or
+remove registers on the fly.
+Each register is identified by an address that the user can define.
+For example have a look to DigitalExpansionAddress.h: the status of an output is
+represented by a register
+
+- ADD_DIGITAL_0_OUTPUT represents the address of the register containing the
+  status of the digital output 0,
+- ADD_DIGITAL_1_OUTPUT represents the address of the register containing the
+  status of the digital output 1
+  ...and so on.
+  When you want to set the digital output 0 of the expansion to an high level you
+  set 1 into the register at the address ADD_DIGITAL_0_OUTPUT and you send this to
+  the expansion.
+
+The Expansion class essentially provides 3 methods:
+
+- read() to read a register
+- write() to write a register
+- execute() to execute an operation (such sending the new output status to the
+  expansion to switch on an output).
+
+Every operation performed on an expansion is implemented using these three basic
+functions.
+
+To set up a programmable function channel for example:
+
+1. you write a bunch of register holding the configuration of the channel
+2. you execute a _configure_ (BEGIN_CHANNEL_AS_ADC), this will use the content
+   of the proper register to send a message to expansion (via the Controller
+   class)
+
+In the same way you can get information from the expansion:
+
+1. write register holding information about what you want to get
+2. execute a _get_ operation (GET_SINGLE_ANALOG_OUTPUT)
+3. read the registers that are filled by the execute function with the
+   information you wanted to get from the expansion
+
+This is generic abstraction that should work on every possible expansion.
+
+Of course, read(), write() and execute() are virtual function so that you can
+customize them for the needs of your expansion.
+
+For example to spare memory and be more efficient the DigitalExpansion class
+override the standard Expansion::write() function. When you write a digital
+output register such ADD_DIGITAL_0_OUTPUT (for example) the overridden function
+will set a bit in the register at the address ADD_DIGITAL_OUTPUT.
+So that the the register at the address ADD_DIGITAL_0_OUTPUT is not really
+allocated and does not take space in memory, moreover the register at the
+address ADD_DIGITAL_OUTPUT (that maps all the outputs as a bit field integer) is
+immediately ready to be transferred to the expansion to update the output during
+an execute.
+
+### About the execute() function
+
+The execute() function has always the same structure (and we strongly suggest
+the same structure on each derived class): it takes an integer as parameter that
+identify the operation to be performed (set an output / read an input /
+configure a channel and so). Depending on the action to be executed the execute()
+function always perform a I2C transaction to communicate with the expansion.
+To this purpose an Expansion::i2c_transaction() is called.
+
+This function (i2c_transaction) is conceived to be generic and takes 3
+parameters:
+
+- a pointer to a function preparing the message to be sent on I2C bus (this
+  function returns the number of bytes to be transmitted)
+- a pointer to a function able to parse the answer received by the controller
+- the number of bytes expected in the answer
+
+So suppose the we want to write an Arduino like `digitalWrite()` function for
+an expansion, these are the operation required:
+
+1. the digitaWrite() function sets the registers holding the information about
+   the output status
+2. execute the operation SET_DIGITAL_OUTPUT
+3. the execute() function "triggers" an I2C transaction using i2c_transaction
+   function
+4. this function use the "prepare" function pointer to understand how to set up
+   the transmission buffer (this typically will write the information held in
+   the registers into the transmission buffer)
+5. send the transmission buffer using the Controlled function send()
+6. wait for the controller to return an answer
+7. parse the received answer using the pointer to the "parsing" function (this
+   will write perhaps some other registers that can be then read to return some
+   information, although this is not the case of digitalWrite())
+
+The i2c_function already takes cares of timeouts and will call the failed
+communication callback if set.
+
+However the i2c_function is written in a way that the pointer to function expected as
+parameters can be methods of the class (this done in order to the ensure that
+the class "owns" its methods to prepare an I2C message and parse an I2C answer).
+
+This means that every derived class should implement its own version of the
+i2c_transaction function changing only the pointer function declaration
+parameters.
+
+Have a look at the DigitalExpansion::i2c_transaction function, the body is
+exactly the same than Expansion::i2c_transaction function, just the function
+pointer declaration are different.
+
+IMPORTANT:
+Every class derived from Expansion should implement its own i2c_transaction as a
+simple copy from the Expansion::i2c_transaction function and changing the
+definition of the pointer so that they points to NewExpansion class methods.
+
+This copy is a little price to have all I2C function "packed" inside the
+expansion class.
+
+### Mandatory functions to be implemented in NewExpansionExpansion class
+
+In addition to the copy of i2c_transaction function, the following function
+must be always implemented in the NewExpansionExpansion class:
+
+- a copy constructor in the form
+  `NewExpansionExpansion::NewExpansionExpansion(Expansion &other)`
+  This copy constructor is crucial. Simply copy an existing one and just change
+  the types.
+  If you look at the different copy constructors already implemented they all do
+  the same operation. They copy all the information from the object held by the
+  controller into your object (also the registers), but only if the object held by
+  the controller is of the same type (otherwise invalid expansion information are
+  returned). This is important: you don't need to worry about allocating or
+  deallocating object (this is managed by the controller), you always get a copy
+  of your expansion that will be automatically destroyed when it goes out of
+  scope.
+
+- a static `makeExpansion()` method that returns an `Expansion *` pointer and that
+  actually allocates an object of the NewExpansionExpansion class via `new` C++
+  operator. This function will be used by the Controller to perform the
+  allocation of the object in the correct way (this way the controller is
+  agnostic of the expansions but can still make them).
+  This function should not be called directly by an application, since it is
+  intended that the Controller makes and deletes the objects.
+  Besides the use of this function to allocate an object would be completely
+  meaningless because it will lack of the necessary information that only the
+  Controller can fill in.
+
+- a static `getProduct()` method that return the string identifying the type of
+  the expansion. This function MUST return the exact same string returned by the
+  getProduct() function defined at the FW level. If you look at the
+  implementation of these two functions in the already implemented class you'll
+  see that they return the same string (which is a shared configuration
+  parameter contained in the <Expansion>CommonCfg.h header file)
+
+- a static (OPTIONAL) `startUp(Controller *)` method that will perform the
+  initialization of your expansions (of all the expansion of the same type).
+  The purpose of this function is very important however hard to explain.
+  Suppose that you have an expansion with some programmable output function (Opta Analog
+  is a good example, because each channel can be RTD, ADC, DAC). The controller
+  application will probably set up all the desired channel function once in the
+  setup() function (the usual Arduino initialization function). So the
+  controller will execute the setup() function just once at the beginning
+  (suppose setting channel 0 as DAC and channel 1 as ADC and so on).
+  After that the Controller just uses the expansion and has no need to configure
+  the channels of the expansion anymore. Now suppose that you have to power down
+  you expansion, but you don't want to reset also the controller (maybe because
+  the controller is controlling other expansions you don't want to shut down).
+  After you perform the operation on shut down expansion you power it up again.
+  The Controller sees the "new" expansion, performs a new expansion discovery
+  process and assign address and all work seamless, but... Well the expansion you
+  shut down lost its configuration, but the Controller did not perform again an
+  initial setup() function because it was not reset, so the configuration is
+  lost. The expansion, in this case, is not more usable until you reset the
+  controller and the setup() function is performed again.
+  The purpose of the static `startUp(Controller *)` function is to avoid cases like that:
+  this function must provide a way to reinitialize all the possible expansions
+  of that type to the desired configuration. This can be a complex task, in the
+  Analog expansion a specific class to hold configuration information for each
+  possible Analog expansion is implemented in AnalogExpansionCfg.h file.
+  This function will be passed to the controller so that controller can
+  re-initialize the expansions every time a discovery expansion process is
+  finished.
