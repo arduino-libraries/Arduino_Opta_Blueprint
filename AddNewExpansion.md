@@ -222,7 +222,7 @@ FW or application.
 |-NewExpansionExpansion.cpp (APP implementation class)
 ```
 
-## The NewExpansion _application_ class
+## The NewExpansion application class
 
 Class `NewExpansionExpansion` must be derived from Expansion class.
 
@@ -260,8 +260,8 @@ To set up a programmable function channel for example:
 
 1. you write a bunch of register holding the configuration of the channel
 2. you execute a _configure_ (BEGIN_CHANNEL_AS_ADC), this will use the content
-   of the proper register to send a message to expansion (via the Controller
-   class)
+   of the proper registers to send a message to expansion (via the Controller
+   class) that will inform the expansion about the desired configuration
 
 In the same way you can get information from the expansion:
 
@@ -270,7 +270,7 @@ In the same way you can get information from the expansion:
 3. read the registers that are filled by the execute function with the
    information you wanted to get from the expansion
 
-This is generic abstraction that should work on every possible expansion.
+This generic abstraction should work on every possible expansion.
 
 Of course, read(), write() and execute() are virtual function so that you can
 customize them for the needs of your expansion.
@@ -279,7 +279,7 @@ For example to spare memory and be more efficient the DigitalExpansion class
 override the standard Expansion::write() function. When you write a digital
 output register such ADD_DIGITAL_0_OUTPUT (for example) the overridden function
 will set a bit in the register at the address ADD_DIGITAL_OUTPUT.
-So that the the register at the address ADD_DIGITAL_0_OUTPUT is not really
+So that the register at the address ADD_DIGITAL_0_OUTPUT is not really
 allocated and does not take space in memory, moreover the register at the
 address ADD_DIGITAL_OUTPUT (that maps all the outputs as a bit field integer) is
 immediately ready to be transferred to the expansion to update the output during
@@ -339,8 +339,25 @@ Every class derived from Expansion should implement its own i2c_transaction as a
 simple copy from the Expansion::i2c_transaction function and changing the
 definition of the pointer so that they points to NewExpansion class methods.
 
-This copy is a little price to have all I2C function "packed" inside the
-expansion class.
+This copy is a little price to have all I2C message functions "packed" inside the
+expansion class that actually deals with those messages.
+
+IMPORTANT:
+There is another important point to be remembered when overriding the execute()
+function (and this, of course is something every expansion must do in order to
+introduce specific operations): at the end of each **execute** function remember
+to call `ctrl->updateRegs(*this);`.
+Why this? Well this library works using copies of expansion objects: you ask the
+controller to give you an expansion using OptaController.getExpansion() and the
+controller will return a copy of the proper expansion object that is held inside
+the controller. This is safe because you don't allocate anything and your copy
+will be destroyed as soon it goes out of scope, however when you work on the
+expansion, you are working **on a copy**. This means that the content of the
+registers of the expansion held by the Controller are no more aligned with the
+ones of your copy.
+Calling `ctrl->updateRegs(*this);` will copy back the content of yours registers
+to the expansion object held by the controller, so that if you get another
+(perhaps in a different function) you don't lose any changes you made elsewhere.
 
 ### Mandatory functions to be implemented in NewExpansionExpansion class
 
@@ -406,3 +423,54 @@ must be always implemented in the NewExpansionExpansion class:
   This function will be passed to the controller so that controller can
   re-initialize the expansions every time a discovery expansion process is
   finished.
+
+Then the new expansion class can define whatever custom additional function: the
+important point here is to remain to read / write / execute paradigm.
+
+## Controller additional initialization function for Custom expansion
+
+If you have followed the previous indications, you should have a FW and an
+application expansion class.
+Typically for "Arduino" expansion the processes to write sketches for Opta
+Controller that uses Arduino expansion (for example Opta Digital and Opta Analog)
+is quite straightforward:
+
+1. call `OptaController.begin()` during `setup()`: this will properly initialize
+   the controller
+2. if needed proper initialize the expansions you want to use with the right
+   configuration (this can be performed in various way, please have look at the
+   example provided with this library for more details)
+3. wherever you need ask the controller to give you a copy of an expansion using
+   OptaController.getExpansion(index_of_expansion)
+4. check for the validity of expansion using the bool() operator: the expansion
+   will be valid only if the type of expansion you requested is actually the
+   same than the "hardware" level
+5. Use the expansion (set output, get input and so on)
+6. as soon as you expansion copy will go out of scope it will be automatically
+   deleted because is a copy and is not allocated on the heap (so no worries for
+   memory management, the controller will destroy the expansion object it holds when
+   needed)
+
+This should be quite simple (have a look at the provided example), however there
+is a missing point for custom expansion: the controller is not aware of the fact
+that additional custom expansion exist.ù
+How to deal with that?
+
+VERY IMPORTANT
+When writing a sketch (an example) for a custom expansion (i.e. an expansion
+which is not a direct Arduino product) you must **register** the new expansion
+to the Controller using `OptaController.registerCustomExpansion()` just after
+the `OptaController.begin()` function.
+The `OptaController.registerCustomExpansion()` parameters are the function you
+added to your NewExpansionExpansion class: see previous paragraph.
+
+So typically you must perform a call like:
+
+```
+OptaController.registerCustomExpansion(NewExpansion::getProduct(),
+NewExpansion::makeExpansion, NewExpansion::startUp);
+```
+
+Please note that I am assuming that your custom expansion is called
+`NewExpansion` but this is of course a generic name that has to be converted in
+the actual expansion name.
