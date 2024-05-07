@@ -38,6 +38,10 @@
 
 #define OPTA_CONTROLLER_DELAY_AFTER_REBOOT 600
 
+/* this is the time the controller leaves to expansion to "set up" themselves
+ * after a successfully I2C address assignment */
+#define OPTA_CONTROLLER_DELAY_EXPANSION_RESET 300
+
 /* when DETECT IN goes low it wait OPTA_CONTROLLER_DEBOUNCE_TIME *
    OPTA_CONTROLLER_DEBOUNCE_NUMBER ms before to consider the PIN really low */
 #define OPTA_CONTROLLER_DEBOUNCE_LOW_TIME 1
@@ -47,7 +51,7 @@
 #define OPTA_CONTROLLER_DEBOUNCE_UP_NUMBER 50
 
 #define OPTA_BLUE_UNDEFINED_DEVICE_NUMBER 255
-
+#define OPTA_CONTROLLER_CUSTOM_MIN_TYPE 100
 /* -----------------------------------------------------------------------------
  * DEBUG CONFIGURATION DEFINES
  * -------------------------------------------------------------------------- */

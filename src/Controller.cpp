@@ -13,6 +13,7 @@
 /* -------------------------------------------------------------------------- */
 
 #include "OptaBluePrintCfg.h"
+#include "Protocol.h"
 #ifdef ARDUINO_OPTA
 #include "AnalogExpansion.h"
 #include "Controller.h"
@@ -43,9 +44,10 @@ Controller::Controller()
   for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
     expansions[i] = nullptr;
   }
-  /* populate list of known (not custom) expansions */
+}
 
-  /* DIGITAL */
+void Controller::init_exp_type_list() {
+  exp_type_list.clear();
   ExpType et;
 
   et.setType((unsigned int)EXPANSION_NOT_VALID);
@@ -74,19 +76,21 @@ Controller::Controller()
   et.setProduct(AnalogExpansion::getProduct());
   et.setStart(AnalogExpansion::startUp);
 
+  exp_type_list.push_back(et);
   next_available_custom_type = EXPANSION_CUSTOM + 20;
 }
+
 int Controller::registerCustomExpansion(std::string &pr, makeExpansion_f f,
                                         startUp_f su) {
 
   int rv = -1;
   bool found = false;
   for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-    if (exp_type_list[0].isProduct(pr)) {
-      exp_type_list[0].setMake(f);
-      exp_type_list[0].setStart(su);
+    if (exp_type_list[i].isProduct(pr)) {
+      exp_type_list[i].setMake(f);
+      exp_type_list[i].setStart(su);
       found = true;
-      rv = exp_type_list[0].getType();
+      rv = exp_type_list[i].getType();
       break;
     }
   }
@@ -673,6 +677,22 @@ void Controller::checkForExpansions() {
       }
     } while (tmp_exp_add[tmp_num_of_exp] != 0 && remain_in_while_loop);
 
+    /* give some time to analog to reset Analog Devices */
+    delay(OPTA_CONTROLLER_DELAY_EXPANSION_RESET);
+
+    /* it clear and reinitialize the list of expansion types */
+    init_exp_type_list();
+    /* NOW ask for the Product type -------------------------------*/
+    for (int i = 0; i < num_of_exp; i++) {
+      if (exp_type[i] > OPTA_CONTROLLER_CUSTOM_MIN_TYPE) {
+        _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
+        if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
+                                   CTRL_ANS_MSG_GET_PRODUCT_LEN)) {
+          parse_get_product();
+        }
+      }
+    }
+
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.print("FINAL Number of expansions found ");
     Serial.println(num_of_exp);
@@ -685,8 +705,6 @@ void Controller::checkForExpansions() {
 
     delay(1000);
 #endif
-    /* give some time to analog to reset Analog Devices */
-    delay(250);
 
     /* at this point all the expansion have the final address, time to
        make room for data from and to each expansion */
@@ -762,6 +780,11 @@ uint8_t Controller::msg_set_address(uint8_t add) {
                        MSG_SET_ADDRESS_LEN);
 }
 
+uint8_t Controller::msg_get_product_type() {
+  return prepareGetMsg(tx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
+                       GET_PRODUCT_TYPE_LEN);
+}
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /* prepare the message in the tx buffer to get address and type from
@@ -780,6 +803,37 @@ uint8_t Controller::msg_get_address_and_type() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void Controller::resetRxBuffer() { memset(rx_buffer, 0, OPTA_I2C_BUFFER_DIM); }
+
+bool Controller::parse_get_product() {
+  /* this function has a variable payload so it is not possible to use a
+   * "checkAnsGetReceived message */
+  if (checkAnsGetReceived(rx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
+                          GET_PRODUCT_TYPE_LEN)) {
+    std::string pr((const char *)(rx_buffer + ANS_ARG_GET_PRODUCT_SIZE_POS + 1),
+                   rx_buffer[ANS_ARG_GET_PRODUCT_SIZE_POS]);
+
+    bool found = false;
+    for (unsigned int i = 0; i < exp_type_list.size(); i++) {
+      if (exp_type_list[i].isProduct(pr)) {
+        found = true;
+        exp_type_list[i].setType(next_available_custom_type);
+        next_available_custom_type++;
+        break;
+      }
+    }
+    if (!found) {
+      ExpType et;
+
+      et.setType(next_available_custom_type);
+      next_available_custom_type++;
+      et.setProduct(pr);
+
+      exp_type_list.push_back(et);
+    }
+    return true;
+  }
+  return false;
+}
 
 bool Controller::parse_opta_reboot() {
   if (checkAnsSetReceived(rx_buffer, ANS_ARG_REBOOT, ANS_LEN_REBOOT,

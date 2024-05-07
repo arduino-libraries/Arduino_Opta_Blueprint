@@ -169,6 +169,7 @@ public:
   void getFlashData(uint8_t device, uint8_t *buf, uint8_t &dbuf, uint16_t &add);
 
 private:
+  void init_exp_type_list();
   std::vector<ExpType> exp_type_list;
   /* controller receiving buffer */
   uint8_t rx_buffer[OPTA_I2C_BUFFER_DIM];
@@ -210,9 +211,10 @@ private:
   uint8_t msg_get_address_and_type();
   uint8_t msg_opta_reset();
   uint8_t msg_opta_reboot();
-
+  uint8_t msg_get_product_type();
   /* -------------------- parse message functions ------------------------ */
 
+  bool parse_get_product();
   bool parse_address_and_type(int slave_address);
   bool parse_opta_reboot();
 
