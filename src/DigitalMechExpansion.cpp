@@ -17,6 +17,14 @@ DigitalMechExpansion::DigitalMechExpansion() {}
 
 DigitalMechExpansion::~DigitalMechExpansion() {}
 
+Expansion *DigitalMechExpansion::makeExpansion() {
+  return new DigitalMechExpansion();
+}
+
+std::string DigitalMechExpansion::getProduct() {
+  std::string rv(OPTA_DIGITAL_MECH_DESCRIPTION);
+  return rv;
+}
 DigitalMechExpansion::DigitalMechExpansion(Expansion &other) {
   DigitalMechExpansion &dme = (DigitalMechExpansion &)other;
   if (other.getType() == EXPANSION_OPTA_DIGITAL_MEC) {

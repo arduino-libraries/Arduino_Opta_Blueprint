@@ -39,6 +39,12 @@ DigitalExpansion::DigitalExpansion() {
   iregs[ADD_PIN_15_ANALOG_IN] = 0;
 }
 
+Expansion *DigitalExpansion::makeExpansion() { return new DigitalExpansion(); }
+
+std::string DigitalExpansion::getProduct() {
+  std::string rv(OPTA_DIGITAL_DESCRIPTION);
+  return rv;
+}
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 DigitalExpansion::DigitalExpansion(Expansion &other) {

@@ -63,6 +63,8 @@ public:
   DigitalExpansion();
   DigitalExpansion(Expansion &other);
   unsigned int execute(uint32_t what) override;
+  static Expansion *makeExpansion();
+  static std::string getProduct();
   /* set the status of a digital input
    * if update is false the new status of the pin is set on a local variable
    * but not sent to the expansion

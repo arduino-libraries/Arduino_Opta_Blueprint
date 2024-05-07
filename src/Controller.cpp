@@ -12,9 +12,10 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
+#include "OptaBluePrintCfg.h"
 #ifdef ARDUINO_OPTA
-#include "Controller.h"
 #include "AnalogExpansion.h"
+#include "Controller.h"
 #include "DigitalCommonCfg.h"
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
@@ -42,6 +43,42 @@ Controller::Controller()
   for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
     expansions[i] = nullptr;
   }
+  /* populate list of known (not custom) expansions */
+
+  /* DIGITAL */
+  ExpType et;
+
+  et.setType((unsigned int)EXPANSION_NOT_VALID);
+  et.setMake(DigitalExpansion::makeExpansion);
+  et.setProduct(DigitalExpansion::getProduct());
+  et.setStart(DigitalExpansion::startUp);
+
+  exp_type_list.push_back(et);
+
+  et.setType((unsigned int)EXPANSION_OPTA_DIGITAL_MEC);
+  et.setMake(DigitalMechExpansion::makeExpansion);
+  et.setProduct(DigitalMechExpansion::getProduct());
+  et.setStart(DigitalExpansion::startUp);
+
+  exp_type_list.push_back(et);
+
+  et.setType((unsigned int)EXPANSION_OPTA_DIGITAL_STS);
+  et.setMake(DigitalStSolidExpansion::makeExpansion);
+  et.setProduct(DigitalStSolidExpansion::getProduct());
+  et.setStart(DigitalExpansion::startUp);
+
+  exp_type_list.push_back(et);
+
+  et.setType((unsigned int)EXPANSION_OPTA_ANALOG);
+  et.setMake(AnalogExpansion::makeExpansion);
+  et.setProduct(AnalogExpansion::getProduct());
+  et.setStart(AnalogExpansion::startUp);
+
+  next_available_custom_type = EXPANSION_CUSTOM + 20;
+}
+bool Controller::registerCustomExpansion(std::string &pr, makeExpansion_f f,
+                                         startUp_f su) {
+  return false;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -137,6 +174,7 @@ Expansion *Controller::getExpansionPtr(int device) {
     if (expansions[device] != nullptr) {
       return expansions[device];
     } else {
+      // for (int i = 0; i <)
       switch (exp_type[device]) {
       case EXPANSION_OPTA_DIGITAL_MEC:
         expansions[device] = new DigitalMechExpansion();

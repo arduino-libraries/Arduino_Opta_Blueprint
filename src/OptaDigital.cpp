@@ -12,6 +12,7 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
+#include "OptaBluePrintCfg.h"
 #ifndef ARDUINO_OPTA
 #if defined ARDUINO_OPTA_DIGITAL
 #include "OptaDigital.h"
@@ -566,8 +567,17 @@ uint8_t OptaDigital::getMinorFw() { return FW_VERSION_MINOR; }
 uint8_t OptaDigital::getReleaseFw() { return FW_VERSION_RELEASE; }
 
 std::string OptaDigital::getProduct() {
-  std::string rv(product_description);
-  return rv;
+  if (expansion_type == OPTA_DIGITAL_INVALID) {
+    std::string rv(OPTA_DIGITAL_DESCRIPTION);
+    return rv;
+  } else if (expansion_type == EXPANSION_OPTA_DIGITAL_MEC) {
+    std::string rv(OPTA_DIGITAL_MECH_DESCRIPTION);
+    return rv;
+  } else if (expansion_type == EXPANSION_OPTA_DIGITAL_STS) {
+    std::string rv(OPTA_DIGITAL_STSOLID_DESCRIPTION);
+    return rv;
+  }
+  return string("invalid");
 }
 void OptaDigital::goInBootloaderMode() { goBootloader(); }
 

@@ -21,6 +21,8 @@ public:
   DigitalStSolidExpansion();
   virtual ~DigitalStSolidExpansion();
   DigitalStSolidExpansion(Expansion &other);
+  static Expansion *makeExpansion();
+  static std::string getProduct();
 
 protected:
 private:

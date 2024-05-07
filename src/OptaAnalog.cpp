@@ -11,6 +11,7 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
+#include "AnalogCommonCfg.h"
 #include <cstdint>
 #include <stdint.h>
 #ifndef ARDUINO_OPTA
@@ -2403,7 +2404,7 @@ uint8_t OptaAnalog::getMinorFw() { return FW_VERSION_MINOR; }
 uint8_t OptaAnalog::getReleaseFw() { return FW_VERSION_RELEASE; }
 
 std::string OptaAnalog::getProduct() {
-  std::string rv(product_description);
+  std::string rv(OPTA_ANALOG_DESCRIPTION);
   return rv;
 }
 

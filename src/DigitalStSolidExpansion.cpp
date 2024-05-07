@@ -18,6 +18,14 @@ DigitalStSolidExpansion::DigitalStSolidExpansion() {}
 
 DigitalStSolidExpansion::~DigitalStSolidExpansion() {}
 
+Expansion *DigitalStSolidExpansion::makeExpansion() {
+  return new DigitalStSolidExpansion();
+}
+
+std::string DigitalExpansion::getProduct() {
+  std::string rv(OPTA_DIGITAL_STSOLID_DESCRIPTION);
+  return rv;
+}
 DigitalStSolidExpansion::DigitalStSolidExpansion(Expansion &other) {
   DigitalStSolidExpansion &dse = (DigitalStSolidExpansion &)other;
   if (other.getType() == EXPANSION_OPTA_DIGITAL_STS) {

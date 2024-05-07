@@ -26,6 +26,11 @@ AnalogExpansion::AnalogExpansion() {
   iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
 }
 
+Expansion *AnalogExpansion::makeExpansion() { return new AnalogExpansion(); }
+std::string AnalogExpansion::getProduct() {
+  std::string rv(OPTA_ANALOG_DESCRIPTION);
+  return rv;
+}
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 AnalogExpansion::~AnalogExpansion() {}

@@ -125,6 +125,8 @@ public:
   ~AnalogExpansion();
   AnalogExpansion(Expansion &other);
 
+  static Expansion *makeExpansion();
+  static std::string getProduct();
   /*
    * Begin channel functions
    */

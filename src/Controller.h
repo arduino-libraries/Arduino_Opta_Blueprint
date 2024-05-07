@@ -24,6 +24,7 @@
 #include "Wire.h"
 #include "sys/_stdint.h"
 
+#include <string>
 #include <vector>
 
 #include <cstdint>
@@ -53,12 +54,34 @@ public:
   }
 };
 
+using makeExpansion_f = Expansion *(*)();
+using startUp_f = void (*)(Controller *);
+
+class ExpType {
+
+private:
+  makeExpansion_f make;
+  startUp_f start;
+  unsigned int type;
+  std::string product;
+
+public:
+  ExpType() : make(nullptr), type(0xFFFFFFFF), start(nullptr) {}
+  void setType(unsigned int t) { type = t; }
+  void setMake(makeExpansion_f f) { make = f; }
+  void setProduct(std::string s) { product = s; }
+  bool isProduct(std::string s) { return (product == s); }
+  void setStart(startUp_f f) { start = f; }
+};
 // namespace Opta {
 
 class Controller {
 public:
   Controller();
   ~Controller();
+
+  bool registerCustomExpansion(std::string &pr, makeExpansion_f f,
+                               startUp_f su);
 
   /* ----------------------------------------------------------- */
 
@@ -132,6 +155,7 @@ public:
   void getFlashData(uint8_t device, uint8_t *buf, uint8_t &dbuf, uint16_t &add);
 
 private:
+  std::vector<ExpType> exp_type_list;
   /* controller receiving buffer */
   uint8_t rx_buffer[OPTA_I2C_BUFFER_DIM];
   /* controller transmission buffer */
@@ -184,6 +208,8 @@ private:
   bool is_detect_low();
 
   CommErr_f failed_i2c_comm;
+
+  unsigned int next_available_custom_type;
 };
 
 extern Controller OptaController;

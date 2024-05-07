@@ -80,5 +80,5 @@ typedef enum { OA_VOLTAGE_DAC, OA_CURRENT_DAC } OaDacType_t;
 #define MAX_FLASH_BUFFER_DIM 32
 #define PRODUCTION_DATA_FLASH_ADDRESS 0x1C00
 
-static const char product_description[] = "ARDUINO OPTA ANALOG";
+#define OPTA_ANALOG_DESCRIPTION "ARDUINO OPTA ANALOG"
 #endif

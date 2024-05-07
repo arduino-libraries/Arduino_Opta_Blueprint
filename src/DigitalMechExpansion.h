@@ -22,6 +22,8 @@ public:
   DigitalMechExpansion();
   virtual ~DigitalMechExpansion();
   DigitalMechExpansion(Expansion &other);
+  static Expansion *makeExpansion();
+  static std::string getProduct();
 
 protected:
 private:
