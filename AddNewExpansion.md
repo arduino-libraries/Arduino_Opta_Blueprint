@@ -474,3 +474,36 @@ NewExpansion::makeExpansion, NewExpansion::startUp);
 Please note that I am assuming that your custom expansion is called
 `NewExpansion` but this is of course a generic name that has to be converted in
 the actual expansion name.
+
+The use of this function leads to an important point: custom expansions
+dynamically calculated "enumerative" type.
+For example: Opta Analog is identified by a type number equal to
+EXPANSION_OPTA_ANALOG (the actual value is unimportant and should never be used,
+but in this particular case is 4). This means that if you use
+Controller.getExpansionType(i) and at the index i you have an Analog expansion
+you'll get always EXPANSION_OPTA_ANALOG value (i.e. 4).
+This happens because the controller is aware of the existence of Analog
+expansion even if they do not call the register function (this is privilege for
+Arduino expansions).
+But when you register a custom expansion via registerCustomExpansion this is not
+true anymore: the Controller registers the expansion and assigns to the
+expansion type a unique value.
+This value is returned by the function registerCustomExpansion itself (or -1 if
+something's wrong).
+You don't need to save this value since it can be always retrieved using
+the controller function `OptaController.getExpansionType(string)`.
+As the parameter of this function always use the NewExpansion::getProduct()
+function.
+So suppose that your custom expansion is at the position 2 in the chain of
+expansions, to know that the expansion is of New Expansion type you can do
+something like: `OptaController.getExspansionType(NewExpansion::getProdut() ==
+OptaController.getExpansionType(2)`. The expression on the left of `==` returns
+the type of the product while the expression on the right returns the actual
+value type the controller assigned to the custom expansion.
+Please note that the use of getExpansionType(index) is not so much interesting
+at the practical level.
+You can always avoid to use it by asking for an expansion using
+`NewExpansionExpansion exp = OptaController.getExpansion(index)` and then
+checking for the validity of the returned expansion using the bool() operator
+(i.e. `if(exp)` -> this will be true only if the expansion at index is actually
+of type NewExpansion).
