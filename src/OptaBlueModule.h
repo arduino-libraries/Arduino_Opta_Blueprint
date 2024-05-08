@@ -19,8 +19,8 @@
 #include "Arduino.h"
 #include "OptaBluePrintCfg.h"
 #include "OptaCrc.h"
+#include "OptaModuleProtocol.h"
 #include "OptaMsgCommon.h"
-#include "Protocol.h"
 #include "Wire.h"
 #include <stdint.h>
 #include <string>

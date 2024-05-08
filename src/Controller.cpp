@@ -14,7 +14,7 @@
 
 #include "OptaBlue.h"
 #include "OptaBluePrintCfg.h"
-#include "Protocol.h"
+#include "OptaBlueProtocol.h"
 #include <cstdint>
 #include <stdint.h>
 #ifdef ARDUINO_OPTA

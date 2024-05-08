@@ -14,7 +14,8 @@
 #ifndef ANALOGEXPANSIONCFG
 #define ANALOGEXPANSIONCFG
 
-#include "Protocol.h"
+#include "OptaAnalogProtocol.h"
+#include "OptaMsgCommon.h"
 #include <cstdint>
 #include <cstring>
 #define OA_CFG_MSG_NUM                                                         \

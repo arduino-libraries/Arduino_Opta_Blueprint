@@ -10,7 +10,7 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-#include "Protocol.h"
+#include "OptaModuleProtocol.h"
 #include <cstring>
 #ifndef ARDUINO_OPTA
 

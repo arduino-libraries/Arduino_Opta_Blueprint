@@ -19,6 +19,7 @@
 #include "FspTimer.h"
 #include "OptaBlueModule.h"
 #include "OptaDigitalCfg.h"
+#include "OptaDigitalProtocol.h"
 #include "OptaMsgCommon.h"
 #include "analog.h"
 #include "boot.h"

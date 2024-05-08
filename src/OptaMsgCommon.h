@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <stdint.h>
+
 bool checkSetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
                          uint8_t mlen);
 

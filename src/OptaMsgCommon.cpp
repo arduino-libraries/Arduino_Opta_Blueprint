@@ -13,8 +13,8 @@
 /* -------------------------------------------------------------------------- */
 #include "OptaMsgCommon.h"
 #include "Arduino.h"
+#include "OptaBlueProtocol.h"
 #include "OptaCrc.h"
-#include "Protocol.h"
 #include <stdint.h>
 
 // #define DEBUG_MESSAGE_ON_SERIAL

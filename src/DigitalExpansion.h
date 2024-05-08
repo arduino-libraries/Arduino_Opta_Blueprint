@@ -19,7 +19,7 @@
 #include "Expansion.h"
 #include "ExpansionOperations.h"
 #include "OptaBluePrintCfg.h"
-#include "Protocol.h"
+#include "OptaDigitalProtocol.h"
 #include <stdint.h>
 namespace Opta {
 

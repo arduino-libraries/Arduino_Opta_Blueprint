@@ -18,8 +18,8 @@
 #include "ControllerCfg.h"
 #include "ExpansionOperations.h"
 #include "OptaBluePrintCfg.h"
+#include "OptaModuleProtocol.h"
 #include "OptaMsgCommon.h"
-#include "Protocol.h"
 #include <cstdint>
 #include <map>
 #include <stdint.h>

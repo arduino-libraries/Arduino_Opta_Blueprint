@@ -20,7 +20,6 @@
 #include "OptaBluePrintCfg.h"
 #include "OptaCrc.h"
 #include "OptaMsgCommon.h"
-#include "Protocol.h"
 #include "Wire.h"
 #include "sys/_stdint.h"
 
