@@ -17,7 +17,7 @@ To add new expansion to the BluePrint library is necessary to provide:
   expansion on the Opta Controller)
 
 The FW and expansion class must be developed in a different folder/repository
-and no changes or PR are required.
+and no changes or PR should be required in this Opta BluePrint library.
 
 It is suggested that FW source files and the expansion class are put in the
 same folder for simplicity reasons (this allows to share information between
@@ -27,16 +27,16 @@ the FW and expansion class in a easy way).
 
 The FW will be composed by the following file
 
-- An Opta<Something>.h file
-- An Opta<Something>.cpp file
-- An Opta<Something>Cfg.h file (optional ?)
-- A <Something>.ino sketch that will be the entry point to use implementation
+- An OptaSomething.h file
+- An OptaSomething.cpp file
+- An OptaSomethingCfg.h file (optional ?)
+- A Something.ino sketch that will be the entry point to use implementation
   in the Opta<Something> files
 
 Please note that the filename convention indicated above is just to keep
 consistency with the file naming used in BluePrint library, but it is optional.
 
-We recommend the sketch <Something>.ino to be placed in a different folder
+We recommend the sketch Something.ino to be placed in a different folder
 (something like 'firmware'): for example the Digital expansion FW resides in
 folder ./firmware/Digital/Digital.ino but it uses the OptaDigital .h and .cpp in
 the ./src folder
@@ -56,6 +56,12 @@ structure (suppose your expansion is called "NewExpansion")
 It is required that every FW version will be identified with a version number in
 this form: MAJOR.MINOR.RELEASE
 MAJOR, MINOR and release are bytes (uint8_t);
+This defines are placed in OptaNewExpansionCfg.h
+
+We recommend to use an #ifdef NEWEXPANSION clause in the file
+OptaNewExpansion.cpp (or, alternatively, to use #ifndef ARDUINO_OPTA ) so that
+your FW implementation file will not be compiled when the application sketch for
+Opta Controller is build.
 
 **_NOTE: in the following we suppose that the new expansion "name" is
 "NewExpansion"_**
@@ -76,6 +82,16 @@ class OptaNewExpansion : public Module {
 
 };
 ```
+
+**IMPORTANT**
+
+The constructor for your new OptaNewExpansion class must always explicitly call
+the Module class constructor `Module(TwoWire *tw, int _detect_in, int
+_detect_out)` specifying:
+
+- the TwoWire object used for I2C Blueprint communication
+- the DETECT IN pin used by the new expansion
+- the DETECT OUT pin used by the new espansion
 
 The Module class defines some pure virtual functions so that every expansion
 must implement these functions:
@@ -128,7 +144,7 @@ must implement these functions:
   transaction).
   Also the address is only 2 bytes wide because the I2C protocol reserve 2 bytes
   for the address.
-  This is the default implementation you get for free by simply implementing
+  This is the default implementation you get for free by simply v
   this function (this means that at the controller level all is already
   implemented). Those limitation can be overcome by defining
   and handling a different I2C message.
@@ -158,15 +174,40 @@ must implement these functions:
   in a state that indicates that the expansion has acquired a valid I2C address.
   In case Status led is not present just provide an empty, dummy implementation.
 
-The OptaNewExpansion class constructor must call the base Module constructor
-`Module(TwoWire *tw, int _detect_in, int _detect_out);` to inform the Module
-class of what is the correct TwoWire object to be used (with the right pin SDA
-and SCL) and which are the pin DETECT IN and DETECT OUT using during the Assign
-Address process. (Note: this can be avoided, so that the base default Module
-constructor is automatically called in case the expansion uses a core/variant
-that define a Wire object on the right pins and the pin_arduino.h of the
-core/variant contains two `#define` statements that correctly define DETECT_IN
-and DETECT_OUT as the correct integer microcontroller PIN).
+## Overriding basic virtual methods
+
+Basic Module class has 4 virtual methods that need to be overridden in your
+derived class.
+
+- `begin()` must contain all the necessary initialization for the new expansion
+- `update()` is the function that will be called repeatedly in your FW (see for
+  example in the folder firmware for an example), this function should manage
+  all the cyclical tasks that your application have to performs
+- `end()` must contain all the shut down operation needed to proper stop the
+  expansion
+- `parse_rx()` will be called to give the opportunity to the expansion to
+  recognize and parse the I2C messages received, in case the expansion recognize
+  a message as to be handled it has to put in the tx_buffer the correct message
+  answer for that controller request and **return the number of byte to be
+  transmitted in the answer** (return -1 if the message is not handled by the
+  expansion).
+
+**VERY IMPORTANT**
+
+All previous overridden method MUST always call the base version at the very
+beginning (this is because the base Module has to have the chance to perform all
+tasks common to every expansions).
+An note about `parse_rx()`: when you call `Module::parse_rx()` in your overridden
+`parse_rx()` it will certainly happen that the base Module itself will be
+managing some messages, you don't need to deal with them, in this case just check for
+the returned value. If the value is -1 this means that the message has not been
+handled by the base version and you need to check if your expansion manages it,
+if the value is greater or equal to 0 the base Module version has already took
+care of the message and you just need to return the same value.
+
+**VERY IMPORTANT**
+Do not make any change to the `expansion_type` (an integer in the Module class).
+This is set in Module class and must be modified in any Custom expansion.
 
 ## OptaNewExpansionCfg.h
 
@@ -174,7 +215,7 @@ This is an optional configuration file that contains all the configuration
 `#define` used to configure the FW.
 If the file is present it must be included only in OptaNewExpansion.h file: this
 means that this file will contain information relevant only to the FW level and
-won't be "export" any information useful at the _application_ level (i.e. on the
+won't "export" any information useful at the _application_ level (i.e. on the
 Opta Controller side).
 
 ## Sharing information between FW and the controller
@@ -187,7 +228,7 @@ proper name of your expansion instead of 'NewExpansion' used here for simplicity
 This file will be included both in the OptaNewExpansion.h file (and this will
 inform the FW) and in the NewExpansionExpansion.h (that name is ugly but it
 simply means that the expansion class to be provided to the application /
-controller level is <Something>Expansion and since we decided to use
+controller level is SomethingExpansion and since we decided to use
 'NewExpansion' as the name of our made up new expansion the name of the file
 will NewExpansionExpansion.h)
 
@@ -334,7 +375,7 @@ Have a look at the DigitalExpansion::i2c_transaction function, the body is
 exactly the same than Expansion::i2c_transaction function, just the function
 pointer declaration are different.
 
-IMPORTANT:
+** IMPORTANT**
 Every class derived from Expansion should implement its own i2c_transaction as a
 simple copy from the Expansion::i2c_transaction function and changing the
 definition of the pointer so that they points to NewExpansion class methods.
@@ -342,7 +383,7 @@ definition of the pointer so that they points to NewExpansion class methods.
 This copy is a little price to have all I2C message functions "packed" inside the
 expansion class that actually deals with those messages.
 
-IMPORTANT:
+**IMPORTANT**
 There is another important point to be remembered when overriding the execute()
 function (and this, of course is something every expansion must do in order to
 introduce specific operations): at the end of each **execute** function remember
@@ -453,10 +494,10 @@ is quite straightforward:
 
 This should be quite simple (have a look at the provided example), however there
 is a missing point for custom expansion: the controller is not aware of the fact
-that additional custom expansion exist.ù
+that additional custom expansion exist.
 How to deal with that?
 
-VERY IMPORTANT
+**VERY IMPORTANT**
 When writing a sketch (an example) for a custom expansion (i.e. an expansion
 which is not a direct Arduino product) you must **register** the new expansion
 to the Controller using `OptaController.registerCustomExpansion()` just after
@@ -507,3 +548,49 @@ You can always avoid to use it by asking for an expansion using
 checking for the validity of the returned expansion using the bool() operator
 (i.e. `if(exp)` -> this will be true only if the expansion at index is actually
 of type NewExpansion).
+
+## About I2C Messages Definition
+
+To communicate with expansion a protocol over I2C is defined.
+For organisation purpose the message "defines" have been splitted in different
+files for different expansions.
+
+- OptaBlueProtocol.h contains a few helper general defines to help in message
+  definition (you should include this file in your message definition file)
+- OptaModuleProtocol.h contains the definition of the messages that have to be
+  handled by every expansion. You don't have to worry about this messages and
+  you don't have to include this file in your expansion library, as far as you
+  follow the previous instructions your expansion will manage correctly those
+  messages.
+- OptaDigitalProtocol.h contains all the messages related to Opta Digital
+- OptaAnalogProtocol.h contains all the messages related to Opta Analog
+
+Feel free to re-use already defined messages in your expansion (for example you
+may re-use message to set digital output defined for Opta Digital, as far as it
+fits your needs).
+
+We suggest to keep the definition of your custom messages (i.e. specific
+messages handled by your custom expansion) in a separate header file (always to
+keep consistency with Opta BluePrint library), so the final structure of your
+custom expansion library should be something like:
+
+```
+/rood_folder_of_new_expansion_library
+|-firmware/NewExpansion/NewExpansion.ino
+|-src/
+|-OptaNewExpansion.h     (FW header class)
+|-OptaNewExpansion.cpp   (FW implementation class)
+|-OptaNewExpansionCfg.h  (FW configuration, optional)
+|-NewExpansionCommonCfg.h (FW / APP shared configuration and types)
+|-NewExpansionExpansion.h (APP header class)
+|-NewExpansionExpansion.cpp (APP implementation class)
+|-OptaNewExpansionProtocol.h (I2C messages definition)
+```
+
+IMPORTANT:
+The header file OptaNewExpansionProtocol.h must always include
+OptaBlueProtocol.h so that you can use same configuration and same messages part
+definition.
+
+OptaNewExpansionProtocol.h will be then included both in application level file
+(NewExpansionExpansion.h) and FW level file (OptaNewExpansion.h).
