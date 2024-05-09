@@ -1,12 +1,16 @@
 
-/ t FILE NAME : OptaExpansion.h AUTHOR : Daniele Aimo EMAIL
-    : d.aimo @arduino.cc DATE : 20240208 DESCRIPTION : LICENSE
-    : Copyright(c) 2024 Arduino SA his Source Code Form is subject to the terms
-      fo the Mozilla Public License(MPL),
-    v 2.0. You can obtain a copy of the MPL at http : // mozilla.org/MPL/2.0/.
-                                                      NOTES : * /
 /* -------------------------------------------------------------------------- */
-
+/* FILE NAME:   OptaExpansion.h
+   AUTHOR:      Daniele Aimo
+   EMAIL:       d.aimo@arduino.cc
+   DATE:        20240208
+   DESCRIPTION:
+   LICENSE:     Copyright (c) 2024 Arduino SA
+                his Source Code Form is subject to the terms fo the Mozilla
+                Public License (MPL), v 2.0. You can obtain a copy of the MPL
+                at http://mozilla.org/MPL/2.0/.
+   NOTES:                                                                     */
+/* -------------------------------------------------------------------------- */
 #ifndef EXPANSION_H_INCLUDED
 #define EXPANSION_H_INCLUDED
 
@@ -31,7 +35,7 @@
 #define ADD_VERSION_MINOR 11
 #define ADD_VERSION_RELEASE 12
 
-                                                              class Controller;
+class Controller;
 
 using FailedComm_f = void (*)(int device, int code);
 
