@@ -417,6 +417,9 @@ must be always implemented in the NewExpansionExpansion class:
   deallocating object (this is managed by the controller), you always get a copy
   of your expansion that will be automatically destroyed when it goes out of
   scope.
+  _IMPORTANT NOTE_: the copy constructor must use a special Controller function
+  to know the type of the Expansion (see below section NewExpansion enumerative
+  type).
 
 - a static `makeExpansion()` method that returns an `Expansion *` pointer and that
   actually allocates an object of the NewExpansionExpansion class via `new` C++
@@ -436,8 +439,8 @@ must be always implemented in the NewExpansionExpansion class:
   see that they return the same string (which is a shared configuration
   parameter contained in the <Expansion>CommonCfg.h header file)
 
-- a static (OPTIONAL) `startUp(Controller *)` method that will perform the
-  initialization of your expansions (of all the expansion of the same type).
+- a static `startUp(Controller *)` method that will perform the
+  initialization of your expansions (of all the expansions of the same type).
   The purpose of this function is very important however hard to explain.
   Suppose that you have an expansion with some programmable output function (Opta Analog
   is a good example, because each channel can be RTD, ADC, DAC). The controller
@@ -464,6 +467,8 @@ must be always implemented in the NewExpansionExpansion class:
   This function will be passed to the controller so that controller can
   re-initialize the expansions every time a discovery expansion process is
   finished.
+  If your expansion type does not need such function just write an empty
+  function. This will used in the copy constructor definition.
 
 Then the new expansion class can define whatever custom additional function: the
 important point here is to remain to read / write / execute paradigm.
@@ -516,31 +521,47 @@ Please note that I am assuming that your custom expansion is called
 `NewExpansion` but this is of course a generic name that has to be converted in
 the actual expansion name.
 
-The use of this function leads to an important point: custom expansions
+## NewExpansion enumerative type
+
+The use of this function leads to an important point: custom expansions get a
 dynamically calculated "enumerative" type.
+
 For example: Opta Analog is identified by a type number equal to
 EXPANSION_OPTA_ANALOG (the actual value is unimportant and should never be used,
-but in this particular case is 4). This means that if you use
-Controller.getExpansionType(i) and at the index i you have an Analog expansion
-you'll get always EXPANSION_OPTA_ANALOG value (i.e. 4).
+but in this particular case is 4).
+This means that if you use `Controller.getExpansionType(i)` and at the index `i`
+you have an Analog expansion you'll get always `EXPANSION_OPTA_ANALOG` value (i.e. 4).
+
 This happens because the controller is aware of the existence of Analog
-expansion even if they do not call the register function (this is privilege for
-Arduino expansions).
-But when you register a custom expansion via registerCustomExpansion this is not
+expansion even if they do not call the register function (this is a privilege
+reserved for Arduino expansions).
+
+But when you register a custom expansion via `registerCustomExpansion` this is not
 true anymore: the Controller registers the expansion and assigns to the
 expansion type a unique value.
-This value is returned by the function registerCustomExpansion itself (or -1 if
+
+This value is returned by the function `registerCustomExpansion` itself (or -1 if
 something's wrong).
+
 You don't need to save this value since it can be always retrieved using
 the controller function `OptaController.getExpansionType(string)`.
 As the parameter of this function always use the NewExpansion::getProduct()
 function.
+
 So suppose that your custom expansion is at the position 2 in the chain of
 expansions, to know that the expansion is of New Expansion type you can do
-something like: `OptaController.getExspansionType(NewExpansion::getProdut() ==
-OptaController.getExpansionType(2)`. The expression on the left of `==` returns
-the type of the product while the expression on the right returns the actual
-value type the controller assigned to the custom expansion.
+something like:
+
+- to get the dynamical enumerative type assigned to your expansion type use
+  `OptaController.getExpansionType(NewExpansion::getProdut())`
+- to get the dynamical actual enumerative type of the expansion at the position
+  2 (this is related to the actual hardware) use `OptaController.getExpansionType(2)`
+
+`OptaController.getExpansionType(NewExpansion::getProdut())` returns
+the type of the product (dynamically calculate) equal for each product.
+`OptaController.getExpansionType(index)` while the expression returns the actual
+type the controller assigned to the custom expansion hardware.
+
 Please note that the use of getExpansionType(index) is not so much interesting
 at the practical level.
 You can always avoid to use it by asking for an expansion using
@@ -548,6 +569,42 @@ You can always avoid to use it by asking for an expansion using
 checking for the validity of the returned expansion using the bool() operator
 (i.e. `if(exp)` -> this will be true only if the expansion at index is actually
 of type NewExpansion).
+
+At this point we can understand the general form of the NewExpansion copy
+constructor:
+
+```
+NewExpansionExpansion::NewExpansionExpansion(Expansion &other) {
+  NewExpansionExpansion &de = (ExpansionExpansion &)other;
+  if (other.getType() ==
+      Controller.getExpansionType(NewExpansionExpansion::getProduct())) {
+    iregs = de.iregs;
+    fregs = de.fregs;
+    type = other.getType();
+    i2c_address = other.getI2CAddress();
+    ctrl = other.getCtrl();
+    index = other.getIndex();
+    if (ctrl != nullptr) {
+      ctrl->setExpStartUpCb(NewExpansionExpansion::startUp);
+    }
+  } else {
+    type = EXPANSION_NOT_VALID;
+    i2c_address = 0;
+    ctrl = other.getCtrl();
+    if (ctrl != nullptr) {
+      ctrl->setExpStartUpCb(NewExpansionExpansion::startUp);
+    }
+    index = 255;
+  }
+}
+```
+
+**IMPORTANT NOTE**: The dynamical type is assigned by the Controller after the
+assign address process and the expansions are discovered.
+If you don't have any expansion NewExpansion attached and you use
+`Controller.getExpansionType(NewExpansionExpansion::getProduct())` you'll get -1
+until a NewExpansion is attached to Opta (this ensure that you get only
+NewExpansionExpansion objects actually related with a real hardware).
 
 ## About I2C Messages Definition
 
