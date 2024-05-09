@@ -53,7 +53,7 @@ void Controller::init_exp_type_list() {
   exp_type_list.clear();
   ExpType et;
 
-  et.setType((uint8_t)EXPANSION_NOT_VALID);
+  et.setType((uint8_t)EXPANSION_DIGITAL_INVALID);
   et.setMake(DigitalExpansion::makeExpansion);
   et.setProduct(DigitalExpansion::getProduct());
   et.setStart(DigitalExpansion::startUp);
@@ -94,7 +94,7 @@ int Controller::getExpansionType(std::string pr) {
   return rv;
 }
 
-int Controller::registerCustomExpansion(std::string &pr, makeExpansion_f f,
+int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
                                         startUp_f su) {
 
   int rv = -1;
@@ -206,15 +206,19 @@ uint8_t Controller::getRx(uint8_t pos) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 Expansion *Controller::getExpansionPtr(int device) {
-
+  
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     if (expansions[device] != nullptr) {
       return expansions[device];
     } else {
       for (unsigned int i = 0; i < exp_type_list.size(); i++) {
+        #ifdef DEBUG_
+        Serial.println("\nd = " + String(device) + " exp_type[d] = " + String(exp_type[device]) + " | i = " + String(i) + " exp_type_list[i] = " + String(exp_type_list[i].getType()));
+        #endif
         if (exp_type[device] == exp_type_list[i].getType()) {
           expansions[device] = exp_type_list[i].allocateExpansion();
           setExpStartUpCb(exp_type_list[i].startUp);
+          break;
         }
       }
       if (expansions[device] != nullptr) {
@@ -696,8 +700,9 @@ void Controller::checkForExpansions() {
     /* it clear and reinitialize the list of expansion types */
     init_exp_type_list();
     /* NOW ask for the Product type -------------------------------*/
+    
     for (int i = 0; i < num_of_exp; i++) {
-      if (exp_type[i] > OPTA_CONTROLLER_CUSTOM_MIN_TYPE) {
+      if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE) {
         _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
         if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
                                    CTRL_ANS_MSG_GET_PRODUCT_LEN)) {

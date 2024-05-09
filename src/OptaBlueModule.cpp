@@ -187,7 +187,7 @@ Module::Module()
 Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
     : address(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), rx_num(0),
       reboot_required(false), reset_required(false), ans_buffer(nullptr),
-      expansion_type(EXPANSION_NOT_VALID), reboot_sent(0),
+      expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
       detect_in(_detect_in), detect_out(_detect_out) {
   Module::expWire = tw;
 }
@@ -305,8 +305,9 @@ int Module::prepare_ans_get_product() {
   for (int i = 0; i < pr.size() && i < 32; i++) {
     tx_buffer[ANS_GET_PRODUCT_SIZE_POS + 1 + i] = pr[i];
   }
-  return prepareGetAns(tx_buffer, ANS_ARG_GET_PRODUCT_TYPE,
+  int rv = prepareGetAns(tx_buffer, ANS_ARG_GET_PRODUCT_TYPE,
                        LEN_GET_PRODUCT_TYPE, LEN_ANS_GET_PRODUCT);
+  return rv;
 }
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_version() {

@@ -94,7 +94,7 @@ public:
    *  controller
    *  This positive integer can be retrieved using getType() Expansion function
    */
-  int registerCustomExpansion(std::string &pr, makeExpansion_f f, startUp_f su);
+  int registerCustomExpansion(std::string pr, makeExpansion_f f, startUp_f su);
 
   /* ----------------------------------------------------------- */
 
