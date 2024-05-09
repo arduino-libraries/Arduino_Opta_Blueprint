@@ -16,7 +16,7 @@
 #include "AnalogCommonCfg.h"
 #include "AnalogExpansionAddress.h"
 #include "AnalogExpansionCfg.h"
-#include "Expansion.h"
+#include "OptaExpansion.h"
 #include <cstdint>
 #include <stdint.h>
 

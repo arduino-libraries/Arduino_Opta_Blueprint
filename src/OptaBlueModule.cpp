@@ -16,6 +16,20 @@
 
 #include "OptaBlueModule.h"
 
+/* This definition are used to avoid compilation error when using this file in a
+ * Custom expansion library. PLEASE NOTE that the value have NO SENSE since the
+ * Custom expansion library must always use the Module constructor with
+ * arguments that specify the correct DETECT_IN and DETECT_OUT pin, so that the
+ * following defines are completely irrelevant */
+
+#ifndef DETECT_IN
+#define DETECT_IN 0
+#endif
+
+#ifndef DETECT_OUT
+#define DETECT_OUT 0
+#endif
+
 Module *OptaExpansion = nullptr;
 
 TwoWire *Module::expWire = nullptr;

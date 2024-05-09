@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* FILE NAME:   ControllerCfg.h
+/* FILE NAME:   OptaControllerCfg.h
    AUTHOR:      Daniele Aimo
    EMAIL:       d.aimo@arduino.cc
    DATE:        20231116

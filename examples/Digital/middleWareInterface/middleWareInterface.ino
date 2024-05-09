@@ -134,7 +134,7 @@ void loop() {
             /* !!! EXECUTE the operation to set the digital output */
             unsigned int  err = expansions[i]->execute(SET_DIGITAL_OUTPUT);
             /* execute returns 0 if all is correct or an error code defined in
-             * Expansion.h */
+             * OptaExpansion.h */
             //Serial.println("(1) err = " + String(err));
             
             /* keep the output in that state for 2 seconds */
@@ -170,7 +170,7 @@ void loop() {
             /* !!! EXECUTE the operation to set the digital output */
             err = expansions[i]->execute(SET_DIGITAL_OUTPUT);
             /* execute returns 0 if all is correct or an error code defined in
-             * Expansion.h */
+             * OptaExpansion.h */
             //Serial.println("(1) err = " + String(err));
             
             /* keep the output in that state for 2 seconds */

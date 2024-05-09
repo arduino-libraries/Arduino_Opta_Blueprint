@@ -13,7 +13,7 @@
 
 #ifdef ARDUINO_OPTA
 #include "AnalogExpansion.h"
-#include "Controller.h"
+#include "OptaController.h"
 
 namespace Opta {
 

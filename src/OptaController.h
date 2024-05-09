@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/* FILENAME:    Controller.h
+/* FILENAME:    OptaController.h
    AUTHOR:      Daniele Aimo (d.aimo@arduino.cc)
    DATE:        20230801
    REVISION:    0.0.1
@@ -14,11 +14,11 @@
 #ifndef OPTA_BLUE_CONTROLLER
 #define OPTA_BLUE_CONTROLLER
 #include "Arduino.h"
-#include "ControllerCfg.h"
 #include "DigitalCommonCfg.h"
-#include "Expansion.h"
 #include "OptaBluePrintCfg.h"
+#include "OptaControllerCfg.h"
 #include "OptaCrc.h"
+#include "OptaExpansion.h"
 #include "OptaMsgCommon.h"
 #include "Wire.h"
 #include "sys/_stdint.h"

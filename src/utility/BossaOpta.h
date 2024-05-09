@@ -14,7 +14,7 @@
 #ifndef BOSSAOPTA_INCLUDED
 #define BOSSAOPTA_INCLUDED
 
-#include "Controller.h"
+#include "OptaController.h"
 #include <stdint.h>
 #include <string>
 #ifdef ARDUINO_OPTA

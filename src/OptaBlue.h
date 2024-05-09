@@ -15,11 +15,11 @@
 #define OPTA_BLUEPRINT_H
 
 #include "AnalogExpansion.h"
-#include "Controller.h"
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
 #include "OptaBluePrintCfg.h"
+#include "OptaController.h"
 
 typedef uint8_t ExpansionType_t;
 

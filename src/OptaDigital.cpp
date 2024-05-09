@@ -13,7 +13,6 @@
 /* -------------------------------------------------------------------------- */
 
 #include "OptaBluePrintCfg.h"
-#ifndef ARDUINO_OPTA
 #if defined ARDUINO_OPTA_DIGITAL
 #include "OptaDigital.h"
 
@@ -631,5 +630,4 @@ void OptaDigital::setStatusLedHasAddress() {
   digitalWrite(OPTA_LED_RED, LED_RGB_OFF);
   digitalWrite(OPTA_LED_GREEN, LED_RGB_ON);
 }
-#endif
 #endif

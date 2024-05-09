@@ -13,11 +13,11 @@
 
 #include <stdint.h>
 #ifdef ARDUINO_OPTA
-#include "Controller.h"
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
-#include "Expansion.h"
+#include "OptaController.h"
+#include "OptaExpansion.h"
 namespace Opta {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */

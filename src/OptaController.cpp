@@ -19,11 +19,11 @@
 #include <stdint.h>
 #ifdef ARDUINO_OPTA
 #include "AnalogExpansion.h"
-#include "Controller.h"
 #include "DigitalCommonCfg.h"
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
+#include "OptaController.h"
 
 // #define DEBUG_COMM_TIMEOUT
 
