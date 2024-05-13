@@ -49,6 +49,12 @@ std::string DigitalExpansion::getProduct() {
 
 DigitalExpansion::DigitalExpansion(Expansion &other) {
   DigitalExpansion &de = (DigitalExpansion &)other;
+
+  type = EXPANSION_NOT_VALID;
+  i2c_address = 0;
+  ctrl = other.getCtrl();
+  index = 255;
+
   if (other.getType() == EXPANSION_OPTA_DIGITAL_MEC ||
       other.getType() == EXPANSION_OPTA_DIGITAL_STS ||
       other.getType() == EXPANSION_DIGITAL_INVALID) {
@@ -58,17 +64,6 @@ DigitalExpansion::DigitalExpansion(Expansion &other) {
     i2c_address = other.getI2CAddress();
     ctrl = other.getCtrl();
     index = other.getIndex();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(DigitalExpansion::startUp);
-    }
-  } else {
-    type = EXPANSION_NOT_VALID;
-    i2c_address = 0;
-    ctrl = other.getCtrl();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(DigitalExpansion::startUp);
-    }
-    index = 255;
   }
 }
 

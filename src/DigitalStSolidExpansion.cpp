@@ -28,6 +28,12 @@ std::string DigitalStSolidExpansion::getProduct() {
 }
 DigitalStSolidExpansion::DigitalStSolidExpansion(Expansion &other) {
   DigitalStSolidExpansion &dse = (DigitalStSolidExpansion &)other;
+
+  type = EXPANSION_NOT_VALID;
+  i2c_address = 0;
+  ctrl = other.getCtrl();
+  index = 255;
+
   if (other.getType() == EXPANSION_OPTA_DIGITAL_STS) {
     iregs = dse.iregs;
     fregs = dse.fregs;
@@ -35,18 +41,8 @@ DigitalStSolidExpansion::DigitalStSolidExpansion(Expansion &other) {
     i2c_address = other.getI2CAddress();
     ctrl = other.getCtrl();
     index = other.getIndex();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(DigitalExpansion::startUp);
-    }
-  } else {
-    type = EXPANSION_NOT_VALID;
-    i2c_address = 0;
-    ctrl = other.getCtrl();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(DigitalExpansion::startUp);
-    }
-    index = 255;
   }
 }
+
 } // namespace Opta
 #endif

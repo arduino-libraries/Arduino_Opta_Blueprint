@@ -26,7 +26,12 @@ AnalogExpansion::AnalogExpansion() {
   iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
 }
 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 Expansion *AnalogExpansion::makeExpansion() { return new AnalogExpansion(); }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 std::string AnalogExpansion::getProduct() {
   std::string rv(OPTA_ANALOG_DESCRIPTION);
   return rv;
@@ -39,6 +44,12 @@ AnalogExpansion::~AnalogExpansion() {}
 
 AnalogExpansion::AnalogExpansion(Expansion &other) {
   AnalogExpansion &ae = (AnalogExpansion &)other;
+
+  type = EXPANSION_NOT_VALID;
+  i2c_address = 0;
+  ctrl = other.getCtrl();
+  index = 255;
+
   if (other.getType() == EXPANSION_OPTA_ANALOG) {
     iregs = ae.iregs;
     fregs = ae.fregs;
@@ -46,18 +57,6 @@ AnalogExpansion::AnalogExpansion(Expansion &other) {
     i2c_address = other.getI2CAddress();
     ctrl = other.getCtrl();
     index = other.getIndex();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(AnalogExpansion::startUp);
-    }
-  } else {
-    type = EXPANSION_NOT_VALID;
-    i2c_address = 0;
-    ctrl = nullptr;
-    ctrl = other.getCtrl();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(AnalogExpansion::startUp);
-    }
-    index = 255;
   }
 }
 

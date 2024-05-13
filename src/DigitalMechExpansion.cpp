@@ -25,8 +25,15 @@ std::string DigitalMechExpansion::getProduct() {
   std::string rv(OPTA_DIGITAL_MECH_DESCRIPTION);
   return rv;
 }
+
 DigitalMechExpansion::DigitalMechExpansion(Expansion &other) {
   DigitalMechExpansion &dme = (DigitalMechExpansion &)other;
+
+  type = EXPANSION_NOT_VALID;
+  i2c_address = 0;
+  ctrl = other.getCtrl();
+  index = 255;
+
   if (other.getType() == EXPANSION_OPTA_DIGITAL_MEC) {
     iregs = dme.iregs;
     fregs = dme.fregs;
@@ -34,17 +41,6 @@ DigitalMechExpansion::DigitalMechExpansion(Expansion &other) {
     i2c_address = other.getI2CAddress();
     ctrl = other.getCtrl();
     index = other.getIndex();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(DigitalExpansion::startUp);
-    }
-  } else {
-    type = EXPANSION_NOT_VALID;
-    i2c_address = 0;
-    ctrl = other.getCtrl();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(DigitalExpansion::startUp);
-    }
-    index = 255;
   }
 }
 
