@@ -16,8 +16,8 @@
 
 /* VERSION of the Digital Firmware */
 #define FW_VERSION_MAJOR 0
-#define FW_VERSION_MINOR 0
-#define FW_VERSION_RELEASE 10
+#define FW_VERSION_MINOR 1
+#define FW_VERSION_RELEASE 0
 
 /* all analog input are supposed to be grouped all together in variant pin table
  */
