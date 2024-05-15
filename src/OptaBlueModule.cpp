@@ -34,6 +34,9 @@ Module *OptaExpansion = nullptr;
 
 TwoWire *Module::expWire = nullptr;
 
+/* 20240515_moved_I2C_reset moved reset I2C to main */
+volatile bool reset_I2C_bus = false;
+
 /* -------------------------------------------------------------------------- */
 /* Module RX event: callback called when Module receive from Controller on I2C*/
 /* -------------------------------------------------------------------------- */
@@ -142,13 +145,15 @@ uint8_t *Module::txPrt() { return ans_buffer; }
 /* Handle reset                                                               */
 /* -------------------------------------------------------------------------- */
 void Module::reset() {
+
   if (Module::expWire != nullptr) {
     Module::expWire->end();
   }
 
   setStatusLedWaitingForAddress();
   /* put address to invalid */
-  address = OPTA_MODULE_INVALID_ADDRESS;
+  
+  address = OPTA_DEFAULT_SLAVE_I2C_ADDRESS;
 
   /* detect_in (toward Controller) as Output */
   pinMode(detect_in, OUTPUT);
@@ -163,12 +168,14 @@ void Module::reset() {
   pinMode(detect_out, INPUT_PULLUP);
 
   while (is_detect_out_low()) {
+    
   }
-
+  
   /* put I2C address to the default one */
   if (Module::expWire != nullptr) {
-    Module::expWire->begin(OPTA_DEFAULT_SLAVE_I2C_ADDRESS);
+    Module::expWire->begin(address);
   }
+  
 }
 
 /* --------------------------------------------------------------------------
@@ -177,7 +184,7 @@ void Module::reset() {
 /* --------------------------------------------------------------------------
  */
 Module::Module()
-    : address(OPTA_MODULE_INVALID_ADDRESS), rx_num(0), reboot_required(false),
+    : address(OPTA_DEFAULT_SLAVE_I2C_ADDRESS), rx_num(0), reboot_required(false),
       reset_required(false), ans_buffer(nullptr),
       expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
       detect_in(DETECT_IN), detect_out(DETECT_OUT) {
@@ -185,7 +192,7 @@ Module::Module()
 }
 
 Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
-    : address(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), rx_num(0),
+    : address(OPTA_DEFAULT_SLAVE_I2C_ADDRESS), rx_num(0),
       reboot_required(false), reset_required(false), ans_buffer(nullptr),
       expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
       detect_in(_detect_in), detect_out(_detect_out) {
@@ -197,7 +204,7 @@ Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
 /* --------------------------------------------------------------------------
  */
 bool Module::addressAcquired() {
-  return ((address != OPTA_MODULE_INVALID_ADDRESS));
+  return ((address > OPTA_DEFAULT_SLAVE_I2C_ADDRESS));
 }
 
 /* --------------------------------------------------------------------------
@@ -206,13 +213,16 @@ bool Module::addressAcquired() {
 /* --------------------------------------------------------------------------
  */
 void Module::begin() {
+  
   initStatusLED();
 #ifdef DEBUG_SERIAL
   Serial.begin(115200);
-  delay(2000);
+  delay(5000);
   // while(!Serial) { }
   Serial.println("[Log]: START");
 #endif
+
+  
   reset();
 
   /* Set up callbacks */
@@ -228,6 +238,17 @@ void Module::begin() {
 /* --------------------------------------------------------------------------
  */
 void Module::update() {
+
+  if(reset_I2C_bus) {
+    /* 20240515_moved_I2C_reset moved reset I2C to main */
+    pinMode(detect_out, INPUT_PULLUP);
+    delay(1);
+    /* accept the address only if detect out is HIGH */
+    if (digitalRead(detect_out) == HIGH) {
+      setAddress(address);
+    }
+    reset_I2C_bus = false;
+  }
 
   updatePinStatus();
 
@@ -249,8 +270,8 @@ void Module::update() {
 
   if (millis() - start > 1000) {
     start = millis();
-    Serial.print("ADDRESS ");
-    Serial.println(address);
+    Serial.print("ADDRESS 0x");
+    Serial.println(address, HEX);
   }
 #endif
 }
@@ -262,6 +283,7 @@ bool Module::parse_set_address() {
    */
   if (checkSetMsgReceived(rx_buffer, ARG_ADDRESS, LEN_ADDRESS,
                           MSG_SET_ADDRESS_LEN)) {
+    address = rx_buffer[BP_PAYLOAD_START_POS];
     return true;
   }
   return false;
@@ -377,13 +399,8 @@ int Module::parse_rx() {
    */
   /* set address message */
   if (parse_set_address()) {
-    pinMode(detect_out, INPUT_PULLUP);
-    delay(1);
-    /* accept the address only if detect out is HIGH */
-    if (digitalRead(detect_out) == HIGH) {
-      address = rx_buffer[BP_PAYLOAD_START_POS];
-      setAddress(address);
-    }
+    /* 20240515_moved_I2C_reset moved reset I2C to main */
+    reset_I2C_bus = true;
     return 0;
   }
   /* get address and type message */

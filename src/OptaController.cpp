@@ -266,7 +266,7 @@ uint8_t Controller::getExpansionI2Caddress(uint8_t i) {
   if (i < num_of_exp) {
     return exp_add[i];
   }
-  return OPTA_MODULE_INVALID_ADDRESS;
+  return OPTA_DEFAULT_SLAVE_I2C_ADDRESS - 1;
 }
 
 /* ------------------------------------------------------------------------ */
@@ -545,13 +545,14 @@ void Controller::checkForExpansions() {
     }
     num_of_exp = 0;
   }
-
+  
+  tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
+  
   while (enter_while) {
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println("[LOG]:  - DETECT pin is LOW (expansions without address)");
     Serial.println("        - Sending SET address message");
 #endif
-
     _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
 
     delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
