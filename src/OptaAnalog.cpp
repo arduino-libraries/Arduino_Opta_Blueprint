@@ -1024,10 +1024,10 @@ void OptaAnalog::updateRtd() {
 #ifdef RTD_SET_SWTICH_AT_BEGIN
     // 1. put the switch in the LOW position
 #ifdef ARDUINO_OPTA_ANALOG
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       digitalWrite(DIO_RTD_SWITCH_1, LOW);
     }
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       digitalWrite(DIO_RTD_SWITCH_2, LOW);
     }
 #endif
@@ -1037,11 +1037,11 @@ void OptaAnalog::updateRtd() {
 #endif
 
     // 3. put the current in to the DAC
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       configureDacValue(0, rtd[0].current_value);
       updateDacValue(0, true);
     }
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       configureDacValue(1, rtd[1].current_value);
       updateDacValue(1, true);
     }
@@ -1052,7 +1052,7 @@ void OptaAnalog::updateRtd() {
     Module::update();
 
     // 5. program new ADC configuration
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       configureAdcMux(0, CFG_ADC_INPUT_NODE_100OHM_R);
       configureAdcRange(0, CFG_ADC_RANGE_2_5V_LOOP);
       configureAdcPullDown(0, false);
@@ -1061,7 +1061,7 @@ void OptaAnalog::updateRtd() {
       sendAdcConfiguration(0);
     }
 
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       configureAdcMux(1, CFG_ADC_INPUT_NODE_100OHM_R);
       configureAdcRange(1, CFG_ADC_RANGE_2_5V_LOOP);
       configureAdcPullDown(1, false);
@@ -1078,10 +1078,10 @@ void OptaAnalog::updateRtd() {
 
     Module::update();
     // 8. store the measurement
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       rtd[0].set_i_excite(adc[0].conversion);
     }
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       rtd[1].set_i_excite(adc[1].conversion);
     }
 
@@ -1090,7 +1090,7 @@ void OptaAnalog::updateRtd() {
     Module::update();
 
     // 10. program new ADC configuration
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       configureAdcMux(0, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
       configureAdcRange(0, CFG_ADC_RANGE_2_5V_RTD); // range
       configureAdcPullDown(0, false);
@@ -1099,7 +1099,7 @@ void OptaAnalog::updateRtd() {
       sendAdcConfiguration(0);
     }
 
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       configureAdcMux(1, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
       configureAdcRange(1, CFG_ADC_RANGE_2_5V_RTD); // range
       configureAdcPullDown(1, false);
@@ -1114,10 +1114,10 @@ void OptaAnalog::updateRtd() {
     updateAdc(true);
 
     // 13. store the measurement
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       rtd[0].set_adc_RTD_2RL(adc[0].conversion);
     }
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       rtd[1].set_adc_RTD_2RL(adc[1].conversion);
     }
 
@@ -1129,10 +1129,10 @@ void OptaAnalog::updateRtd() {
 
     // 14. change the position of the switch
 #ifdef ARDUINO_OPTA_ANALOG
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       digitalWrite(DIO_RTD_SWITCH_1, HIGH);
     }
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       digitalWrite(DIO_RTD_SWITCH_2, HIGH);
     }
 #endif
@@ -1148,7 +1148,7 @@ void OptaAnalog::updateRtd() {
 
     Module::update();
     // 16. program new ADC configuration
-    if (rtd[0].is_rtd) {
+    if (rtd[0].is_rtd && rtd[0].use_3_wires) {
       configureAdcMux(0, CFG_ADC_INPUT_NODE_100OHM_R);
       configureAdcRange(0, CFG_ADC_RANGE_2_5V_RTD);
       configureAdcPullDown(0, false);
@@ -1157,7 +1157,7 @@ void OptaAnalog::updateRtd() {
       sendAdcConfiguration(0);
     }
 
-    if (rtd[1].is_rtd) {
+    if (rtd[1].is_rtd && rtd[1].use_3_wires) {
       configureAdcMux(1, CFG_ADC_INPUT_NODE_100OHM_R);
       configureAdcRange(1, CFG_ADC_RANGE_2_5V_RTD);
       configureAdcPullDown(1, false);
