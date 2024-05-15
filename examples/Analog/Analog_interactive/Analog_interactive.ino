@@ -508,7 +508,7 @@ void changeExpansion(uint8_t device) {
               float v = getFloatFromSerial();
               Serial.println("  -> Entered voltage: " + String(v) + " V");
 
-              if(v >= 0 && v < 11.0) {
+              if(v >= 0 && v <= 11.0) {
                 Serial.println("     setting new value...");
                 e.pinVoltage(ch,v);
               }
@@ -522,7 +522,7 @@ void changeExpansion(uint8_t device) {
               Serial.println("  Enter the new value in milli-Ampere [0-25]: ");
               float v = getFloatFromSerial();
               Serial.println("  -> Entered current: " + String(v) + " mA");
-              if(v >= 0 && v < 25.0) {
+              if(v >= 0 && v <= 25.0) {
                 Serial.println("      setting new value...");
                 e.pinCurrent(ch,v);
               }
