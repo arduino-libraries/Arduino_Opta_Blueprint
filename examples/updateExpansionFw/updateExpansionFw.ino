@@ -35,14 +35,14 @@ static unsigned char oa_type = opta_analog_fw_update[oa_fw_size];
 static unsigned char oa_M = opta_analog_fw_update[oa_fw_size + 1];
 static unsigned char oa_m = opta_analog_fw_update[oa_fw_size + 2];
 static unsigned char oa_r = opta_analog_fw_update[oa_fw_size + 3];
-static unsigned int  oa_version = oa_M * 100 + oa_m * 10 + oa_r;
+static unsigned int  oa_version = oa_M * 255 + oa_m * 255 + oa_r;
 
 static uint32_t od_fw_size = sizeof(opta_digital_fw_update) - 4;
 static unsigned char od_type = opta_digital_fw_update[od_fw_size];
 static unsigned char od_M = opta_digital_fw_update[od_fw_size + 1];
 static unsigned char od_m = opta_digital_fw_update[od_fw_size + 2];
 static unsigned char od_r = opta_digital_fw_update[od_fw_size + 3];
-static unsigned int  od_version = od_M * 100 + od_m * 10 + od_r;
+static unsigned int  od_version = od_M * 255 + od_m * 255 + od_r;
 
 static char *fileptr = nullptr;
 
@@ -91,7 +91,7 @@ bool isUpdatable(int device) {
    if(OptaController.getFwVersion(device,M,m,r)) {
       Serial.print(" Current FW version: ");
       printVersion(M,m,r);
-      unsigned int current_version = M * 100 + m * 10 + r;
+      unsigned int current_version = M * 255 + m * 255 + r;
       if(EXPANSION_OPTA_DIGITAL_MEC == type || EXPANSION_OPTA_DIGITAL_STS == type) {
          if(od_version > current_version ) {
             rv = true;
