@@ -379,7 +379,7 @@ bool AnalogExpansion::dac_registers_defined() {
 
 void AnalogExpansion::beginChannelAsHighImpedance(uint8_t ch) {
   iregs[ADD_OA_PIN] = ch;
-  int32_t err = execute(BEGIN_CHANNEL_AS_HIGH_IMP);
+  execute(BEGIN_CHANNEL_AS_HIGH_IMP);
 }
 
 void AnalogExpansion::beginChannelAsRtd(uint8_t ch, bool use_3_wires,
