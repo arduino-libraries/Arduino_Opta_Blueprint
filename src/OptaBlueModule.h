@@ -102,9 +102,6 @@ public:
   uint8_t getI2CAddress() { return address; }
 
 protected:
-  int detect_in;
-  int detect_out;
-
   uint8_t address;
   uint8_t rx_num;
   volatile bool reboot_required;
@@ -112,6 +109,8 @@ protected:
   uint8_t *ans_buffer;
   int expansion_type;
   unsigned long int reboot_sent;
+  int detect_in;
+  int detect_out;
   void updatePinStatus();
 
   /* handle "reset": reset here means

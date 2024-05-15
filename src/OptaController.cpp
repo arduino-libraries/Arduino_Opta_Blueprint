@@ -802,6 +802,8 @@ uint8_t Controller::msg_set_address(uint8_t add) {
                        MSG_SET_ADDRESS_LEN);
 }
 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 uint8_t Controller::msg_get_product_type() {
   return prepareGetMsg(tx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
                        GET_PRODUCT_TYPE_LEN);
@@ -826,9 +828,11 @@ uint8_t Controller::msg_get_address_and_type() {
 
 void Controller::resetRxBuffer() { memset(rx_buffer, 0, OPTA_I2C_BUFFER_DIM); }
 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 bool Controller::parse_get_product() {
-  if (checkAnsGetReceived(rx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
-                          GET_PRODUCT_TYPE_LEN)) {
+  if (checkAnsGetReceived(rx_buffer, ANS_ARG_GET_PRODUCT_TYPE, ANS_LEN_GET_PRODUCT_TYPE,
+                          LEN_ANS_GET_PRODUCT_TYPE)) {
     std::string pr((const char *)(rx_buffer + ANS_GET_PRODUCT_SIZE_POS + 1),
                    rx_buffer[ANS_GET_PRODUCT_SIZE_POS]);
 

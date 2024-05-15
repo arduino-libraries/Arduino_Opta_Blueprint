@@ -207,24 +207,33 @@ void OptaDigital::begin() {
     opta_adc.cfg.scan_end_ipl = 14;
   }
 
-  fsp_err_t err = R_ADC_Open(&(opta_adc.ctrl), &(opta_adc.cfg));
+  
 #if defined DEBUG_SERIAL && defined DEBUG_ADC_SETUP_OPTA_DIGITAL
+  fsp_err_t err = R_ADC_Open(&(opta_adc.ctrl), &(opta_adc.cfg));
   Serial.print("ADC open ");
   Serial.println(err);
+#else
+  R_ADC_Open(&(opta_adc.ctrl), &(opta_adc.cfg));
 #endif
 
-  err = R_ADC_ScanCfg(&(opta_adc.ctrl), &(opta_adc.channel_cfg));
+  
 
 #if defined DEBUG_SERIAL && defined DEBUG_ADC_SETUP_OPTA_DIGITAL
+  err = R_ADC_ScanCfg(&(opta_adc.ctrl), &(opta_adc.channel_cfg));
   Serial.print("ADC scan ");
   Serial.println(err);
+#else
+   R_ADC_ScanCfg(&(opta_adc.ctrl), &(opta_adc.channel_cfg)); 
 #endif
 
-  err = R_ADC_ScanStart(&(opta_adc.ctrl));
+  
 
 #if defined DEBUG_SERIAL && defined DEBUG_ADC_SETUP_OPTA_DIGITAL
+  err = R_ADC_ScanStart(&(opta_adc.ctrl));
   Serial.print("ADC Scan Start ");
   Serial.println(err);
+#else
+  R_ADC_ScanStart(&(opta_adc.ctrl));
 #endif
 }
 

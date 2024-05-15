@@ -320,15 +320,17 @@ bool Module::parse_reset_controller() {
   return false;
 }
 
+/* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_product() {
+/* ------------------------------------------------------------------------ */
   std::string pr(getProduct());
   memset(tx_buffer, 0x0, OPTA_I2C_BUFFER_DIM);
   tx_buffer[ANS_GET_PRODUCT_SIZE_POS] = pr.size();
-  for (int i = 0; i < pr.size() && i < 32; i++) {
+  for (unsigned int i = 0; i < pr.size() && i < 32; i++) {
     tx_buffer[ANS_GET_PRODUCT_SIZE_POS + 1 + i] = pr[i];
   }
   int rv = prepareGetAns(tx_buffer, ANS_ARG_GET_PRODUCT_TYPE,
-                       LEN_GET_PRODUCT_TYPE, LEN_ANS_GET_PRODUCT);
+                       ANS_LEN_GET_PRODUCT_TYPE, LEN_ANS_GET_PRODUCT_TYPE);
   return rv;
 }
 /* ------------------------------------------------------------------------ */
