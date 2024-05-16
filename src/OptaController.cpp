@@ -93,6 +93,8 @@ int Controller::getExpansionType(std::string pr) {
   return rv;
 }
 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
                                         startUp_f su) {
 
@@ -110,9 +112,9 @@ int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
   if (!found) {
     ExpType et;
 
-    et.setMake(DigitalExpansion::makeExpansion);
-    et.setProduct(DigitalExpansion::getProduct());
-    et.setStart(DigitalExpansion::startUp);
+    et.setMake(f);
+    et.setProduct(pr);
+    et.setStart(su);
     add_exp_type(et);
   }
   return rv;
