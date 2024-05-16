@@ -207,7 +207,7 @@ care of the message and you just need to return the same value.
 
 **VERY IMPORTANT**
 Do not make any change to the `expansion_type` (an integer in the Module class).
-This is set in Module class and must be modified in any Custom expansion.
+This is set in Module class and must NOT be modified in any Custom expansion.
 
 ## OptaNewExpansionCfg.h
 
@@ -255,12 +255,12 @@ FW or application.
 /rood_folder_of_new_expansion_library
 |-firmware/NewExpansion/NewExpansion.ino
 |-src/
-|-OptaNewExpansion.h     (FW header class)
-|-OptaNewExpansion.cpp   (FW implementation class)
-|-OptaNewExpansionCfg.h  (FW configuration, optional)
-|-NewExpansionCommonCfg.h (FW / APP shared configuration and types)
-|-NewExpansionExpansion.h (APP header class)
-|-NewExpansionExpansion.cpp (APP implementation class)
+      |-OptaNewExpansion.h     (FW header class)
+      |-OptaNewExpansion.cpp   (FW implementation class)
+      |-OptaNewExpansionCfg.h  (FW configuration, optional)
+      |-NewExpansionCommonCfg.h (FW / APP shared configuration and types)
+      |-NewExpansionExpansion.h (APP header class)
+      |-NewExpansionExpansion.cpp (APP implementation class)
 ```
 
 ## The NewExpansion application class
@@ -437,7 +437,7 @@ must be always implemented in the NewExpansionExpansion class:
   getProduct() function defined at the FW level. If you look at the
   implementation of these two functions in the already implemented class you'll
   see that they return the same string (which is a shared configuration
-  parameter contained in the <Expansion>CommonCfg.h header file)
+  parameter contained in the <Expansion>CommonCfg.h header file). 
 
 - a static `startUp(Controller *)` method that will perform the
   initialization of your expansions (of all the expansions of the same type).
@@ -514,7 +514,8 @@ So typically you must perform a call like:
 
 ```
 OptaController.registerCustomExpansion(NewExpansion::getProduct(),
-NewExpansion::makeExpansion, NewExpansion::startUp);
+                                       NewExpansion::makeExpansion, 
+                                       NewExpansion::startUp);
 ```
 
 Please note that I am assuming that your custom expansion is called
@@ -523,7 +524,7 @@ the actual expansion name.
 
 ## NewExpansion enumerative type
 
-The use of this function leads to an important point: custom expansions get a
+The use of `registerCustomExpansion` leads to an important point: custom expansions get a
 dynamically calculated "enumerative" type.
 
 For example: Opta Analog is identified by a type number equal to
@@ -574,27 +575,25 @@ At this point we can understand the general form of the NewExpansion copy
 constructor:
 
 ```
+
 NewExpansionExpansion::NewExpansionExpansion(Expansion &other) {
-  NewExpansionExpansion &de = (ExpansionExpansion &)other;
-  if (other.getType() ==
-      Controller.getExpansionType(NewExpansionExpansion::getProduct())) {
-    iregs = de.iregs;
-    fregs = de.fregs;
-    type = other.getType();
-    i2c_address = other.getI2CAddress();
-    ctrl = other.getCtrl();
-    index = other.getIndex();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(NewExpansionExpansion::startUp);
+  NewExpansionExpansion &de = (NewExpansionExpansion &)other;
+
+  type = EXPANSION_NOT_VALID;
+  i2c_address = 0;
+  ctrl = other.getCtrl();
+  index = 255;
+
+  if (ctrl != nullptr) {
+    if (other.getType() ==
+        ctrl->getExpansionType(NewExpansionExpansion::getProduct())) {
+      iregs = de.iregs;
+      fregs = de.fregs;
+      type = other.getType();
+      i2c_address = other.getI2CAddress();
+      ctrl = other.getCtrl();
+      index = other.getIndex();
     }
-  } else {
-    type = EXPANSION_NOT_VALID;
-    i2c_address = 0;
-    ctrl = other.getCtrl();
-    if (ctrl != nullptr) {
-      ctrl->setExpStartUpCb(NewExpansionExpansion::startUp);
-    }
-    index = 255;
   }
 }
 ```
