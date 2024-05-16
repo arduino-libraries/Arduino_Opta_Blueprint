@@ -34,4 +34,7 @@ uint8_t prepareGetMsg(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen);
 uint8_t prepareSetAns(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen);
 uint8_t prepareGetAns(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen);
 
+/* given the expected len without CRC returns the expected len answer */
+uint8_t getExpectedAnsLen(uint8_t len);
+
 #endif

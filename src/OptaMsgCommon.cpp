@@ -77,6 +77,14 @@ bool checkAnsSet(uint8_t *buffer, uint8_t arg, uint8_t len) {
   return false;
 }
 
+uint8_t getExpectedAnsLen(uint8_t len) {
+#ifdef BP_USE_CRC
+  return len + 1;
+#else
+  return len;
+#endif
+}
+
 bool checkCrc(uint8_t *buffer, uint8_t mlen) {
   bool rv = true;
 
