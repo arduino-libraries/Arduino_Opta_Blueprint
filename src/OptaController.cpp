@@ -50,7 +50,6 @@ Controller::Controller()
 }
 
 void Controller::init_exp_type_list() {
-  exp_type_list.clear();
   ExpType et;
 
   et.setType((uint8_t)EXPANSION_DIGITAL_INVALID);
@@ -58,28 +57,28 @@ void Controller::init_exp_type_list() {
   et.setProduct(DigitalExpansion::getProduct());
   et.setStart(DigitalExpansion::startUp);
 
-  exp_type_list.push_back(et);
+  add_exp_type(et);
 
   et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_MEC);
   et.setMake(DigitalMechExpansion::makeExpansion);
   et.setProduct(DigitalMechExpansion::getProduct());
   et.setStart(DigitalExpansion::startUp);
 
-  exp_type_list.push_back(et);
+  add_exp_type(et);
 
   et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_STS);
   et.setMake(DigitalStSolidExpansion::makeExpansion);
   et.setProduct(DigitalStSolidExpansion::getProduct());
   et.setStart(DigitalExpansion::startUp);
 
-  exp_type_list.push_back(et);
+  add_exp_type(et);
 
   et.setType((uint8_t)EXPANSION_OPTA_ANALOG);
   et.setMake(AnalogExpansion::makeExpansion);
   et.setProduct(AnalogExpansion::getProduct());
   et.setStart(AnalogExpansion::startUp);
 
-  exp_type_list.push_back(et);
+  add_exp_type(et);
   next_available_custom_type = EXPANSION_CUSTOM + 20;
 }
 
@@ -114,9 +113,25 @@ int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
     et.setMake(DigitalExpansion::makeExpansion);
     et.setProduct(DigitalExpansion::getProduct());
     et.setStart(DigitalExpansion::startUp);
-    exp_type_list.push_back(et);
+    add_exp_type(et);
   }
   return rv;
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void Controller::add_exp_type(ExpType et) {
+
+  bool found = false;
+  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
+    if (exp_type_list[i].isProduct(et.getProduct())) {
+      found = true;
+      return;
+    }
+  }
+  if (!found) {
+    exp_type_list.push_back(et);
+  }
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -846,11 +861,9 @@ bool Controller::parse_get_product() {
     }
     if (!found) {
       ExpType et;
-
       et.setType(next_available_custom_type);
       et.setProduct(pr);
-
-      exp_type_list.push_back(et);
+      add_exp_type(et);
     }
     return true;
   }

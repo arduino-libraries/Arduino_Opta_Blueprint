@@ -78,6 +78,7 @@ public:
   void setProduct(std::string s) { product = s; }
   bool isProduct(std::string s) { return (product == s); }
   void setStart(startUp_f f) { startUp = f; }
+  std::string getProduct() {return product;}
 };
 // namespace Opta {
 
@@ -169,6 +170,7 @@ public:
 
 private:
   void init_exp_type_list();
+  void add_exp_type(ExpType et);
   std::vector<ExpType> exp_type_list;
   /* controller receiving buffer */
   uint8_t rx_buffer[OPTA_I2C_BUFFER_DIM];
