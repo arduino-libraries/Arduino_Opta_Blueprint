@@ -284,6 +284,7 @@ bool Module::parse_set_address() {
   if (checkSetMsgReceived(rx_buffer, ARG_ADDRESS, LEN_ADDRESS,
                           MSG_SET_ADDRESS_LEN)) {
     address = rx_buffer[BP_PAYLOAD_START_POS];
+    set_address_msg_received = true;
     return true;
   }
   return false;

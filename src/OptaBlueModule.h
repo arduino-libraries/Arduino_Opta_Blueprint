@@ -131,6 +131,17 @@ protected:
   uint8_t tx_num;
   uint16_t flash_add;
   uint8_t flash_dim;
+
+  volatile bool set_address_msg_received;
+  /* USE this in custom expansion to know when the address of the expansion
+     has been set */
+  bool address_set_up(bool reset = true) {
+      bool rv = set_address_msg_received;
+      if(reset){
+        set_address_msg_received = false;
+      }
+      return rv;
+  }
 };
 
 extern Module *OptaExpansion;
