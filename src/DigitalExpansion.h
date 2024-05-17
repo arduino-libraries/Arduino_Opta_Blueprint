@@ -65,7 +65,7 @@ public:
   unsigned int execute(uint32_t what) override;
   static Expansion *makeExpansion();
   static std::string getProduct();
-  /* set the status of a digital input
+  /* set the status of a digital output
    * if update is false the new status of the pin is set on a local variable
    * but not sent to the expansion
    * this allow to set more pins status and then set them at once sending the
@@ -75,6 +75,9 @@ public:
    * please note that all digital outputs are transferred in 1 single I2C
    * transaction */
   void digitalWrite(int pin, PinStatus st, bool update = false);
+
+  /* get the status ha digital output has been set */
+  PinStatus digitalOutRead(int pin);
 
   /* get the status of a digital input
    * if update is false the new status of the pin is get from a local variable

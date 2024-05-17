@@ -350,6 +350,16 @@ void DigitalExpansion::digitalWrite(int pin, PinStatus st,
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+PinStatus DigitalExpansion::digitalOutRead(int pin) {
+  if (pin >= 0 && pin <= DIGITAL_OUT_NUM) {
+    if (iregs[ADD_DIGITAL_OUTPUT] & (1 << pin)) {
+      return HIGH;
+    } 
+  }
+  return LOW;
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 PinStatus DigitalExpansion::digitalRead(int pin, bool update /*= false*/) {
   if (pin >= 0 && pin < DIGITAL_IN_NUM) {
     if (update) {
