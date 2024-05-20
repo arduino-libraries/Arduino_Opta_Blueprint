@@ -496,6 +496,48 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
    * the value is already up to date*/
 }
 
+/* get Pwm period in micro seconds */
+  uint32_t AnalogExpansion::getPwmPeriod(uint8_t ch) {
+    uint32_t per_add = BASE_OA_PWM_ADDRESS + ch;
+    if (!addressExist(per_add)) {
+      return 0;
+    }
+    else {
+      return iregs[per_add];
+    }
+  }
+  /* get Pwm pulse in micro seconds */
+  uint32_t AnalogExpansion::getPwmPulse(uint8_t ch) {
+    uint32_t pul_add = BASE_OA_PWM_ADDRESS + ch + OA_PWM_CHANNELS_NUM;
+    if (!addressExist(pul_add)) {
+      return 0;
+    }
+    else {
+      return iregs[pul_add];
+    }
+
+  }
+
+  float AnalogExpansion::getPwmFreqHz(uint8_t ch) {
+    float period = (float)getPwmPeriod(ch);
+    if(period > 0) {
+      period = period / 1000000; //get seconds 
+      return 1 / period;
+    }
+    return 0.0;
+
+  }
+
+  float AnalogExpansion::getPwmPulsePerc(uint8_t ch) {
+    float period = (float)getPwmPeriod(ch);
+    float pulse = (float)getPwmPulse(ch);
+    if(period > 0 && pulse <= period) {
+      return pulse / period;
+    }
+    return 0.0;
+
+  }
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_set_pwm() {
@@ -591,7 +633,14 @@ bool AnalogExpansion::parse_ans_get_adc() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 float AnalogExpansion::pinVoltage(uint8_t ch, bool update /*= true*/) {
-  if (cfgs[index].isVoltageAdcCh(ch)) {
+  if(cfgs[index].isVoltageDacCh(ch)) {
+    unsigned int output_value = iregs[BASE_OA_DAC_ADDRESS + ch];
+    if(output_value > 8191) {
+      output_value = 8191;
+    }
+    return (float)output_value * 11.0 / 8191.0; 
+  }
+  else if (cfgs[index].isVoltageAdcCh(ch)) {
     uint16_t v = getAdc(ch, update);
     return 10.0 * (float)v / 65535.0;
   }
@@ -601,7 +650,17 @@ float AnalogExpansion::pinVoltage(uint8_t ch, bool update /*= true*/) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 float AnalogExpansion::pinCurrent(uint8_t ch, bool update /*= true*/) {
-  if (cfgs[index].isVoltageDacCh(ch) && cfgs[index].isCurrentAdcCh(ch)) {
+  if(cfgs[index].isCurrentDacCh(ch)) {
+    unsigned int output_value = iregs[BASE_OA_DAC_ADDRESS + ch];
+    if(output_value > 8191) {
+      output_value = 8191;
+    }
+    float rv = (float)output_value * 25.0 / 8191.0; 
+    Serial.println("Current DAC = " + String(rv));
+    delay(2000);
+    return rv;
+  }
+  else if (cfgs[index].isVoltageDacCh(ch) && cfgs[index].isCurrentAdcCh(ch)) {
     float code = (float)getAdc(ch, update);
     float current = (code / 65535.0) * 5.0;
     current = current - 2.5;

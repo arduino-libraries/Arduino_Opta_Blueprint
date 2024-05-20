@@ -238,13 +238,37 @@ public:
    */
   /* period and pulse in micro seconds */
   void setPwm(uint8_t ch, uint32_t period, uint32_t pulse);
+  /* get Pwm period in micro seconds */
+  uint32_t getPwmPeriod(uint8_t ch);
+  /* get Pwm pulse in micro seconds */
+  uint32_t getPwmPulse(uint8_t ch);
+
+  float getPwmFreqHz(uint8_t ch);
+  float getPwmPulsePerc(uint8_t ch);
+
   /* get adc converter bits of channel ch (if ch is configured as ADC)*/
   uint16_t getAdc(uint8_t ch, bool update = true);
-  /* get adc value as Volts (if ch is configured as voltage ADC, otherwise 0.0)
+
+  /* - if the pin is a VOLTAGE DAC (output) returns the Voltage set as output (but not 
+     directly measured) 
+     - if the pin is a VOLTAGE ADC (input) returns the Voltage measure by the Adc
+     - if the pin is a CURRENT DAC with addition VOLTAGE ADC it returns the Voltage
+     measured by the ADC
+     - 0.0 otherwise
+
+     Value is intended in Volts
    */
   float pinVoltage(uint8_t ch, bool update = true);
-  /* get adc value as milli Ampere (if ch is configured as current ADC,
-   * otherwise 0.0)*/
+
+   /* - if the pin is a CURRENT DAC (output) returns the VCurrent set as output (but not 
+     directly measured) 
+     - if the pin is a CURRENT ADC (input) returns the Current measured by the Adc
+     - if the pin is a VOLTAGE DAC with addition VOLTAGE ADC it returns the Current
+     measured by the ADC
+     - 0.0 otherwise
+
+     Value is intended in milli Ampere
+   */
   float pinCurrent(uint8_t ch, bool update = true);
   /* set dac converter bits of channels ch (if ch is configured as DAC) */
   void setDac(uint8_t ch, uint16_t value, bool update = true);
