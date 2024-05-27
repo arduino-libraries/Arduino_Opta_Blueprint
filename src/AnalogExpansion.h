@@ -319,6 +319,8 @@ public:
   bool isChCurrentAdc(uint8_t ch);
   bool isChDigitalInput(uint8_t ch);
   bool isChRtd(uint8_t ch);
+  bool isChRtd2Wires(uint8_t ch);
+  bool isChRtd3Wires(uint8_t ch);
   bool isChHighImpedance(uint8_t ch);
 
 protected:

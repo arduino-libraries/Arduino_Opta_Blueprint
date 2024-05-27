@@ -14,6 +14,7 @@
 #ifndef ANALOGEXPANSIONCFG
 #define ANALOGEXPANSIONCFG
 
+
 #include "OptaAnalogProtocol.h"
 #include "OptaMsgCommon.h"
 #include <cstdint>
@@ -50,8 +51,10 @@ private:
     return rv;
   }
   bool is_cfg(uint8_t i) {
-    if (cfg[i] != nullptr && size[i] >= 5) {
-      return true;
+    if(i < OA_CFG_MSG_NUM) {
+       if (cfg[i] != nullptr && size[i] >= 5) {
+         return true;
+       }
     }
     return false;
   }
@@ -142,6 +145,17 @@ public:
     if (is_cfg(ch)) {
       if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_RTD) {
         return true;
+      }
+    }
+    return false;
+  }
+
+  bool isRtd3WiresCh(uint8_t ch) {
+    if (is_cfg(ch)) {
+      if(ch <= 1) {
+        if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_RTD && *(cfg[ch] + OA_CH_RTD_3WIRE_POS) == OA_ENABLE) {
+          return true;
+        }
       }
     }
     return false;

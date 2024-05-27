@@ -1358,6 +1358,25 @@ bool AnalogExpansion::isChRtd(uint8_t ch) {
   return false;
 }
 
+bool AnalogExpansion::isChRtd2Wires(uint8_t ch) {
+  if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
+    if(ch > 1) {
+      return (AnalogExpansion::cfgs[index].isRtdCh(ch));
+    }
+  }
+  return false;
+
+}
+
+
+bool AnalogExpansion::isChRtd3Wires(uint8_t ch) {
+  if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
+    return (AnalogExpansion::cfgs[index].isRtd3WiresCh(ch));
+  }
+  return false;
+
+}
+
 bool AnalogExpansion::isChHighImpedance(uint8_t ch) {
 
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
