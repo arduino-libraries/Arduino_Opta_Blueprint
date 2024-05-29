@@ -24,6 +24,10 @@ OaChannelCfg AnalogExpansion::cfgs[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 AnalogExpansion::AnalogExpansion() {
   iregs[ADD_OA_LED_VALUE] = 0;
   iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
+
+  for(int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
+    iregs[BASE_OA_DAC_ADDRESS + i] = 0;
+  }
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -306,6 +310,8 @@ void AnalogExpansion::beginChannelAsDac(uint8_t ch, OaDacType_t type,
   iregs[ADD_OA_DAC_LIMIT_CURRENT] = (limit_current) ? OA_ENABLE : OA_DISABLE;
   iregs[ADD_OA_DAC_USE_SLEW] = (enable_slew) ? OA_ENABLE : OA_DISABLE;
   iregs[ADD_OA_DAC_SLEW_RATE] = sr;
+
+  iregs[BASE_OA_DAC_ADDRESS + ch] = 0;
 
   execute(BEGIN_CHANNEL_AS_DAC);
 
@@ -655,9 +661,7 @@ float AnalogExpansion::pinCurrent(uint8_t ch, bool update /*= true*/) {
     if(output_value > 8191) {
       output_value = 8191;
     }
-    float rv = (float)output_value * 25.0 / 8191.0; 
-    Serial.println("Current DAC = " + String(rv));
-    delay(2000);
+    float rv = (float)output_value * 25.0 / 8191.0;
     return rv;
   }
   else if (cfgs[index].isVoltageDacCh(ch) && cfgs[index].isCurrentAdcCh(ch)) {
@@ -1362,6 +1366,12 @@ bool AnalogExpansion::isChRtd2Wires(uint8_t ch) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
     if(ch > 1) {
       return (AnalogExpansion::cfgs[index].isRtdCh(ch));
+    }
+    else {
+      if(AnalogExpansion::cfgs[index].isRtdCh(ch) && !AnalogExpansion::cfgs[index].isRtd3WiresCh(ch)) {
+        return true;
+      }
+
     }
   }
   return false;
