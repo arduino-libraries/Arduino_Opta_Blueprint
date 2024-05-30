@@ -281,9 +281,11 @@ void loop() {
             }
 
             Serial.println(product_data_example);
+            uint8_t len = strlen(product_data_example) + 1;
+            len = (len >= 32) ? 31 : len;
             // MAX 32 bytes can be written 
-            dexp.setProductData((uint8_t *)product_data_example,
-            strlen(product_data_example));
+            product_data_example[len] = 0;
+            dexp.setProductData((uint8_t *)product_data_example, len);
         
             written[i] = true;
             Serial.println("WRITTEN");
@@ -320,6 +322,7 @@ void loop() {
         Serial.print("\nWriting to ");
         Serial.println(" ANALOG flash");
         char product_data_example[32]; // Max 32 bytes
+        memset(product_data_example,0x00,32);
 
         /*
          * WRITING INFORMATION FOR OPTA DIGITAL
@@ -333,9 +336,11 @@ void loop() {
             serial_number[6], serial_number[7]);
 
         Serial.println(product_data_example);
+        uint8_t len = strlen(product_data_example) + 1;
+        len = (len >= 32) ? 31 : len;
         // MAX 32 bytes can be written 
-        aexp.setProductData((uint8_t *)product_data_example,
-            strlen(product_data_example));
+        product_data_example[len] = 0;
+        aexp.setProductData((uint8_t *)product_data_example, len);
         
         written[i] = true;
         Serial.println("WRITTEN");
