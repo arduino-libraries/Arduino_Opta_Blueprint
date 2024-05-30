@@ -75,6 +75,7 @@ void loop() {
       uint16_t add = PRODUCTION_DATA_FLASH_ADDRESS;
       Serial.print("Expansion Serial Number: ");
       dexp.getFlashData((uint8_t *)buffer,dbuf,add);
+      Serial.print("Serial number: ");
       for(int i = 0;  i < 32; i++) {
         if(std::isprint(buffer[i])) {
           Serial.print((char)buffer[i]);
