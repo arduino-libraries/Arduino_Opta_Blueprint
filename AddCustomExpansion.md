@@ -333,14 +333,15 @@ the same structure on each derived class): it takes an integer as parameter that
 identify the operation to be performed (set an output / read an input /
 configure a channel and so). Depending on the action to be executed the execute()
 function always perform a I2C transaction to communicate with the expansion.
-To this purpose an Expansion::i2c_transaction() is called.
+To this purpose I2C_TRANSACTION macro is used.
 
-This function (i2c_transaction) is conceived to be generic and takes 3
+This macro (I2C_TRANSACTION) is conceived to be generic and takes 3
 parameters:
 
 - a pointer to a function preparing the message to be sent on I2C bus (this
   function returns the number of bytes to be transmitted)
-- a pointer to a function able to parse the answer received by the controller
+- a pointer to a function able to parse the answer received by the controller (
+  returns true if parsing is correct)
 - the number of bytes expected in the answer
 
 So suppose the we want to write an Arduino like `digitalWrite()` function for
@@ -349,8 +350,8 @@ an expansion, these are the operation required:
 1. the digitaWrite() function sets the registers holding the information about
    the output status
 2. execute the operation SET_DIGITAL_OUTPUT
-3. the execute() function "triggers" an I2C transaction using i2c_transaction
-   function
+3. the execute() function "triggers" an I2C transaction using I2C_TRANSACTION
+   macro
 4. this function use the "prepare" function pointer to understand how to set up
    the transmission buffer (this typically will write the information held in
    the registers into the transmission buffer)
@@ -360,28 +361,16 @@ an expansion, these are the operation required:
    will write perhaps some other registers that can be then read to return some
    information, although this is not the case of digitalWrite())
 
-The i2c_function already takes cares of timeouts and will call the failed
+The I2C_TRANSACTION already takes cares of timeouts and will call the failed
 communication callback if set.
 
-However the i2c_function is written in a way that the pointer to function expected as
-parameters can be methods of the class (this done in order to the ensure that
-the class "owns" its methods to prepare an I2C message and parse an I2C answer).
+**IMPORTANT**
+There are 3 operation the basic expansion class takes care which are common to 
+all classes (WRITE in flash, READ in flash, get FW version).
+If you want to use these operation remember to call `Expansion::execute();` in 
+your `defaul` case switch of execute. This will use the base `execute()` function
+performing these basic operations.
 
-This means that every derived class should implement its own version of the
-i2c_transaction function changing only the pointer function declaration
-parameters.
-
-Have a look at the DigitalExpansion::i2c_transaction function, the body is
-exactly the same than Expansion::i2c_transaction function, just the function
-pointer declaration are different.
-
-** IMPORTANT**
-Every class derived from Expansion should implement its own i2c_transaction as a
-simple copy from the Expansion::i2c_transaction function and changing the
-definition of the pointer so that they points to NewExpansion class methods.
-
-This copy is a little price to have all I2C message functions "packed" inside the
-expansion class that actually deals with those messages.
 
 **IMPORTANT**
 There is another important point to be remembered when overriding the execute()
@@ -399,6 +388,7 @@ ones of your copy.
 Calling `ctrl->updateRegs(*this);` will copy back the content of yours registers
 to the expansion object held by the controller, so that if you get another
 (perhaps in a different function) you don't lose any changes you made elsewhere.
+For an example look to a digital expansion execute function.
 
 ### Mandatory functions to be implemented in NewExpansionExpansion class
 
