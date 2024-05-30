@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <map>
 #include <stdint.h>
+#include <functional>
 
 #define EXECUTE_OK 0
 #define EXECUTE_ERR_I2C_COMM 1
@@ -34,6 +35,10 @@
 #define ADD_VERSION_MAJOR 10
 #define ADD_VERSION_MINOR 11
 #define ADD_VERSION_RELEASE 12
+
+#define I2C_TRANSACTION(m,p,l)    prepare_msg = [this](){return m();}; \
+                                  parse_msg = [this](){return p();};   \
+                                  i2c_transaction(l);
 
 class Controller;
 
@@ -85,6 +90,8 @@ public:
   }
   void setController(Controller *ptr) { ctrl = ptr; }
 
+  
+
 protected:
   FailedComm_f com_timeout;
   std::map<unsigned int, unsigned int> iregs;
@@ -103,9 +110,14 @@ protected:
   uint8_t msg_get_flash();
   bool parse_ans_get_flash();
 
-private:
-  unsigned int i2c_transaction(uint8_t (Expansion::*prepare)(),
-                               bool (Expansion::*parse)(), int rx_bytes);
+  std::function<uint8_t()> prepare_msg;
+  std::function<bool()> parse_msg;
+  unsigned int i2c_rv = 0;
+  // in case no aswer is expected 
+  virtual bool parse_dummy() {return true;}
+  
+
+  virtual unsigned int i2c_transaction(int rx_bytes);  
 };
 
 } // namespace Opta

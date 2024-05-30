@@ -123,58 +123,32 @@ bool Expansion::addressFloatExist(unsigned int address) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 unsigned int Expansion::execute(uint32_t what) {
-  unsigned int rv = EXECUTE_OK;
+  i2c_rv = EXECUTE_OK;
   if (ctrl != nullptr) {
     switch (what) {
     case WRITE_FLASH:
-      return i2c_transaction(&Expansion::msg_set_flash, nullptr, 0);
+      I2C_TRANSACTION(msg_set_flash, parse_dummy, 0);
       break;
     case READ_FLASH:
-      return i2c_transaction(&Expansion::msg_get_flash,
-                             &Expansion::parse_ans_get_flash,
-                             CTRL_ANS_MSG_GET_FLASH_LEN);
+      I2C_TRANSACTION(msg_get_flash,
+                      parse_ans_get_flash,
+                      CTRL_ANS_MSG_GET_FLASH_LEN);
       break;
     case GET_VERSION:
-      return i2c_transaction(&Expansion::msg_get_fw_version,
-                             &Expansion::parse_ans_get_version,
-                             CTRL_ANS_GET_VERSION_LEN);
+      I2C_TRANSACTION(msg_get_fw_version,
+                      parse_ans_get_version,
+                      CTRL_ANS_GET_VERSION_LEN);
 
       break;
 
     default:
-      rv = EXECUTE_ERR_UNSUPPORTED;
+      i2c_rv = EXECUTE_ERR_UNSUPPORTED;
       break;
     }
   } else {
-    rv = EXECUTE_ERR_NO_CONTROLLER;
+    i2c_rv = EXECUTE_ERR_NO_CONTROLLER;
   }
-  return rv;
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-unsigned int Expansion::i2c_transaction(uint8_t (Expansion::*prepare)(),
-                                        bool (Expansion::*parse)(),
-                                        int rx_bytes) {
-  if (prepare != nullptr) {
-    uint8_t err =
-        ctrl->send(i2c_address, index, type, (this->*prepare)(), rx_bytes);
-    if (err == SEND_RESULT_OK) {
-      if (parse != nullptr) {
-        if (!(this->*parse)()) {
-          return EXECUTE_ERR_PROTOCOL;
-        }
-        return EXECUTE_OK;
-      }
-    } else if (err == SEND_RESULT_COMM_TIMEOUT) {
-      if (com_timeout != nullptr) {
-        com_timeout(index, ctrl->getLastTxArgument());
-      }
-    }
-
-    return EXECUTE_ERR_I2C_COMM;
-  }
-  return EXECUTE_ERR_SINTAX;
+  return i2c_rv;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -286,7 +260,7 @@ bool Expansion::verify_address(unsigned int add) { return false; }
 bool Expansion::getFwVersion(uint8_t &major, uint8_t &minor, uint8_t &release) {
 
   uint8_t err = execute(GET_VERSION);
-  /*Serial.println("GET FW version err = " + String(err));*/
+  Serial.println("GET FW version err = " + String(err));
   if (err == EXECUTE_OK) {
     major = iregs[ADD_VERSION_MAJOR];
     minor = iregs[ADD_VERSION_MINOR];
@@ -294,6 +268,29 @@ bool Expansion::getFwVersion(uint8_t &major, uint8_t &minor, uint8_t &release) {
     return true;
   }
   return false;
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+unsigned int Expansion::i2c_transaction(int rx_bytes) {
+  
+  i2c_rv = EXECUTE_ERR_SINTAX;
+  if (prepare_msg && ctrl != nullptr) {
+      uint8_t err = ctrl->send(i2c_address, index, type, prepare_msg(), rx_bytes);
+      i2c_rv = EXECUTE_ERR_I2C_COMM;
+      if (err == SEND_RESULT_OK) {
+        if (parse_msg) {
+          if (!parse_msg()) {
+            i2c_rv = EXECUTE_ERR_PROTOCOL;
+          }
+          i2c_rv = EXECUTE_OK;
+        }
+      } else if (err == SEND_RESULT_COMM_TIMEOUT) {
+        if (com_timeout != nullptr) {
+          com_timeout(index, ctrl->getLastTxArgument());
+        }
+      }
+  }
+  return i2c_rv;
 }
 
 } // namespace Opta

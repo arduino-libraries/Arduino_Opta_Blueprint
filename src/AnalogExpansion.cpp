@@ -963,33 +963,6 @@ int AnalogExpansion::analogRead(int pin, bool update /* = true*/) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-unsigned int
-AnalogExpansion::i2c_transaction(uint8_t (AnalogExpansion::*prepare)(),
-                                 bool (AnalogExpansion::*parse)(),
-                                 int rx_bytes) {
-  if (prepare != nullptr) {
-    uint8_t err =
-        ctrl->send(i2c_address, index, type, (this->*prepare)(), rx_bytes);
-    if (err == SEND_RESULT_OK) {
-      if (parse != nullptr) {
-        if (!(this->*parse)()) {
-          return EXECUTE_ERR_PROTOCOL;
-        }
-        return EXECUTE_OK;
-      }
-    } else if (err == SEND_RESULT_COMM_TIMEOUT) {
-      if (com_timeout != nullptr) {
-        com_timeout(index, ctrl->getLastTxArgument());
-      }
-    }
-
-    return EXECUTE_ERR_I2C_COMM;
-  }
-  return EXECUTE_ERR_SINTAX;
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 bool AnalogExpansion::parse_oa_ack() {
   if (ctrl != nullptr) {
 
@@ -1033,89 +1006,80 @@ bool AnalogExpansion::verify_address(unsigned int add) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 unsigned int AnalogExpansion::execute(uint32_t what) {
-  unsigned int rv = EXECUTE_OK;
+  i2c_rv = EXECUTE_OK;
   if (ctrl != nullptr) {
     switch (what) {
 
     case BEGIN_CHANNEL_AS_ADC:
-      rv = i2c_transaction(&AnalogExpansion::msg_begin_adc,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_begin_adc,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case BEGIN_CHANNEL_AS_DI:
-      rv = i2c_transaction(&AnalogExpansion::msg_begin_di,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_begin_di,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case BEGIN_CHANNEL_AS_RTD:
-      rv = i2c_transaction(&AnalogExpansion::msg_begin_rtd,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_begin_rtd,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case BEGIN_CHANNEL_AS_DAC:
-      rv = i2c_transaction(&AnalogExpansion::msg_begin_dac,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_begin_dac,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case SET_PWM:
-      rv = i2c_transaction(&AnalogExpansion::msg_set_pwm,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_set_pwm,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case GET_SINGLE_ANALOG_INPUT:
-      rv = i2c_transaction(&AnalogExpansion::msg_get_adc,
-                           &AnalogExpansion::parse_ans_get_adc,
-                           CTRL_ANS_OA_GET_ADC_LEN);
+      I2C_TRANSACTION(msg_get_adc,
+                      parse_ans_get_adc,
+                      CTRL_ANS_OA_GET_ADC_LEN);
       break;
     case SET_SINGLE_ANALOG_OUTPUT:
-      rv = i2c_transaction(&AnalogExpansion::msg_set_dac,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_set_dac,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case BEGIN_RTD_UPDATE_TIME:
-      rv = i2c_transaction(&AnalogExpansion::msg_set_rtd_time,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_set_rtd_time,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case GET_RTD:
-      rv = i2c_transaction(&AnalogExpansion::msg_get_rtd,
-                           &AnalogExpansion::parse_ans_get_rtd,
-                           CTRL_ANS_OA_GET_RTD_LEN);
+      I2C_TRANSACTION(msg_get_rtd,
+                      parse_ans_get_rtd,
+                      CTRL_ANS_OA_GET_RTD_LEN);
       break;
     case SET_LED:
-      rv = i2c_transaction(&AnalogExpansion::msg_set_led,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_set_led,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case GET_DIGITAL_INPUT:
-      rv = i2c_transaction(&AnalogExpansion::msg_get_di,
-                           &AnalogExpansion::parse_ans_get_di,
-                           CTRL_ANS_OA_GET_DI_LEN);
+      I2C_TRANSACTION(msg_get_di,
+                      parse_ans_get_di,
+                      CTRL_ANS_OA_GET_DI_LEN);
       break;
     case GET_ALL_ANALOG_INPUT:
-      rv = i2c_transaction(&AnalogExpansion::msg_get_all_ai,
-                           &AnalogExpansion::parse_ans_get_all_ai,
-                           CTRL_ANS_OA_GET_ALL_ADC_LEN);
+      I2C_TRANSACTION(msg_get_all_ai,
+                      parse_ans_get_all_ai,
+                      CTRL_ANS_OA_GET_ALL_ADC_LEN);
       break;
     case SET_ALL_ANALOG_OUTPUTS:
-      rv = i2c_transaction(&AnalogExpansion::msg_set_all_dac,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_set_all_dac,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case BEGIN_CHANNEL_AS_HIGH_IMP:
-      rv = i2c_transaction(&AnalogExpansion::msg_begin_high_imp,
-                           &AnalogExpansion::parse_oa_ack, CTRL_ANS_OA_LEN);
+      I2C_TRANSACTION(msg_begin_high_imp,
+                      parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
-    /* ################################################################ */
-    case WRITE_FLASH:
-      rv = Expansion::execute(WRITE_FLASH);
-      break;
-    case READ_FLASH:
-      rv = Expansion::execute(READ_FLASH);
-      break;
-    case GET_VERSION:
-      rv = Expansion::execute(GET_VERSION);
-      break;
+    
     default:
-      rv = EXECUTE_ERR_UNSUPPORTED;
+      i2c_rv = Expansion::execute(what);
       break;
     }
     ctrl->updateRegs(*this);
   } else {
-    rv = EXECUTE_ERR_NO_CONTROLLER;
+    i2c_rv = EXECUTE_ERR_NO_CONTROLLER;
   }
-  return rv;
+  return i2c_rv;
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 

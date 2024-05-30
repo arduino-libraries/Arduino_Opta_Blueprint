@@ -53,9 +53,6 @@ protected:
   uint8_t msg_get_all_ai();
   bool parse_ans_get_all_ai();
 
-  unsigned int i2c_transaction(uint8_t (DigitalExpansion::*prepare)(),
-                               bool (DigitalExpansion::*parse)(), int rx_bytes);
-
   static uint16_t timeouts[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
   static uint8_t defaults[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 

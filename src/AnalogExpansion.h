@@ -325,8 +325,7 @@ public:
 
 protected:
   bool verify_address(unsigned int add) override;
-  unsigned int i2c_transaction(uint8_t (AnalogExpansion::*prepare)(),
-                               bool (AnalogExpansion::*parse)(), int rx_bytes);
+  
 
   static OaChannelCfg cfgs[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 
