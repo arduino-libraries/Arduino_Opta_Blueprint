@@ -245,8 +245,9 @@ Expansion *Controller::getExpansionPtr(int device) {
         expansions[device]->setCtrl(this);
       }
     }
+    return expansions[device];
   }
-  return expansions[device];
+  return nullptr;
 }
 
 Expansion dummyExp;

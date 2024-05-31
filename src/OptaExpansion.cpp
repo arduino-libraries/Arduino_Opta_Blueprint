@@ -260,7 +260,6 @@ bool Expansion::verify_address(unsigned int add) { return false; }
 bool Expansion::getFwVersion(uint8_t &major, uint8_t &minor, uint8_t &release) {
 
   uint8_t err = execute(GET_VERSION);
-  Serial.println("GET FW version err = " + String(err));
   if (err == EXECUTE_OK) {
     major = iregs[ADD_VERSION_MAJOR];
     minor = iregs[ADD_VERSION_MINOR];
