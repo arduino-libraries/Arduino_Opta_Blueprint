@@ -303,10 +303,11 @@ void OptaAnalog::update() {
   // This ensure synchronization
   for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
     updateDac(i);
+    updateDacValue(i, false);
   }
   Module::update();
   if (update_dac_using_LDAC) {
-    update_dac_using_LDAC = false;
+    update_dac_using_LDAC--;
     toggle_ldac();
   }
   Module::update();
@@ -1359,7 +1360,7 @@ void OptaAnalog::configureDacValue(uint8_t ch, uint16_t value) {
 void OptaAnalog::toggle_ldac() {
   digitalWrite(LDAC1, LOW);
   digitalWrite(LDAC2, LOW);
-  delay(30);
+  delay(2);
   digitalWrite(LDAC1, HIGH);
   digitalWrite(LDAC2, HIGH);
 }
@@ -1368,16 +1369,11 @@ void OptaAnalog::toggle_ldac() {
 
 void OptaAnalog::updateDacValue(uint8_t ch, bool toggle /*= true*/) {
   if (ch < OA_AN_CHANNELS_NUM) {
-    if (dac[ch].value != dac[ch].set_value) {
       write_reg(OA_REG_DAC_CODE, dac[ch].set_value, ch);
-      // Serial.println("++++++++ DAC ch " + String(ch) + " value " +
-      //                String(dac[ch].set_value));
       dac[ch].value = dac[ch].set_value;
-
       if (toggle) {
         toggle_ldac();
       }
-    }
   }
 }
 
@@ -2090,14 +2086,13 @@ bool OptaAnalog::parse_set_dac_value() {
     uint16_t value = rx_buffer[OA_SET_DAC_VALUE_POS];
     value += (rx_buffer[OA_SET_DAC_VALUE_POS + 1] << 8);
 
-    if (rx_buffer[OA_SET_DAC_UPDATE_VALUE] == 1) {
-      update_dac_using_LDAC = true;
-    } else {
-      update_dac_using_LDAC = false;
-    }
-
     configureDacValue(ch, value);
     updateDacValue(ch, false);
+
+    if (rx_buffer[OA_SET_DAC_UPDATE_VALUE] == 1) {
+      update_dac_using_LDAC = 2;
+    } 
+
     /* value are sent to the analog device during
      * update function */
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
@@ -2113,7 +2108,7 @@ bool OptaAnalog::parse_set_all_dac_value() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_SET_ALL_DAC, LEN_OA_SET_ALL_DAC,
                           OA_SET_ALL_DAC_LEN)) {
 
-    update_dac_using_LDAC = true;
+    update_dac_using_LDAC = 2;
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
     return true;
   }
@@ -2364,9 +2359,11 @@ void OptaAnalog::setup_channels() {
           break;
         case CH_FUNC_VOLTAGE_OUTPUT:
           sendDacConfiguration(ch);
+          updateDacValue(ch, true);
           break;
         case CH_FUNC_CURRENT_OUTPUT:
           sendDacConfiguration(ch);
+          updateDacValue(ch, true);
           break;
         case CH_FUNC_VOLTAGE_INPUT:
           configureAdcEnable(ch, true);

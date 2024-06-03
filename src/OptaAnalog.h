@@ -77,7 +77,7 @@ private:
   uint8_t adc_ch_mask_0_last = 0;
   uint8_t adc_ch_mask_1_last = 0;
 
-  bool update_dac_using_LDAC = false;
+  uint8_t update_dac_using_LDAC = 0;
 
   /* used to avoid change of function while "adding" adc to
    * a certain channel */
