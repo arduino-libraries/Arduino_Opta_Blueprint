@@ -202,6 +202,14 @@ OptaAnalog::OptaAnalog()
 void OptaAnalog::begin() {
   /* ------------------------------------------------------------------------ */
 
+  digitalWrite(DIO_RESET_1,LOW);
+  digitalWrite(DIO_RESET_2,LOW);
+  delay(10);
+  digitalWrite(DIO_RESET_1,HIGH);
+  digitalWrite(DIO_RESET_2,HIGH);
+
+
+
   Module::begin();
   SPI.begin();
 
@@ -511,43 +519,10 @@ bool OptaAnalog::read_direct_reg(uint8_t device, uint8_t addr,
 // resistance measurement
 void OptaAnalog::configureFunction(uint8_t ch, CfgFun_t f) {
   if (ch < OA_AN_CHANNELS_NUM) {
-    CfgFun_t current_fun = fun[ch];
-    if (current_fun != f) {
-      if ((current_fun == CH_FUNC_VOLTAGE_OUTPUT ||
-           current_fun == CH_FUNC_CURRENT_OUTPUT ||
-           current_fun == CH_FUNC_RESISTANCE_MEASUREMENT) &&
-          write_function_configuration[ch]) {
-        configureDacValue(ch, 0);
-        updateDacValue(ch, true);
-        if (ch == 0) {
-          digitalWrite(DIO_RTD_SWITCH_2, LOW);
-        }
-        if (ch == 1) {
-          digitalWrite(DIO_RTD_SWITCH_2, LOW);
-        }
-      }
-
-      if (adc[ch].en_conversion) {
-        configureAdcEnable(ch, false);
-      }
-
-      /* write_function_configuration is a flag to remember that
-       * adc is "added" to a channel. so in this case we need to
-       * avoid to reset the function to High impedance because
-       * we are not actually changing the function */
-      if (current_fun != CH_FUNC_HIGH_IMPEDENCE &&
-          write_function_configuration[ch]) {
-        // to switch function first go in high impedance
-        uint8_t v = CH_HIGH_IMP;
-        write_reg(OA_REG_FUNC_SETUP, v, ch);
-        delay(1);
-      }
-
-      set_channel_setup(ch);
-      fun[ch] = f;
-    }
+    update_fun[ch] = f;
   }
 }
+
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -559,11 +534,10 @@ CfgFun_t OptaAnalog::getFunction(uint8_t ch) {
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-void OptaAnalog::sendFunction(uint8_t ch) {
+void OptaAnalog::sendFunction(uint8_t ch, CfgFun_t f) {
   if (ch < OA_AN_CHANNELS_NUM) {
     uint8_t v = 0;
 
-    CfgFun_t f = fun[ch];
     switch (f) {
     case CH_FUNC_HIGH_IMPEDENCE:
       v = CH_HIGH_IMP;
@@ -2087,8 +2061,7 @@ bool OptaAnalog::parse_set_dac_value() {
     value += (rx_buffer[OA_SET_DAC_VALUE_POS + 1] << 8);
 
     configureDacValue(ch, value);
-    updateDacValue(ch, false);
-
+    
     if (rx_buffer[OA_SET_DAC_UPDATE_VALUE] == 1) {
       update_dac_using_LDAC = 2;
     } 
@@ -2333,28 +2306,71 @@ int OptaAnalog::parse_rx() {
   return rv;
 }
 
-void OptaAnalog::set_channel_setup(uint8_t ch) {
-  if (ch >= 0 && ch <= OA_AN_CHANNELS_NUM) {
-    channel_setup |= (1 << ch);
+
+
+bool OptaAnalog::configuration_to_be_updated() {
+  bool rv = false;
+  for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
+    if(update_fun[ch] != fun[ch]) {
+      rv = true;
+      break;
+    }
   }
+  return rv;
 }
+
+
 void OptaAnalog::setup_channels() {
-  if (channel_setup != 0) {
+  if (configuration_to_be_updated()) {
     stopAdc();
     for (uint8_t ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
-      if ((channel_setup & (1 << ch)) != 0) {
-
-        CfgFun_t f = fun[ch];
-        /* avoid to send High impedance since each channel has already be
-         * reset to High impedance when a new channel function is requested
-         * see configureFunction()*/
-        if (f != CH_FUNC_HIGH_IMPEDENCE && write_function_configuration[ch]) {
-          write_function_configuration[ch] = false;
-
-          sendFunction(ch);
+      if (update_fun[ch] != fun[ch]) {
+        /* new function has been requested */
+        
+        /* disable adc conversion (it will be enable in any case after) */
+        if (adc[ch].en_conversion) {
+          configureAdcEnable(ch, false);
         }
 
-        switch (f) {
+        if(write_function_configuration[ch]) {
+          /* channel must be changed only when an actual request of new function
+             is active and not when an ADC is added to a channel */
+
+          /* if the current function is DAC or RTD reset output value 
+             put the switch in the correct position for channel 0 or 1
+             remember that 3 wires RTD is actually a DAC current ! */
+          if (fun[ch] == CH_FUNC_VOLTAGE_OUTPUT ||
+              fun[ch] == CH_FUNC_CURRENT_OUTPUT || 
+              fun[ch] == CH_FUNC_RESISTANCE_MEASUREMENT) { 
+            configureDacValue(ch, 0);
+            updateDacValue(ch, true);
+            if (ch == 0) {
+              digitalWrite(DIO_RTD_SWITCH_1, LOW);
+            }
+            if (ch == 1) {
+              digitalWrite(DIO_RTD_SWITCH_2, LOW);
+            }
+          }
+
+          /* if the current function is not HIGH IMPEDENCE go in HI 
+            (this is necessary to change the function on a channel) */
+          if (fun[ch] != CH_FUNC_HIGH_IMPEDENCE) {
+            write_reg(OA_REG_FUNC_SETUP, CH_HIGH_IMP, ch);
+            delay(5);
+          }
+
+          /* write the new function only if the new f*/
+        
+          if (update_fun[ch] != CH_FUNC_HIGH_IMPEDENCE) {
+            sendFunction(ch, update_fun[ch]);
+          }
+          write_function_configuration[ch] = false;
+        } //if(write_function_configuration[ch]) {
+
+        /* update the channel configurazione (to be done always also in case
+           of add an ADC channel */
+
+        switch (update_fun[ch]) {
         case CH_FUNC_HIGH_IMPEDENCE:
           break;
         case CH_FUNC_VOLTAGE_OUTPUT:
@@ -2389,7 +2405,9 @@ void OptaAnalog::setup_channels() {
         default:
           break;
         }
-        channel_setup &= ~(1 << ch);
+        
+        /* update the function so that it will be not updated again */
+        fun[ch] = update_fun[ch];
       }
     }
     startAdc();
@@ -2825,6 +2843,51 @@ void OptaAnalog::displayOaDebugInformation() {
   read_reg(0x23, reg, OA_DUMMY_CHANNEL_DEVICE_0);
   print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_0);
 #endif
+}
+
+void printFunction(CfgFun_t f) {
+  if(f == CH_FUNC_HIGH_IMPEDENCE) {
+    Serial.print("High Impedence");
+  } else if(f == CH_FUNC_VOLTAGE_OUTPUT) {
+    Serial.print("DAC Voltage");
+  }
+  else if(f == CH_FUNC_CURRENT_OUTPUT) {
+    Serial.print("DAC Current");
+  }
+  else if(f == CH_FUNC_VOLTAGE_INPUT) {
+    Serial.print("ADC Voltage");
+  }
+  else if(f == CH_FUNC_CURRENT_INPUT_EXT_POWER) {
+    Serial.print("ADC Current");
+  }
+  else if(f == CH_FUNC_CURRENT_INPUT_LOOP_POWER) {
+    Serial.print("ADC Current loop");
+  }
+  else if(f == CH_FUNC_RESISTANCE_MEASUREMENT) {
+    Serial.print("RTD");
+  }
+  else if(f == CH_FUNC_DIGITAL_INPUT) {
+    Serial.print("Digital Input");
+  }
+  else if(f == CH_FUNC_DIGITAL_INPUT_LOOP_POWER) {
+    Serial.print("Digital Input loop");
+  }
+  else if(f == CH_FUNC_UNDEFINED) {
+    Serial.print("Undefined");
+  }
+  else {
+    Serial.print("BOH?");
+  }
+}
+
+
+void OptaAnalog::debugPrintChannelFunction(uint8_t ch) {
+  Serial.print("Ch " + String(ch) + " Fun ");
+  printFunction(fun[ch]);
+  Serial.print("   |    Update Fun ");
+  printFunction(update_fun[ch]);
+  Serial.println();
+
 }
 #endif
 #endif

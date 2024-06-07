@@ -46,6 +46,7 @@ private:
    * Data structures used to hold information about Analog Device AD74412R
    * --------------------------------------------------------------------- */
   CfgFun_t fun[OA_AN_CHANNELS_NUM]; // function configuration x channel
+  volatile CfgFun_t update_fun[OA_AN_CHANNELS_NUM]; // function update configuration x channel
   CfgPwm pwm[OA_PWM_CHANNELS_NUM];  // pwm configuration x channel
   CfgAdc adc[OA_AN_CHANNELS_NUM];   // adc configuration x channel
   CfgDi din[OA_AN_CHANNELS_NUM];    // d[igital]i[nput] configuration x channel
@@ -84,10 +85,9 @@ private:
   bool write_function_configuration[OA_AN_CHANNELS_NUM] = {
       true, true, true, true, true, true, true, true};
 
-  uint8_t channel_setup = 0;
-
-  void set_channel_setup(uint8_t ch);
   void setup_channels();
+  
+  bool configuration_to_be_updated();
 
   /* ABOUT register and reading writing register with the function below
    * --------------------------------------------------------------------
@@ -222,7 +222,7 @@ public:
   /* CONFIGURE CHANNEL FUNCTIONs                                         */
   /* ################################################################### */
   void configureFunction(uint8_t ch, CfgFun_t f);
-  void sendFunction(uint8_t ch);
+  void sendFunction(uint8_t ch, CfgFun_t f);
   CfgFun_t getFunction(uint8_t ch);
 
   /* ################################################################### */
@@ -370,6 +370,7 @@ public:
   void debugAdcConfiguration(uint8_t ch);
   void debugDiConfiguration(uint8_t ch);
   void debugDacFunction(uint8_t ch);
+  void debugPrintChannelFunction(uint8_t ch);
 #endif
 #ifdef DEBUG_UPDATE_FW
   void set_led_on(uint8_t l) { led_status |= (1 << l); }
