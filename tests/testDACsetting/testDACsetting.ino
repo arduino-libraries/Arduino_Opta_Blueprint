@@ -13,7 +13,169 @@
 
 #include "OptaBlue.h"
 
+AnalogExpansion out_expansion;
+AnalogExpansion in_expansion;
 
+/* This test uses 2 opta analog to performs DAC and ADC test 
+   from the HW point of view hw must be "paired" 
+   so channel 0 of expansion 0 is wired with channel 0 of expansion 1,
+   channel 1 of expansion 0 is wired with channel 0 of expansion 1 
+   and so on
+
+   at the beginning 
+   - expansion 0 is DAC --> provides output
+   - expansion 1 is ADC --> read the input
+
+   after a while and then ciclycally roles are inverted 
+
+
+   */
+
+
+void setExpansionAsOutput_1(AnalogExpansion &a) {
+   /* channels from 0 to 3 voltage DAC */
+   a.beginChannelAsVoltageDac(0);
+   a.beginChannelAsVoltageDac(1);
+   a.beginChannelAsVoltageDac(2);
+   a.beginChannelAsVoltageDac(3);
+   /*channels from 4 to 7 are current DAC */
+   a.beginChannelAsCurrentDac(4);
+   a.beginChannelAsCurrentDac(5);
+   a.beginChannelAsCurrentDac(6);
+   a.beginChannelAsCurrentDac(7);
+} 
+
+
+void setExpansionAsInput_1(AnalogExpansion &a) {
+   /* channels from 0 to 3 voltage ADC */
+   a.beginChannelAsAdc(0, OA_VOLTAGE_ADC, true, false, false, 0);
+   a.beginChannelAsAdc(1, OA_VOLTAGE_ADC, true, false, false, 0);
+   a.beginChannelAsAdc(2, OA_VOLTAGE_ADC, true, false, false, 0);
+   a.beginChannelAsAdc(3, OA_VOLTAGE_ADC, true, false, false, 0);
+   /*channels from 4 to 7 are current ADC */
+   a.beginChannelAsAdc(4, OA_CURRENT_ADC, false, false, false, 0);
+   a.beginChannelAsAdc(5, OA_CURRENT_ADC, false, false, false, 0);
+   a.beginChannelAsAdc(6, OA_CURRENT_ADC, false, false, false, 0);
+   a.beginChannelAsAdc(7, OA_CURRENT_ADC, false, false, false, 0);
+} 
+
+void setExpansionAsOutput_2(AnalogExpansion &a) {
+   /* channels from 4 to 7 voltage DAC */
+   a.beginChannelAsVoltageDac(4);
+   a.beginChannelAsVoltageDac(5);
+   a.beginChannelAsVoltageDac(6);
+   a.beginChannelAsVoltageDac(7);
+   /*channels from 0 to 0 are current DAC */
+   a.beginChannelAsCurrentDac(0);
+   a.beginChannelAsCurrentDac(1);
+   a.beginChannelAsCurrentDac(2);
+   a.beginChannelAsCurrentDac(3);
+} 
+
+void setExpansionAsInput_2(AnalogExpansion &a) { //rejection active
+   /* channels from 4 to 7 voltage ADC */
+   a.beginChannelAsAdc(4, OA_VOLTAGE_ADC, true, true, false, 0);
+   a.beginChannelAsAdc(5, OA_VOLTAGE_ADC, true, true, false, 0);
+   a.beginChannelAsAdc(6, OA_VOLTAGE_ADC, true, true, false, 0);
+   a.beginChannelAsAdc(7, OA_VOLTAGE_ADC, true, true, false, 0);
+   /*channels from 0 to 3 are current ADC */
+   a.beginChannelAsAdc(0, OA_CURRENT_ADC, false, true, false, 0);
+   a.beginChannelAsAdc(1, OA_CURRENT_ADC, false, true, false, 0);
+   a.beginChannelAsAdc(2, OA_CURRENT_ADC, false, true, false, 0);
+   a.beginChannelAsAdc(3, OA_CURRENT_ADC, false, true, false, 0);
+} 
+
+
+void initForward_1() {
+   /* expansion 0 out / expansion 1 is in with configuration 1 */
+   out_expansion = OptaController.getExpansion(0);
+   if(out_expansion) {
+      setExpansionAsOutput_1(out_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 0 not found... looping forever...");
+      while(1) {}
+   }
+
+   
+   in_expansion = OptaController.getExpansion(1);
+   if(in_expansion) {
+      setExpansionAsInput_1(in_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 1 not found... looping forever...");
+      while(1) {}
+   }
+}
+
+
+void initForward_2() {
+   /* expansion 0 out / expansion 1 is in with configuration 2 */
+   out_expansion = OptaController.getExpansion(0);
+   if(out_expansion) {
+      setExpansionAsOutput_2(out_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 0 not found... looping forever...");
+      while(1) {}
+   }
+
+   
+   in_expansion = OptaController.getExpansion(1);
+   if(in_expansion) {
+      setExpansionAsInput_2(in_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 1 not found... looping forever...");
+      while(1) {}
+   }
+}
+
+
+void initReverse_1() {
+   /* expansion 0 in / expansion 1 is out with configuration 1 */
+   out_expansion = OptaController.getExpansion(1);
+   if(out_expansion) {
+      setExpansionAsOutput_1(out_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 0 not found... looping forever...");
+      while(1) {}
+   }
+
+   
+   in_expansion = OptaController.getExpansion(0);
+   if(in_expansion) {
+      setExpansionAsInput_1(in_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 1 not found... looping forever...");
+      while(1) {}
+   }
+}
+
+
+void initReverse_2() {
+   /* expansion 0 input / expansion 1 is output with configuration 2 */
+   out_expansion = OptaController.getExpansion(1);
+   if(out_expansion) {
+      setExpansionAsOutput_2(out_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 0 not found... looping forever...");
+      while(1) {}
+   }
+
+   
+   in_expansion = OptaController.getExpansion(0);
+   if(in_expansion) {
+      setExpansionAsInput_2(in_expansion);
+   }
+   else {
+      if(Serial) Serial.println("Analog Expansion 1 not found... looping forever...");
+      while(1) {}
+   }
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                 SETUP                                      */
@@ -24,131 +186,102 @@ void setup() {
    delay(2000);
 
    OptaController.begin();
-   delay(1000);
-
-   /* Test is suppose to  Opta Analog 0-1 */
-
-   AnalogExpansion a1 = OptaController.getExpansion(0);
-   AnalogExpansion a2 = OptaController.getExpansion(1);
-
-  
-
-   if(a1 && a2) {
-      
-      Serial.println("Time needed after setting up channels");
-
-
-      for(int ch = 0; ch < 8; ch++ ) {
-         a1.beginChannelAsDac(ch,
-                              OA_VOLTAGE_DAC,
-                              true,
-                              false,
-                              OA_SLEW_RATE_0);
-
-         unsigned int start = millis();
-         a1.pinVoltage((uint8_t)ch, (float)3.0);
-
-         a2.beginChannelAsAdc(ch, // the output channel you are using
-                              OA_VOLTAGE_ADC, // adc type
-                              true, // enable pull down
-                              false, // disable rejection
-                              false, // disable diagnostic
-                              0); // disable averaging
-
-         float value = a2.pinVoltage((uint8_t)ch);
-
-         while(value > 3.1 || value < 2.9) {
-            value = a2.pinVoltage((uint8_t)ch);  
-         }
-
-         unsigned int stop = millis();
-
-         Serial.println("Channel " + String(ch) + " took " + String(stop -  start));
-
-      }   
+   initReverse_1();
    
-   }
-   else {
-      Serial.println("Analog expansion at index 0 and 1 not found");
-   }
 
-
-   Serial.println("Exit setup in 10 second main loop is going to begin");
-   delay(5000);
-
+   if(Serial) Serial.println("Exit setup");
      
    
-}   
+}
    
+#define MAX_TEST_VALUES 10
+
+static const float voltages[MAX_TEST_VALUES] = {1.4, 9.7, 3.6, 8.8, 5.2, 2.3, 7.8,
+9.2, 4.1, 8.6};
+static const float currents[MAX_TEST_VALUES] = {2.3, 12.0, 8.5, 9.2, 7.8, 19.3,
+1.9, 14.5, 9.3, 2.2};
 
 
+int myrand(int _min, int _max) {
+  return _min + ( std::rand() % ( _max - _min + 1 ) );
+}
 
-
+#define RANDOMFUNCTION myrand(0,6)
 
 /* -------------------------------------------------------------------------- */
 /*                                  LOOP                                      */
 /* -------------------------------------------------------------------------- */
 void loop() {
 /* -------------------------------------------------------------------------- */    
+   static uint8_t configuration = 0;
+
    OptaController.update();
    
-
-   static float set_value = 0.0;
-   static bool increment = true;
-
-   AnalogExpansion a1 = OptaController.getExpansion(0);
-   AnalogExpansion a2 = OptaController.getExpansion(1);
-
-   if(a1 && a2) {
+   /* TEST adc and dac ---- expansion 0 and 1 */
+   
+   if(in_expansion && out_expansion) {
+      static uint8_t index = 0;
       
       for(int ch = 0; ch < 8; ch++ ) {
 
-         Serial.print("Set value = " +  String(set_value));
+         if(out_expansion.isChCurrentDac(ch)){
+            if(Serial) Serial.print("Exp " + String(out_expansion.getIndex()) + " SET out ch " + String(ch) + " to " +
+            String(currents[index]) + " mA... ");
+            out_expansion.pinCurrent((uint8_t)ch, currents[index]);
+            unsigned int start = millis();
 
-         unsigned int start = millis();
-         a1.pinVoltage((uint8_t)ch, (float)set_value);
+            float value = in_expansion.pinCurrent((uint8_t)ch);
+            while(value > (currents[index] + 0.3) || value < (currents[index] - 0.3)) {
+               value = in_expansion.pinCurrent((uint8_t)ch);  
+            }
+            if(Serial) Serial.println( " | Exp " +  String(in_expansion.getIndex()) + " read " + String(value) + "V -->" " OK! in " + String(millis()-start));
 
-         float value = a2.pinVoltage((uint8_t)ch);
+         }
+         else if(out_expansion.isChVoltageDac(ch)) {
+            if(Serial) Serial.print("Exp " + String(out_expansion.getIndex()) + " SET out ch " + String(ch) + " to " +
+            String(voltages[index]) + " V... ");
+            out_expansion.pinVoltage((uint8_t)ch, voltages[index]);
+            unsigned int start = millis();
 
-         while(value > (set_value + 0.1) || value < (set_value - 0.1)) {
-            value = a2.pinVoltage((uint8_t)ch);  
+            float value = in_expansion.pinVoltage((uint8_t)ch);
+            while(value > (voltages[index] + 0.3) || value < (voltages[index] - 0.3)) {
+               value = in_expansion.pinVoltage((uint8_t)ch);  
+            }
+
+            if(Serial) Serial.println( " | Exp " +  String(in_expansion.getIndex()) + " read " + String(value) + "V -->" " OK! in " + String(millis()-start));
+         }
+      }
+      index++;
+      if(index >= MAX_TEST_VALUES) {
+         index = 0;
+
+         configuration++;
+         if(configuration >= 4) {
+            configuration = 0;
          }
 
-         unsigned int stop = millis();
+         Serial.println("configuration = " + String(configuration));
 
-         Serial.println("  Channel " + String(ch) + " took " + String(stop -  start));
-
-      }   
-   
+         if(configuration == 0) {
+            Serial.println("\n------ Configurazione FORWARD 1");
+            initForward_1();
+         }
+         else if(configuration == 1) {
+            Serial.println("\n------ Configurazione REVERSE 1");
+            initReverse_1();
+         }
+         else if(configuration == 2) {
+            Serial.println("\n------ Configurazione FORWARD 2");
+            initForward_2();
+         }
+         else if(configuration == 3) {
+            Serial.println("\n------ Configurazione REVERSE 2");
+            initReverse_2();
+         }
+      }
+      Serial.println("index = " + String(index));
    }
    else {
       Serial.println("Analog expansion at index 0 and 1 not found");
    }
-
-   if(increment) {
-
-      set_value += 1.0;
-   }
-   else {
-      set_value -= 1.0;
-   }
-
-   
-   if(set_value > 10) {
-      increment = false;
-      set_value = 9.0;
-   }
-
-   
-
-   if(set_value < 0.0) {
-      increment = true;
-      set_value = 0.0;
-   }
-
-   
-
-  
-   
-
 }
