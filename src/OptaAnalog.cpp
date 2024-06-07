@@ -285,21 +285,8 @@ void OptaAnalog::debug_with_leds() {
   }
 }
 #endif
-void new_i2c_address_obtained(void *ptr) {
-  OptaAnalog *oa = (OptaAnalog *)ptr;
-  if (ptr != nullptr) {
-    if (oa->getI2CAddress() >= OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS &&
-        oa->getI2CAddress() < OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS) {
-      oa->swAnalogDevReset();
-      oa->suspendPwm(0);
-      oa->suspendPwm(1);
-      oa->suspendPwm(2);
-      oa->suspendPwm(3);
-    }
-  }
-}
-void OptaAnalog::update() {
 
+void OptaAnalog::update() {
   Module::update();
 #ifdef DEBUG_UPDATE_FW
   debug_with_leds();
@@ -2365,6 +2352,7 @@ void OptaAnalog::setup_channels() {
           if (fun[ch] == CH_FUNC_VOLTAGE_OUTPUT ||
               fun[ch] == CH_FUNC_CURRENT_OUTPUT || 
               fun[ch] == CH_FUNC_RESISTANCE_MEASUREMENT) { 
+
             configureDacValue(ch, 0);
             updateDacValue(ch, true);
             if (ch == 0) {
