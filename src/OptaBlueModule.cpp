@@ -562,7 +562,7 @@ bool Module::parse_set_flash() {
     add += (rx_buffer[SAVE_ADDRESS_2_POS] << 8);
     uint8_t d = rx_buffer[SAVE_DIMENSION_POS];
 
-    writeInFlash(add, rx_buffer + SAVE_DATA_INIT_POS, d);
+    writeInFlash(add, rx_buffer + SAVE_DATA_INIT_POS, 32);
     return true;
   } else {
     return false;
