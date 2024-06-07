@@ -166,15 +166,12 @@ public:
   CfgOutSlewRate_t slew_rate;
   CfgOutSlewStep_t slew_step;
   uint16_t reset_value;   // value when a CLEAR_DAC is issued
-  uint16_t set_value;     // value the DAC is set to
-  uint16_t value;         // value the DAC is requested to be set to
   uint16_t present_value; // value the DAC is using due to slew rate
                           // limitation set
   bool enable_clear;
   bool enable_slew;
   CfgDac() {
     reset_value = 0;
-    set_value = 0;
     current_limit = OUT_CURRENT_LIMIT_7_5mA;
     slew_rate = OUT_SLEW_RATE_4k;
     slew_step = OUT_SLEW_STEP_64;
