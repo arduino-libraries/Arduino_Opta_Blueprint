@@ -54,6 +54,9 @@ private:
   CfgDac dac[OA_AN_CHANNELS_NUM];   // dac configuration x channel
   CfgRtd rtd[OA_AN_CHANNELS_NUM];   // rtd configuration x channel
 
+  volatile bool dac_value_updated[OA_AN_CHANNELS_NUM];
+  volatile uint16_t dac_values[OA_AN_CHANNELS_NUM];
+
   uint16_t alert[OA_AN_DEVICES_NUM];
   uint16_t aMask[OA_AN_DEVICES_NUM]; // a[lert]Mask
   uint16_t state[OA_AN_DEVICES_NUM];
@@ -78,7 +81,7 @@ private:
   uint8_t adc_ch_mask_0_last = 0;
   uint8_t adc_ch_mask_1_last = 0;
 
-  uint8_t update_dac_using_LDAC = 0;
+  bool update_dac_using_LDAC = false;
 
   /* used to avoid change of function while "adding" adc to
    * a certain channel */
@@ -88,6 +91,8 @@ private:
   void setup_channels();
   
   bool configuration_to_be_updated();
+
+  bool are_all_dac_updated();
 
   /* ABOUT register and reading writing register with the function below
    * --------------------------------------------------------------------

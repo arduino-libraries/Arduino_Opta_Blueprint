@@ -193,6 +193,8 @@ OptaAnalog::OptaAnalog()
   expansion_type = EXPANSION_OPTA_ANALOG;
   for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
     fun[i] = CH_FUNC_HIGH_IMPEDENCE;
+    dac_value_updated[i] = true;
+    dac_values[i] = 0;
   }
   /* ------------------------------------------------------------------------ */
 }
@@ -314,8 +316,9 @@ void OptaAnalog::update() {
     updateDacValue(i, false);
   }
   Module::update();
-  if (update_dac_using_LDAC) {
-    update_dac_using_LDAC--;
+  if (update_dac_using_LDAC && are_all_dac_updated()) {
+    update_dac_using_LDAC = false;
+    
     toggle_ldac();
   }
   Module::update();
@@ -1327,14 +1330,14 @@ void OptaAnalog::sendDacConfiguration(uint8_t ch) {
 void OptaAnalog::configureDacValue(uint8_t ch, uint16_t value) {
   if (ch < OA_AN_CHANNELS_NUM) {
     if (value <= OA_MAX_DAC_VALUE) {
-      dac[ch].set_value = value;
+      dac_values[ch] = value;
     }
   }
 }
 void OptaAnalog::toggle_ldac() {
   digitalWrite(LDAC1, LOW);
   digitalWrite(LDAC2, LOW);
-  delay(2);
+  delay(5);
   digitalWrite(LDAC1, HIGH);
   digitalWrite(LDAC2, HIGH);
 }
@@ -1343,8 +1346,17 @@ void OptaAnalog::toggle_ldac() {
 
 void OptaAnalog::updateDacValue(uint8_t ch, bool toggle /*= true*/) {
   if (ch < OA_AN_CHANNELS_NUM) {
-      write_reg(OA_REG_DAC_CODE, dac[ch].set_value, ch);
-      dac[ch].value = dac[ch].set_value;
+      write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
+      uint16_t set_value = 0;
+      read_reg(OA_REG_DAC_CODE, set_value, ch);
+      while(set_value != dac_values[ch]) {
+        write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
+        read_reg(OA_REG_DAC_CODE, set_value, ch);
+      }
+      if(!dac_value_updated[ch]) {
+        dac_value_updated[ch] = true;
+      }
+      
       if (toggle) {
         toggle_ldac();
       }
@@ -2061,9 +2073,10 @@ bool OptaAnalog::parse_set_dac_value() {
     value += (rx_buffer[OA_SET_DAC_VALUE_POS + 1] << 8);
 
     configureDacValue(ch, value);
+    dac_value_updated[ch] = false;
     
     if (rx_buffer[OA_SET_DAC_UPDATE_VALUE] == 1) {
-      update_dac_using_LDAC = 2;
+      update_dac_using_LDAC = true;
     } 
 
     /* value are sent to the analog device during
@@ -2081,7 +2094,7 @@ bool OptaAnalog::parse_set_all_dac_value() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_SET_ALL_DAC, LEN_OA_SET_ALL_DAC,
                           OA_SET_ALL_DAC_LEN)) {
 
-    update_dac_using_LDAC = 2;
+    update_dac_using_LDAC = false;
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
     return true;
   }
@@ -2307,6 +2320,16 @@ int OptaAnalog::parse_rx() {
 }
 
 
+bool OptaAnalog::are_all_dac_updated() {
+  bool rv = true;
+  for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
+    if(!dac_value_updated[ch]) {
+      rv = false;
+      break;
+    }
+  }
+  return rv;
+}
 
 bool OptaAnalog::configuration_to_be_updated() {
   bool rv = false;
@@ -2375,11 +2398,9 @@ void OptaAnalog::setup_channels() {
           break;
         case CH_FUNC_VOLTAGE_OUTPUT:
           sendDacConfiguration(ch);
-          updateDacValue(ch, true);
           break;
         case CH_FUNC_CURRENT_OUTPUT:
           sendDacConfiguration(ch);
-          updateDacValue(ch, true);
           break;
         case CH_FUNC_VOLTAGE_INPUT:
           configureAdcEnable(ch, true);
