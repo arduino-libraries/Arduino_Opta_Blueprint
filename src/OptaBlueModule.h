@@ -85,7 +85,9 @@ public:
   uint8_t *txPrt();
 
   void setRebootSent() { reboot_sent = millis(); }
-
+  #ifdef USE_CONFIRM_RX_MESSAGE
+  bool parse_confirm_address_rx();
+  #endif
   bool parse_set_address();
   bool parse_get_address_and_type();
   bool parse_reset_controller();
@@ -99,6 +101,7 @@ public:
   int prepare_ans_get_version();
   int prepare_ans_reboot();
   int prepare_ans_get_flash();
+  
   uint8_t getI2CAddress() { return address; }
 
 protected:
@@ -106,6 +109,9 @@ protected:
   uint8_t rx_num;
   volatile bool reboot_required;
   volatile bool reset_required;
+  #ifdef USE_CONFIRM_RX_MESSAGE
+  volatile bool confirm_address_reception = false;
+  #endif
   uint8_t *ans_buffer;
   int expansion_type;
   unsigned long int reboot_sent;

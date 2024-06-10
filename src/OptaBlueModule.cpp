@@ -149,6 +149,9 @@ void Module::reset() {
   if (Module::expWire != nullptr) {
     Module::expWire->end();
   }
+  #ifdef USE_CONFIRM_RX_MESSAGE
+  confirm_address_reception = false;
+  #endif
 
   setStatusLedWaitingForAddress();
   /* put address to invalid */
@@ -276,11 +279,26 @@ void Module::update() {
 #endif
 }
 
-/* --------------------------------------------------------------------------
- */
+#ifdef USE_CONFIRM_RX_MESSAGE
+/* -------------------------------------------------------------------------- */
+bool Module::parse_confirm_address_rx() {
+  /* ------------------------------------------------------------------------ */
+  if (checkSetMsgReceived(rx_buffer, ARG_CONFIRM_ADDRESS_RX, LEN_CONFIRM_ADDRESS_RX,
+                          CONFIRM_ADDRESS_RX_LEN)) {
+    if(rx_buffer[CONFIRM_ADDRESS_FIRST_POS] == CONFIRM_ADDRESS_FIRST_VALUE && 
+      rx_buffer[CONFIRM_ADDRESS_SECOND_POS] == CONFIRM_ADDRESS_SECOND_VALUE) {
+      confirm_address_reception = true;
+    }
+    return true;
+  }
+  return false;
+}
+#endif
+
+
+/* -------------------------------------------------------------------------- */
 bool Module::parse_set_address() {
-  /* ------------------------------------------------------------------------
-   */
+  /* ------------------------------------------------------------------------ */
   if (checkSetMsgReceived(rx_buffer, ARG_ADDRESS, LEN_ADDRESS,
                           MSG_SET_ADDRESS_LEN)) {
     address = rx_buffer[BP_PAYLOAD_START_POS];
@@ -413,6 +431,11 @@ int Module::parse_rx() {
     new_i2c_address_obtained(this);
     return rv;
   }
+  #ifdef USE_CONFIRM_RX_MESSAGE
+  else if(parse_confirm_address_rx()) {
+    return 0;
+  }
+  #endif
   /* reset control message */
   else if (parse_reset_controller()) {
     reset_required = true;
@@ -521,6 +544,7 @@ bool Module::is_detect_out_high() {
 void Module::updatePinStatus() {
   /* ----------------------------------------------------------------------
    */
+
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
   Serial.print("- UPDATE PIN ");
 #endif
@@ -540,15 +564,20 @@ void Module::updatePinStatus() {
     Serial.println(address, HEX);
 #endif
     setStatusLedHasAddress();
-
-    if (is_detect_in_low()) {
-      reset_required = true;
-    } else if (is_detect_out_low()) {
-      reset_required = true;
-    } else {
-      pinMode(detect_out, INPUT_PULLUP);
-      digitalWrite(detect_in, HIGH);
+    #ifdef USE_CONFIRM_RX_MESSAGE
+    if(confirm_address_reception) {
+    #endif  
+      if (is_detect_in_low()) {
+        reset_required = true;
+      } else if (is_detect_out_low()) {
+        reset_required = true;
+      } else {
+        pinMode(detect_out, INPUT_PULLUP);
+        digitalWrite(detect_in, HIGH);
+      }
+    #ifdef USE_CONFIRM_RX_MESSAGE  
     }
+    #endif
   }
 }
 
@@ -581,6 +610,10 @@ bool Module::parse_get_flash() {
   }
   return false;
 }
+
+
+
+
 
 /* ------------------------------------------------------------------------ */
 int Module::prepare_ans_get_flash() {
