@@ -66,6 +66,25 @@ Opta Controller is build.
 **_NOTE: in the following we suppose that the new expansion "name" is
 "NewExpansion"_**
 
+## Performance request
+Each expansion performs Assign Address Process using a common class Module, which
+is contained in OptaBlueModule files (.h and .cpp).
+In particular the function Module::update() is responsible to change the I2C address 
+of the expansion. 
+When the expansion has not a valid address and it receives the command from the
+controller to set up the address, the change of the address (being performed in 
+Module::update()) is done in the main loop of the function.
+So there is a delay between the time the expansion get the message (I2C interrupt) and
+the moment the espansion actually set the address (in the main loop).
+The actual set of the expansion, in other word, depends on how "fast" is the main
+loop, however the main controller waits for a certain time and then retry the
+process. 
+The expansion must set the new address as fast as it can!
+This means that is is strongly suggested that the main loop of the expansion
+only runs when the address is valid, so that when not a valid address has been set up,
+it can react very quickly to the address set request.
+
+
 ### OptaNewExpansion class
 
 The files OptaNewExpansion file .h and .cpp must contain the implementation
