@@ -190,7 +190,7 @@ void initReverse_2() {
 void setup() {
 /* -------------------------------------------------------------------------- */    
    Serial.begin(115200);
-   delay(2000);
+   delay(5000);
 
    OptaController.begin();
    initReverse_1();
@@ -313,14 +313,14 @@ void loop() {
    if(rtd_in) {
    	for(int i = 0; i < 8; i++) {
    		if(rtd_in.isChRtd(i)) {
-   			Serial.println("RTD expansion - channel " + String(i) + " reading value " + String(rtd_in.getRtd(i)) + " ohm");
+   			Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value " + String(rtd_in.getRtd(i)) + " ohm");
    		}
    		else if(rtd_in.isChDigitalInput(i)) {
    			rtd_in.updateDigitalInputs();
    			if(rtd_in.digitalRead(i)==HIGH){
-   				Serial.println("RTD expansion - channel " + String(i) + " reading value HIGH (DIGITAL)");
+   				Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value HIGH (DIGITAL)");
    			} else if(rtd_in.digitalRead(i)==LOW){
-   				Serial.println("RTD expansion - channel " + String(i) + " reading value LOW (DIGITAL)");
+   				Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value LOW (DIGITAL)");
    			}
    		}
    	}

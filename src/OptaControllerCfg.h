@@ -36,6 +36,8 @@
    It exits as soon as the message is received */
 #define OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT 50
 
+#define OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE 100
+
 #define OPTA_CONTROLLER_DELAY_AFTER_REBOOT 600
 
 /* this is the time the controller leaves to expansion to "set up" themselves

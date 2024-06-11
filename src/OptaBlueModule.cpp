@@ -155,9 +155,8 @@ void Module::reset() {
 
   setStatusLedWaitingForAddress();
   /* put address to invalid */
+  wire_i2c_address = OPTA_DEFAULT_SLAVE_I2C_ADDRESS;
   
-  address = OPTA_DEFAULT_SLAVE_I2C_ADDRESS;
-
   /* detect_in (toward Controller) as Output */
   pinMode(detect_in, OUTPUT);
   /* put detect in pin to LOW -> signal the MODULE wants an address */
@@ -176,7 +175,7 @@ void Module::reset() {
   
   /* put I2C address to the default one */
   if (Module::expWire != nullptr) {
-    Module::expWire->begin(address);
+    Module::expWire->begin(wire_i2c_address);
   }
   
 }
@@ -187,7 +186,7 @@ void Module::reset() {
 /* --------------------------------------------------------------------------
  */
 Module::Module()
-    : address(OPTA_DEFAULT_SLAVE_I2C_ADDRESS), rx_num(0), reboot_required(false),
+    : rx_num(0), reboot_required(false),
       reset_required(false), ans_buffer(nullptr),
       expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
       detect_in(DETECT_IN), detect_out(DETECT_OUT) {
@@ -195,7 +194,7 @@ Module::Module()
 }
 
 Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
-    : address(OPTA_DEFAULT_SLAVE_I2C_ADDRESS), rx_num(0),
+    : rx_num(0),
       reboot_required(false), reset_required(false), ans_buffer(nullptr),
       expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
       detect_in(_detect_in), detect_out(_detect_out) {
@@ -207,7 +206,7 @@ Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
 /* --------------------------------------------------------------------------
  */
 bool Module::addressAcquired() {
-  return ((address > OPTA_DEFAULT_SLAVE_I2C_ADDRESS));
+  return ((wire_i2c_address > OPTA_DEFAULT_SLAVE_I2C_ADDRESS));
 }
 
 /* --------------------------------------------------------------------------
@@ -241,14 +240,14 @@ void Module::begin() {
 /* --------------------------------------------------------------------------
  */
 void Module::update() {
-
   if(reset_I2C_bus) {
     /* 20240515_moved_I2C_reset moved reset I2C to main */
     pinMode(detect_out, INPUT_PULLUP);
     delay(1);
     /* accept the address only if detect out is HIGH */
     if (digitalRead(detect_out) == HIGH) {
-      setAddress(address);
+      wire_i2c_address = rx_i2c_address;
+      setAddress(wire_i2c_address);
     }
     reset_I2C_bus = false;
   }
@@ -301,7 +300,7 @@ bool Module::parse_set_address() {
   /* ------------------------------------------------------------------------ */
   if (checkSetMsgReceived(rx_buffer, ARG_ADDRESS, LEN_ADDRESS,
                           MSG_SET_ADDRESS_LEN)) {
-    address = rx_buffer[BP_PAYLOAD_START_POS];
+    rx_i2c_address = rx_buffer[BP_PAYLOAD_START_POS];
     set_address_msg_received = true;
     return true;
   }
@@ -399,7 +398,7 @@ bool Module::parse_reboot() {
 int Module::prepare_ans_get_address_and_type() {
   /* ----------------------------------------------------------------------
    */
-  tx_buffer[BP_PAYLOAD_START_POS] = address;
+  tx_buffer[BP_PAYLOAD_START_POS] = wire_i2c_address;
   tx_buffer[BP_PAYLOAD_START_POS + 1] = expansion_type;
   return prepareGetAns(tx_buffer, ANS_ARG_ADDRESS_AND_TYPE,
                        ANS_LEN_ADDRESS_AND_TYPE, ANS_MSG_ADDRESS_AND_TYPE_LEN);
@@ -561,7 +560,7 @@ void Module::updatePinStatus() {
   } else {
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
     Serial.print("ADDRESS ACQUIRED ");
-    Serial.println(address, HEX);
+    Serial.println(wire_i2c_address, HEX);
 #endif
     setStatusLedHasAddress();
     #ifdef USE_CONFIRM_RX_MESSAGE

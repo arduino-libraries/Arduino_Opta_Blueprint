@@ -204,7 +204,7 @@ private:
 
   /* ---------------  generic message handling functions ----------------- */
 
-  bool wait_for_device_answer(uint8_t device, uint8_t wait_for);
+  bool wait_for_device_answer(uint8_t device, uint8_t wait_for, uint16_t timeout);
 
   /* ---------------- message preparation functions ---------------------- */
 
@@ -213,11 +213,15 @@ private:
   uint8_t msg_opta_reset();
   uint8_t msg_opta_reboot();
   uint8_t msg_get_product_type();
+  #ifdef USE_CONFIRM_RX_MESSAGE
+  uint8_t msg_confirm_rx_address();
+  #endif
   /* -------------------- parse message functions ------------------------ */
 
   bool parse_get_product();
   bool parse_address_and_type(int slave_address);
   bool parse_opta_reboot();
+
 
   void _send(int add, int n, int r);
 

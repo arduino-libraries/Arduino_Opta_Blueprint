@@ -102,10 +102,11 @@ public:
   int prepare_ans_reboot();
   int prepare_ans_get_flash();
   
-  uint8_t getI2CAddress() { return address; }
+  uint8_t getI2CAddress() { return wire_i2c_address; }
 
 protected:
-  uint8_t address;
+  volatile uint8_t rx_i2c_address = OPTA_DEFAULT_SLAVE_I2C_ADDRESS;
+  uint8_t wire_i2c_address = OPTA_DEFAULT_SLAVE_I2C_ADDRESS;
   uint8_t rx_num;
   volatile bool reboot_required;
   volatile bool reset_required;

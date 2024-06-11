@@ -464,7 +464,7 @@ void OptaDigital::update() {
            Module */
   Module::update();
 
-  // if (Module::addressAcquired()) {
+  
   /* always "refresh" the header of the answers */
   ans_get_din_buffer[BP_CMD_POS] = BP_ANS_GET;
   ans_get_din_buffer[BP_ARG_POS] = ANS_ARG_OPDIG_DIGITAL;
@@ -473,6 +473,18 @@ void OptaDigital::update() {
   ans_get_all_ain_buffer[BP_CMD_POS] = BP_ANS_GET;
   ans_get_all_ain_buffer[BP_ARG_POS] = ANS_ARG_OPTDIG_ALL_ANALOG_IN;
   ans_get_all_ain_buffer[BP_LEN_POS] = ANS_LEN_OPTDIG_ALL_ANALOG_IN;
+
+  /* Added to have the same behaviour of Opta Analog
+     [Opta analog has a slow main that depends on the operation it is performing
+     at the very beginning (when the espansion has not an address yet) it is 
+     necessary to go faster so the main is skipped untill the expansion gets 
+     a valid address]
+     This would not be necessary in case of Digital because the main loop is fast
+      */
+  if(wire_i2c_address <= OPTA_DEFAULT_SLAVE_I2C_ADDRESS || wire_i2c_address >= OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS) {
+    return;
+  }
+
 
   /* update output */
   _updateDigitalOut();
@@ -530,7 +542,7 @@ void OptaDigital::update() {
 
     R_ADC_ScanStart(&(opta_adc.ctrl));
   }
-  //}
+  
 }
 
 #ifdef EN_DIGITAL_STANDALONE

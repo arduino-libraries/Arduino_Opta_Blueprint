@@ -288,6 +288,16 @@ void OptaAnalog::debug_with_leds() {
 
 void OptaAnalog::update() {
   Module::update();
+
+  /* Opta analog has a slow main that depends on the operation it is performing
+     at the very beginning (when the espansion has not an address yet) it is 
+     necessary to go faster so the main is skipped untill the expansion gets 
+     a valid address */
+
+  if(wire_i2c_address <= OPTA_DEFAULT_SLAVE_I2C_ADDRESS || wire_i2c_address >= OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS) {
+    return;
+  }
+
 #ifdef DEBUG_UPDATE_FW
   debug_with_leds();
   updateLedStatus();

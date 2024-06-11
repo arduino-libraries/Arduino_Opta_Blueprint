@@ -188,7 +188,7 @@ uint8_t Controller::send(int add, int device, unsigned int type, int n, int r) {
         _send(add, n, r);
 
         if (r > 0) {
-          if (wait_for_device_answer(device, r)) {
+          if (wait_for_device_answer(device, r, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
             return SEND_RESULT_OK;
           }
           return SEND_RESULT_COMM_TIMEOUT;
@@ -377,7 +377,7 @@ bool Controller::rebootExpansion(uint8_t device) {
 
     _send(exp_add[device], msg_opta_reboot(), req);
 
-    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req)) {
+    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
       if (parse_opta_reboot()) {
         delay(OPTA_CONTROLLER_DELAY_AFTER_REBOOT);
         return true;
@@ -562,18 +562,29 @@ void Controller::checkForExpansions() {
       tmp_exp_add[i] = 0;
     }
     num_of_exp = 0;
+    
+    for(int i = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 1; i < OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 2*OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
+      _send(i, msg_opta_reset(), 0);
+    }
+    delay(OPTA_CONTROLLER_SETUP_INIT_DELAY);
   }
   
   tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
+  bool send_new_address = true;
   
   while (enter_while) {
+
+    if(send_new_address) {
+
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println("[LOG]:  - DETECT pin is LOW (expansions without address)");
-    Serial.println("        - Sending SET address message");
+    Serial.println("        - Sending SET temp address message 0x" + String(tmp_address,HEX));
 #endif
-    _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
+      _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
+      delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
+    }
 
-    delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
+    send_new_address = false;
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println("        - Sending GET address message");
@@ -598,9 +609,25 @@ void Controller::checkForExpansions() {
        tmp_num_of_exp so that tmp_exp_add array is filled in a circular way
      */
 
-    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req)) {
-      parse_address_and_type(tmp_address);
+    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+      if(parse_address_and_type(tmp_address)) {
+        #ifdef USE_CONFIRM_RX_MESSAGE
+        delay(5);
+        _send(tmp_address, msg_confirm_rx_address(),0);
+        #endif
+        send_new_address = true;
+        #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+        Serial.println("        GOT IT! ");
+        #endif
+      } 
+      else {
+        #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+        Serial.println("          TIMEOUT ");
+        #endif  
+      }
     }
+
+    
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.print("TEMPORARY Number of expansions found ");
@@ -696,7 +723,7 @@ void Controller::checkForExpansions() {
       after 3 failed attemps the address is skipped and then the
       tmp_num_of_exp is decreased in the else branch */
 
-      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req)) {
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
         if (parse_address_and_type(address)) {
           remain_in_while_loop = (tmp_num_of_exp != initial_value);
         }
@@ -724,7 +751,7 @@ void Controller::checkForExpansions() {
       if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE) {
         _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
         if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
-                                   CTRL_ANS_MSG_GET_PRODUCT_LEN)) {
+                                   CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
           if (parse_get_product()) {
             exp_type[i] = next_available_custom_type;
             next_available_custom_type++;
@@ -819,6 +846,20 @@ uint8_t Controller::msg_set_address(uint8_t add) {
   return prepareSetMsg(tx_buffer, ARG_ADDRESS, LEN_ADDRESS,
                        MSG_SET_ADDRESS_LEN);
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+ #ifdef USE_CONFIRM_RX_MESSAGE
+uint8_t Controller::msg_confirm_rx_address() {
+  tx_buffer[CONFIRM_ADDRESS_FIRST_POS] = CONFIRM_ADDRESS_FIRST_VALUE; 
+  tx_buffer[CONFIRM_ADDRESS_SECOND_POS] = CONFIRM_ADDRESS_SECOND_VALUE; 
+
+  
+  return prepareSetMsg(tx_buffer, ARG_CONFIRM_ADDRESS_RX, LEN_CONFIRM_ADDRESS_RX,
+                       CONFIRM_ADDRESS_RX_LEN);
+
+}
+#endif
+
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -933,7 +974,9 @@ bool Controller::parse_address_and_type(int slave_address) {
           Serial.println("EXPANSION_OPTA_DIGITAL_MEC");
         } else if (tmp_exp_type[tmp_num_of_exp] == EXPANSION_OPTA_DIGITAL_STS) {
           Serial.println("EXPANSION_OPTA_DIGITAL_STS");
-        } else {
+        } else if (tmp_exp_type[tmp_num_of_exp] == EXPANSION_OPTA_ANALOG) {
+          Serial.println("EXPANSION_OPTA_ANALOG");
+        }else {
           Serial.println("expansion code unknown!!!!!!");
         }
 #endif
@@ -1015,10 +1058,10 @@ void Controller::_send(int add, int n, int r) {
 /* when an answer is requested from expansion this function wait for an
    answer and put it into the rx buffer
    return true if an answer is available */
-bool Controller::wait_for_device_answer(uint8_t device, uint8_t wait_for) {
+bool Controller::wait_for_device_answer(uint8_t device, uint8_t wait_for, uint16_t timeout) {
   uint8_t rx = 0;
   unsigned long int start = millis();
-  while (millis() - start < OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT &&
+  while (millis() - start < timeout &&
          rx < wait_for) {
     while (Wire.available()) {
       uint8_t rec = Wire.read();
