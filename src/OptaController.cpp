@@ -732,7 +732,7 @@ void Controller::checkForExpansions() {
         attempts++;
         if (attempts > 2) {
           DEC_WITH_MAX(tmp_num_of_exp, OPTA_CONTROLLER_MAX_EXPANSION_NUM);
-          Serial.println(tmp_num_of_exp);
+          
           remain_in_while_loop = (tmp_num_of_exp != initial_value);
         } else {
           remain_in_while_loop = true;
