@@ -192,10 +192,14 @@ void digitalTask() {
 
 
       for(int i = 0; i < 5; i++) {
-         Serial.print("Expansions " + String(i));
+         if(Serial) Serial.print("Expansions " + String(i));
          DigitalExpansion d = OptaController.getExpansion(i);
          if(d) {
-            Serial.println(" FOUND!");
+            Serial.println("Index " + String(d.getIndex()));
+            if(d.getIndex() == 0) {
+               continue;
+            }
+            if(Serial) Serial.println(" FOUND!");
             if(status) {
                for(int i = 0; i < 8; i++) {
                   d.digitalWrite(i,HIGH,true);
@@ -212,7 +216,7 @@ void digitalTask() {
             }
          }
          else {
-            Serial.println(" ---------- NOT FOUND!");
+            if(Serial) Serial.println(" ---------- NOT FOUND!");
          }
       }
       if(status) {
@@ -326,43 +330,43 @@ void loop() {
             configuration = 0;
          }
 
-         Serial.println("configuration = " + String(configuration));
+         if(Serial) Serial.println("configuration = " + String(configuration));
 
          if(configuration == 0) {
-            Serial.println("\n------ Configurazione FORWARD 1");
+            if(Serial) Serial.println("\n------ Configurazione FORWARD 1");
             initForward_1();
          }
          else if(configuration == 1) {
-            Serial.println("\n------ Configurazione REVERSE 1");
+            if(Serial) Serial.println("\n------ Configurazione REVERSE 1");
             initReverse_1();
          }
          else if(configuration == 2) {
-            Serial.println("\n------ Configurazione FORWARD 2");
+            if(Serial) Serial.println("\n------ Configurazione FORWARD 2");
             initForward_2();
          }
          else if(configuration == 3) {
-            Serial.println("\n------ Configurazione REVERSE 2");
+            if(Serial) Serial.println("\n------ Configurazione REVERSE 2");
             initReverse_2();
          }
       }
-      Serial.println("index = " + String(index));
+      if(Serial) Serial.println("index = " + String(index));
    }
    else {
-      Serial.println("Analog expansion at index 0 and 1 not found");
+      if(Serial) Serial.println("Analog expansion at index 0 and 1 not found");
    }
 
    AnalogExpansion rtd_in = OptaController.getExpansion(RTD_EXPANSION_INDEX);
    if(rtd_in) {
    	for(int i = 0; i < 8; i++) {
    		if(rtd_in.isChRtd(i)) {
-   			Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value " + String(rtd_in.getRtd(i)) + " ohm");
+   			if(Serial) Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value " + String(rtd_in.getRtd(i)) + " ohm");
    		}
    		else if(rtd_in.isChDigitalInput(i)) {
    			rtd_in.updateDigitalInputs();
    			if(rtd_in.digitalRead(i)==HIGH){
-   				Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value HIGH (DIGITAL)");
+   				if(Serial) Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value HIGH (DIGITAL)");
    			} else if(rtd_in.digitalRead(i)==LOW){
-   				Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value LOW (DIGITAL)");
+   				if(Serial) Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value LOW (DIGITAL)");
    			}
    		}
          else {
@@ -370,13 +374,13 @@ void loop() {
             if(Serial) Serial.println("BOH?");
          }    
    	}
-      Serial.println("------------ PWM ON");
+      if(Serial) Serial.println("------------ PWM ON");
       rtd_in.setPwm(OA_PWM_CH_0,10000,5000);
       rtd_in.setPwm(OA_PWM_CH_1,8000,2000);
       rtd_in.setPwm(OA_PWM_CH_2,20000,5000);
       rtd_in.setPwm(OA_PWM_CH_2,20000,10000);
    	delay(2000);
-      Serial.println("------------ PWM OFF -----------");
+      if(Serial) Serial.println("------------ PWM OFF -----------");
       rtd_in.setPwm(OA_PWM_CH_0,0,5000);
       rtd_in.setPwm(OA_PWM_CH_1,0,2000);
       rtd_in.setPwm(OA_PWM_CH_2,0,5000);
