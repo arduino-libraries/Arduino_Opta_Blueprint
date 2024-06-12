@@ -2387,46 +2387,47 @@ void OptaAnalog::setup_channels() {
           }
           write_function_configuration[ch] = false;
         } //if(write_function_configuration[ch]) {
-
-        /* update the channel configurazione (to be done always also in case
-           of add an ADC channel */
-
-        switch (update_fun[ch]) {
-        case CH_FUNC_HIGH_IMPEDENCE:
-          break;
-        case CH_FUNC_VOLTAGE_OUTPUT:
-          sendDacConfiguration(ch);
-          break;
-        case CH_FUNC_CURRENT_OUTPUT:
-          sendDacConfiguration(ch);
-          break;
-        case CH_FUNC_VOLTAGE_INPUT:
-          configureAdcEnable(ch, true);
-          sendAdcConfiguration(ch);
-          break;
-        case CH_FUNC_CURRENT_INPUT_EXT_POWER:
-          configureAdcEnable(ch, true);
-          sendAdcConfiguration(ch);
-          break;
-        case CH_FUNC_CURRENT_INPUT_LOOP_POWER:
-          configureAdcEnable(ch, true);
-          sendAdcConfiguration(ch);
-          break;
-        case CH_FUNC_RESISTANCE_MEASUREMENT:
-          configureAdcEnable(ch, true);
-          break;
-        case CH_FUNC_DIGITAL_INPUT:
-          sendDinConfiguration(ch);
-          break;
-        case CH_FUNC_DIGITAL_INPUT_LOOP_POWER:
-          sendDinConfiguration(ch);
-          break;
-        default:
-          break;
-        }
-        
-        /* update the function so that it will be not updated again */
+           /* update the function so that it will be not updated again */
         fun[ch] = update_fun[ch];
+      }
+
+      /* update the channel configurazione (to be done always also in case
+         of add an ADC channel */
+
+      switch (update_fun[ch]) {
+      case CH_FUNC_HIGH_IMPEDENCE:
+        break;
+      case CH_FUNC_VOLTAGE_OUTPUT:
+        sendDacConfiguration(ch);
+        update_dac_using_LDAC = true;
+        break;
+      case CH_FUNC_CURRENT_OUTPUT:
+        sendDacConfiguration(ch);
+        update_dac_using_LDAC = true;
+        break;
+      case CH_FUNC_VOLTAGE_INPUT:
+        configureAdcEnable(ch, true);
+        sendAdcConfiguration(ch);
+        break;
+      case CH_FUNC_CURRENT_INPUT_EXT_POWER:
+        configureAdcEnable(ch, true);
+        sendAdcConfiguration(ch);
+        break;
+      case CH_FUNC_CURRENT_INPUT_LOOP_POWER:
+        configureAdcEnable(ch, true);
+        sendAdcConfiguration(ch);
+        break;
+      case CH_FUNC_RESISTANCE_MEASUREMENT:
+        configureAdcEnable(ch, true);
+        break;
+      case CH_FUNC_DIGITAL_INPUT:
+        sendDinConfiguration(ch);
+        break;
+      case CH_FUNC_DIGITAL_INPUT_LOOP_POWER:
+        sendDinConfiguration(ch);
+        break;
+      default:
+        break;
       }
     }
     startAdc();
