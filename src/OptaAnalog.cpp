@@ -1341,6 +1341,23 @@ void OptaAnalog::toggle_ldac() {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+void OptaAnalog::reset_dac_value(uint8_t ch) {
+  if (ch < OA_AN_CHANNELS_NUM) {
+    write_reg(OA_REG_DAC_CODE, 0, ch);
+    uint16_t set_value = 0;
+    read_reg(OA_REG_DAC_CODE, set_value, ch);
+    while(set_value != 0) {
+      write_reg(OA_REG_DAC_CODE, 0, ch);
+      read_reg(OA_REG_DAC_CODE, set_value, ch);
+    }
+    
+    toggle_ldac();
+  }
+}
+
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 void OptaAnalog::updateDacValue(uint8_t ch, bool toggle /*= true*/) {
   if (ch < OA_AN_CHANNELS_NUM) {
       write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
@@ -2363,8 +2380,8 @@ void OptaAnalog::setup_channels() {
               fun[ch] == CH_FUNC_CURRENT_OUTPUT || 
               fun[ch] == CH_FUNC_RESISTANCE_MEASUREMENT) { 
 
-            configureDacValue(ch, 0);
-            updateDacValue(ch, true);
+            reset_dac_value(ch);
+
             if (ch == 0) {
               digitalWrite(DIO_RTD_SWITCH_1, LOW);
             }
@@ -2907,6 +2924,36 @@ void OptaAnalog::debugPrintChannelFunction(uint8_t ch) {
   Serial.print("   |    Update Fun ");
   printFunction(update_fun[ch]);
   Serial.println();
+
+}
+
+void OptaAnalog::debugPrintDac() {
+  Serial.println();
+  for(int ch = 0; ch < 8; ch++) {
+    Serial.println("CHANNEL " + String(ch));
+    uint16_t hw_function_channel = 0;
+    read_reg(0x01, hw_function_channel, ch);
+    hw_function_channel = hw_function_channel & 0x0F;
+    if(hw_function_channel == 1) {
+      Serial.println("VOLTAGE DAC");
+    }
+    else if(hw_function_channel == 2) {
+      Serial.println("CURRENT DAC");
+    }
+    else {
+      Serial.println("IS NOT DAC " + String(hw_function_channel) );
+    }
+
+    if(hw_function_channel == 1 || hw_function_channel == 2) {
+      uint16_t dac_user_set_value = dac_values[ch];
+      uint16_t dac_register_setting = 0;
+      read_reg(0x16, dac_register_setting, ch);
+      uint16_t dac_active_setting = 0;
+      read_reg(0x1E, dac_active_setting, ch);
+      Serial.println("User setting: " +  String(dac_user_set_value) + " output setting " + String(dac_register_setting) + " active setting " + String(dac_active_setting));
+    }
+
+  }
 
 }
 #endif

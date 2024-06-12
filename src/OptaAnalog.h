@@ -89,9 +89,7 @@ private:
       true, true, true, true, true, true, true, true};
 
   void setup_channels();
-  
   bool configuration_to_be_updated();
-
   bool are_all_dac_updated();
 
   /* ABOUT register and reading writing register with the function below
@@ -190,6 +188,8 @@ private:
   bool parse_set_led();
 
   void toggle_ldac();
+
+  void reset_dac_value(uint8_t ch);
 
 public:
   OptaAnalog();
@@ -376,6 +376,7 @@ public:
   void debugDiConfiguration(uint8_t ch);
   void debugDacFunction(uint8_t ch);
   void debugPrintChannelFunction(uint8_t ch);
+  void debugPrintDac();
 #endif
 #ifdef DEBUG_UPDATE_FW
   void set_led_on(uint8_t l) { led_status |= (1 << l); }
