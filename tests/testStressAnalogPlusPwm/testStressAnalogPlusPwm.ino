@@ -19,7 +19,7 @@
 AnalogExpansion out_expansion;
 AnalogExpansion in_expansion;
 
-#define RTD_EXPANSION_INDEX 3
+#define RTD_EXPANSION_INDEX 4
 
 
 
@@ -95,7 +95,7 @@ void setExpansionAsInput_2(AnalogExpansion &a) { //rejection active
 
 void initForward_1() {
    /* expansion 0 out / expansion 1 is in with configuration 1 */
-   out_expansion = OptaController.getExpansion(0);
+   out_expansion = OptaController.getExpansion(1);
    if(out_expansion) {
       setExpansionAsOutput_1(out_expansion);
    }
@@ -105,7 +105,7 @@ void initForward_1() {
    }
 
    
-   in_expansion = OptaController.getExpansion(1);
+   in_expansion = OptaController.getExpansion(2);
    if(in_expansion) {
       setExpansionAsInput_1(in_expansion);
    }
@@ -118,7 +118,7 @@ void initForward_1() {
 
 void initForward_2() {
    /* expansion 0 out / expansion 1 is in with configuration 2 */
-   out_expansion = OptaController.getExpansion(0);
+   out_expansion = OptaController.getExpansion(1);
    if(out_expansion) {
       setExpansionAsOutput_2(out_expansion);
    }
@@ -128,7 +128,7 @@ void initForward_2() {
    }
 
    
-   in_expansion = OptaController.getExpansion(1);
+   in_expansion = OptaController.getExpansion(2);
    if(in_expansion) {
       setExpansionAsInput_2(in_expansion);
    }
@@ -141,7 +141,7 @@ void initForward_2() {
 
 void initReverse_1() {
    /* expansion 0 in / expansion 1 is out with configuration 1 */
-   out_expansion = OptaController.getExpansion(1);
+   out_expansion = OptaController.getExpansion(2);
    if(out_expansion) {
       setExpansionAsOutput_1(out_expansion);
    }
@@ -151,7 +151,7 @@ void initReverse_1() {
    }
 
    
-   in_expansion = OptaController.getExpansion(0);
+   in_expansion = OptaController.getExpansion(1);
    if(in_expansion) {
       setExpansionAsInput_1(in_expansion);
    }
@@ -164,7 +164,7 @@ void initReverse_1() {
 
 void initReverse_2() {
    /* expansion 0 input / expansion 1 is output with configuration 2 */
-   out_expansion = OptaController.getExpansion(1);
+   out_expansion = OptaController.getExpansion(2);
    if(out_expansion) {
       setExpansionAsOutput_2(out_expansion);
    }
@@ -174,7 +174,7 @@ void initReverse_2() {
    }
 
    
-   in_expansion = OptaController.getExpansion(0);
+   in_expansion = OptaController.getExpansion(1);
    if(in_expansion) {
       setExpansionAsInput_2(in_expansion);
    }
@@ -365,6 +365,10 @@ void loop() {
    				Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value LOW (DIGITAL)");
    			}
    		}
+         else {
+            if(Serial) Serial.println("Exp " + String(rtd_in.getIndex()) + " ch " + String(i));  
+            if(Serial) Serial.println("BOH?");
+         }    
    	}
       Serial.println("------------ PWM ON");
       rtd_in.setPwm(OA_PWM_CH_0,10000,5000);
