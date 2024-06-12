@@ -132,6 +132,7 @@ int getIntegerNonBlocking() {
    /* basic function that get a integer from serial 
    * (can be improved....)
    * it does not wait for input from serial and return -1 if*/
+
   int rv = -1;
   if(Serial.available()) {
     rv = 0;
@@ -143,6 +144,12 @@ int getIntegerNonBlocking() {
     if( (num >= 0x30 && num <= 0x39) ) {
       rv *= 10;
       rv += num - 0x30;
+    }
+    else if(num == 0x4D || num == 0x6D) {
+      while(Serial.available()) {
+        Serial.read();
+      }
+      return num;
     }
   }
   return rv;
@@ -312,28 +319,19 @@ void configureChannels(uint8_t device) {
 void setup() {
 /* -------------------------------------------------------------------------- */
   Serial.begin(115200);
-  delay(3000);
+  delay(5000);
 
   OptaController.begin();
 
-  Serial.println("*** Generic Analog interactive example ***");
+  Serial.println("*********** Generic Analog interactive example ***********");
   Serial.println();
-  Serial.println("WARNING: Make sure that your Opta Analog are connected and powered up!");
+  Serial.println("This sketch allows to control ans set-up Analog Expansions");
+  Serial.println("using command via Serial line.\n");
+  Serial.println("To display the main menu enter 'm' or 'M' (for 'm'enu...)");
   Serial.println();
 
-  int go = 1000;
-  
-  /* the setup function will ask the user to select an expansion and to
-   * configure it */
+  Serial.println("***********************************************************");
 
-  do {
-    Serial.println("Select the Analog expansion to be configured [0-4] or just hit return to finish: ");
-    go = getIntegerFromSerial();
-    if(go >= 0 && go < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-      Serial.println("Selected expansion at index " + String(go));
-    }
-    configureChannels(go);
-  } while(go != -1);
 }
 
 
@@ -613,6 +611,104 @@ void showExpansionInformation() {
   delay(2000);
 }
 
+/* ____________________________________________________________SHOW MAIN MENU */
+void showMainMenu() {
+ 
+    Serial.println("\n****** Main menu: *******");
+    Serial.println("  1.  CONFIGURE expansion (channel configuration for Analog)");
+    Serial.println("  2.  CHANGE expansion outputs");
+    Serial.println("  3   ADD Adc to Analog Expansion channels");
+    Serial.println("  4.  WATCH expasion channels configuration and input values");
+    Serial.println("  5.  Show expansions");
+    Serial.println(":> ");
+    
+}
+
+
+/*__________________________________________________________SERIAL INTERFACE: */
+/* manage the user input via Serial line                                      */
+/* -------------------------------------------------------------------------- */
+uint8_t serialInterface() {
+/* -------------------------------------------------------------------------- */
+  /* init so that menu is displayed the first time */
+  static int menu_command = 0x4D; // M in ASCII to display the firs menu
+  static uint8_t selected_expansion = 255;
+  static bool first = true;
+
+  /* getIngeterNonCBlocking returns -1 if there are not commands 
+  so in case no commands are present the menu won't be shown again */
+  menu_command = getIntegerNonBlocking();
+
+  if(menu_command == 0x4D || menu_command == 0x6D || first) {
+    first = false;
+    showMainMenu();
+    selected_expansion = 255;
+  }
+  else if(menu_command == 1) {
+    /* configure channels (ONLY ANALOG) */
+    Serial.println("-> Configure ANALOG expansion channels");
+    Serial.println("Please select an expansion:> ");
+    selected_expansion = getIntegerFromSerial();
+    Serial.println("-> Selected expansion " + String(selected_expansion));
+    if(selected_expansion < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+      configureChannels(selected_expansion);
+    }
+    else {
+      Serial.println("\nWARNING: wrong selection, max num of expansion is 5");
+    }
+  }
+  else if(menu_command == 2) {
+    Serial.println("-> Change expansion outputs");
+    Serial.println("Please select an expansion:> ");
+    selected_expansion = getIntegerFromSerial();
+    Serial.println("-> Selected expansion " + String(selected_expansion));
+    if(selected_expansion < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+      changeExpansion(selected_expansion);
+    }
+    else {
+      Serial.println("\nWARNING: wrong selection, max num of expansion is 5");
+    }
+  }
+  else if(menu_command == 3) {
+    Serial.println("-> ADD Adc over a configured Analog channel");
+    Serial.println("Please select an expansion:> ");
+    selected_expansion = getIntegerFromSerial();
+    Serial.println("-> Selected expansion " + String(selected_expansion));
+    if(selected_expansion < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+      addAdcToConfiguration(selected_expansion);
+    }
+    else {
+      Serial.println("\nWARNING: wrong selection, max num of expansion is 5");
+    }
+
+  }
+  else if(menu_command == 4) {
+    Serial.println("-> Selection: WATCH expansion configuration and input values");
+    Serial.println("Please select an expansion:> ");
+    selected_expansion = getIntegerFromSerial();
+    Serial.println("-> Selected expansion " + String(selected_expansion));
+    if(selected_expansion < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+      watchExpansion(selected_expansion);
+    }
+    else {
+      Serial.println("\nWARNING: wrong selection, max num of expansion is 5");
+    }
+  }
+  else if(menu_command == 5) {
+    printExpansionInfo();
+  }
+  else if(menu_command > -1) {
+    Serial.println("\nWARNING: wrong selection, unavailable option");
+  }
+
+  
+
+
+  return selected_expansion;
+}
+
+
+
 
 /* -------------------------------------------------------------------------- */
 /*                                  LOOP                                      */
@@ -621,52 +717,13 @@ void loop() {
 /* -------------------------------------------------------------------------- */    
   OptaController.update();
   
-  static unsigned long start = millis() + 11000;
-  if(millis() - start > 10000) {
-    /* main menu is printed every 10 second */
-    start = millis();
-    Serial.println("\n****** Main menu: *******");
-    Serial.println("  1.  WATCH an Analog Expansion (see input values)");
-    Serial.println("  2.  CHANGE Analog Expansion outputs (set output values)");
-    Serial.println("  3   UPDATE an Analog Expansion Configuration (change what channels do)");
-    Serial.println("  4.  ADD ADC to certain channel (already set up with a different function)");
-    Serial.println("  5.  SHOW Expansions information");
-  }
-
-  int go = getIntegerNonBlocking();
-  static int device = -1;
+  uint8_t exp_index = serialInterface();
   
-  /* if the user select something... */
-  if(go != -1) {
-    if(go >= 1 && go <= 5) {
-      if(go < 5) {
-        Serial.println("    -> Select the expansion: > ");
-        int dev = getIntegerFromSerial();
-        device = dev;
-      }
-      if((device >= 0 && device < OptaController.getExpansionNum()) || go == 5) {
-         if(go == 1)
-            watchExpansion(device);
-         else if(go == 2)
-            changeExpansion(device);
-         else if(go == 3)
-            configureChannels(device);
-         else if(go == 4)
-            addAdcToConfiguration(device);
-         else if(go == 5) 
-            showExpansionInformation();
-         else
-            Serial.println("UNRECOGNIZED Option");
-      }
-    }
+  if(exp_index >= 0 && exp_index < 5) {
+    watchExpansion(exp_index);
+    delay(1000);
   }
-  /* otherwise watch the selected expansion */
-  else {
-    if(device != -1) {
-        watchExpansion(device);
-        delay(1000);
-    }
-  }
+  
 }
 
 
