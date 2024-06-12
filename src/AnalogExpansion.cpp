@@ -574,7 +574,7 @@ uint8_t AnalogExpansion::msg_set_pwm() {
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_PWM,
                                  LEN_OA_SET_PWM, OA_SET_PWM_LEN);
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN], rv);
+        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN] + OA_FIRST_PWM_CH, rv);
       }
       return rv;
     }
