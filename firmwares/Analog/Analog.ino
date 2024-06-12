@@ -23,7 +23,6 @@ void setup() {
 /* -------------------------------------------------------------------------- */
   #ifdef DEBUG_SERIAL
   Serial.begin(115200);
-  delay(3000);
   #endif
 
   OptaExpansion = new OptaAnalog();
@@ -31,7 +30,6 @@ void setup() {
   if(OptaExpansion != nullptr) {
     OptaExpansion->begin();
   }
-
 
   #ifdef DEBUG_SERIAL
   oa = (OptaAnalog *)OptaExpansion;
@@ -41,9 +39,10 @@ void setup() {
 #ifdef DEBUG_SERIAL
 void dbg() {
   static unsigned long s = millis() + 11000;
-  if(millis()-s > 5000) {
+  if(millis()-s > 10000) {
     s = millis();
     oa->displayOaDebugInformation();
+    oa->debugPrintDac();
   }
 }
 #endif
@@ -55,9 +54,21 @@ void dbg() {
 /* -------------------------------------------------------------------------- */
 void loop() {
 /* -------------------------------------------------------------------------- */
+  
   if(OptaExpansion != nullptr) {
+
     OptaExpansion->update();
+    
     #ifdef DEBUG_SERIAL
+    if(Serial.available()) {
+      while(Serial.available()){
+        Serial.read();
+      }
+      oa->displayOaDebugInformation();
+      oa->debugPrintDac();
+    }
+
+    
     dbg();
     #endif
   }
