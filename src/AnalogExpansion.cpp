@@ -688,29 +688,16 @@ void AnalogExpansion::setDac(uint8_t ch, uint16_t value,
     }
     /* if the address is not defined --> the value has never been sent
      * to the expansion => send it*/
+    iregs[BASE_OA_DAC_ADDRESS + ch] = value;
+    iregs[ADD_UPDATE_ANALOG_OUTPUT] = (update) ? 1 : 0;
+    unsigned int err = 1;
+    uint8_t t = 0;
+    do {
+      err = execute(SET_SINGLE_ANALOG_OUTPUT);
+      delay(5);
+      t++;
+    } while(err != EXECUTE_OK && t < 3);
 
-    if (!addressExist(BASE_OA_DAC_ADDRESS + ch)) {
-      iregs[BASE_OA_DAC_ADDRESS + ch] = value;
-
-      iregs[ADD_UPDATE_ANALOG_OUTPUT] = (update) ? 1 : 0;
-
-      /*unsigned int err =*/execute(SET_SINGLE_ANALOG_OUTPUT);
-      /*Serial.println("SET DAC (1) err = " + String(err));*/
-
-    }
-    /* if the address is defined and the value different to the one held
-     * by the correspondent register => send it */
-    else if (value != iregs[BASE_OA_DAC_ADDRESS + ch]) {
-
-      iregs[BASE_OA_DAC_ADDRESS + ch] = value;
-      iregs[ADD_UPDATE_ANALOG_OUTPUT] = (update) ? 1 : 0;
-      /*unsigned int err = */ execute(SET_SINGLE_ANALOG_OUTPUT);
-      /*Serial.println("SET DAC (2) err = " + String(err));*/
-
-    } else {
-    }
-    /* if the address is defined and the value is equal => do nothing
-     * the value is already up to date*/
   }
 }
 
