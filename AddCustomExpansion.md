@@ -18,6 +18,7 @@ To add new expansion to the BluePrint library is necessary to provide:
 
 The FW and expansion class must be developed in a different folder/repository
 and no changes or PR should be required in this Opta BluePrint library.
+We suggest to create a separate library.
 
 It is suggested that FW source files and the expansion class are put in the
 same folder for simplicity reasons (this allows to share information between
@@ -45,7 +46,7 @@ So a good starting point to develop an expansion FW is the following folder
 structure (suppose your expansion is called "NewExpansion")
 
 ```
-/rood_folder_of_new_expansion_library
+/root_folder_of_new_expansion_library
 |-firmware/NewExpansion/NewExpansion.ino
 |-src/
       |-OptaNewExpansion.h
@@ -65,25 +66,6 @@ Opta Controller is build.
 
 **_NOTE: in the following we suppose that the new expansion "name" is
 "NewExpansion"_**
-
-## Performance request
-Each expansion performs Assign Address Process using a common class Module, which
-is contained in OptaBlueModule files (.h and .cpp).
-In particular the function Module::update() is responsible to change the I2C address 
-of the expansion. 
-When the expansion has not a valid address and it receives the command from the
-controller to set up the address, the change of the address (being performed in 
-Module::update()) is done in the main loop of the function.
-So there is a delay between the time the expansion get the message (I2C interrupt) and
-the moment the espansion actually set the address (in the main loop).
-The actual set of the expansion, in other word, depends on how "fast" is the main
-loop, however the main controller waits for a certain time and then retry the
-process. 
-The expansion must set the new address as fast as it can!
-This means that is is strongly suggested that the main loop of the expansion
-only runs when the address is valid, so that when not a valid address has been set up,
-it can react very quickly to the address set request.
-
 
 ### OptaNewExpansion class
 
@@ -227,6 +209,35 @@ care of the message and you just need to return the same value.
 **VERY IMPORTANT**
 Do not make any change to the `expansion_type` (an integer in the Module class).
 This is set in Module class and must NOT be modified in any Custom expansion.
+
+### Performance request
+Each expansion performs Assign Address Process using a common class Module, which
+is contained in OptaBlueModule files (.h and .cpp).
+The Module::begin() function performs the assign address process at the very
+beginning, but the function Module::update() is responsible to change the I2C address 
+of the expansion when a new expansion is plugged in and the assign address process
+is done a second time (this function has to be called in the NewExpansion::update()
+function, see above). 
+In the latter case the change of the address (being performed in 
+Module::update()) is done in the main loop of the expansion.
+So there is a delay between the time the expansion gets the message (I2C interrupt) and
+the moment the espansion actually sets the address (in the main loop).
+The actual set of the expansion, in other word, depends on how "fast" is the main
+loop, however the main controller waits for a certain time and then retry the
+process.
+The expansion must set the new address as fast as it can in order to avoid retries
+from the controller.
+This means that is is strongly suggested that the main loop of the expansion (except for 
+the call to the Module::update() function) only runs when the address is valid, 
+so that when not a valid address has been set up, it can react very quickly to the 
+address set request.
+A good way to understand if the expansion has a valid address is:
+```
+if(wire_i2c_address <= OPTA_DEFAULT_SLAVE_I2C_ADDRESS || 
+   wire_i2c_address >= OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS) {
+    // NO VALID ADDRESS ACQUIRED
+}
+```
 
 ## OptaNewExpansionCfg.h
 
@@ -384,7 +395,7 @@ The I2C_TRANSACTION already takes cares of timeouts and will call the failed
 communication callback if set.
 
 **IMPORTANT**
-There are 3 operation the basic expansion class takes care which are common to 
+There are 3 operations the basic expansion class takes care which are common to 
 all classes (WRITE in flash, READ in flash, get FW version).
 If you want to use these operation remember to call `Expansion::execute();` in 
 your `defaul` case switch of execute. This will use the base `execute()` function
