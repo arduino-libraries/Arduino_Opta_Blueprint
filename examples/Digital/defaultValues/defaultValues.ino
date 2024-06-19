@@ -37,6 +37,8 @@ void setup() {
   false,true,true,false,false),2000);
   DigitalExpansion::setDefault(OptaController,3,DigitalExpansion::calcDefault(false,false,false,
   false,false,false,true,true),1000);
+  DigitalExpansion::setDefault(OptaController,4,DigitalExpansion::calcDefault(true,false,false,
+  true,false,false,false,true),5000);
   delay(1000);
 
   
