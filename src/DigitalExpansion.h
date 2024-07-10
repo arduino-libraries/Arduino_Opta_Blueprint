@@ -73,7 +73,7 @@ public:
    * transaction */
   void digitalWrite(int pin, PinStatus st, bool update = false);
 
-  /* get the status ha digital output has been set */
+  /* get the status digital output has been set */
   PinStatus digitalOutRead(int pin);
 
   /* get the status of a digital input
