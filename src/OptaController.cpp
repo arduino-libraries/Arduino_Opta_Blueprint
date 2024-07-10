@@ -302,6 +302,7 @@ void Controller::begin() {
   pinMode(OPTA_CONTROLLER_DETECT_PIN, INPUT_PULLUP);
   /* initialize the controller as I2C MASTER */
   Wire.begin();
+  Wire.setClock(400000);
 
   _send(OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS, msg_opta_reset(), 0);
   delay(OPTA_CONTROLLER_SETUP_INIT_DELAY);
