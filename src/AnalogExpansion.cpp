@@ -694,7 +694,9 @@ void AnalogExpansion::setDac(uint8_t ch, uint16_t value,
     uint8_t t = 0;
     do {
       err = execute(SET_SINGLE_ANALOG_OUTPUT);
-      delay(5);
+      if(err) {
+        delay(5);
+      }
       t++;
     } while(err != EXECUTE_OK && t < 3);
 
