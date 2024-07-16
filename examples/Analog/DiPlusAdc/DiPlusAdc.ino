@@ -45,7 +45,7 @@ void updateAnalogExpansion() {
   
    Serial.println("\n*** OPTA ANALOG expansion ");
    
-   AnalogExpansion aexp = OptaController.getExpansion(2);
+   AnalogExpansion aexp = OptaController.getExpansion(0);
    
    if(!aexp) {
      return;
@@ -132,7 +132,7 @@ void setup() {
   }
 
   /* analog expansion must be in position 0 */
-  AnalogExpansion aexp = OptaController.getExpansion(2);
+  AnalogExpansion aexp = OptaController.getExpansion(0);
 
   if(aexp) {
      setupAnalogExpansion(aexp);
