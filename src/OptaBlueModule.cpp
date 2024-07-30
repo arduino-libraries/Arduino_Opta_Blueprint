@@ -273,7 +273,7 @@ void Module::update() {
   if (millis() - start > 1000) {
     start = millis();
     Serial.print("ADDRESS 0x");
-    Serial.println(address, HEX);
+    Serial.println(wire_i2c_address, HEX);
   }
 #endif
 }
