@@ -2108,7 +2108,7 @@ bool OptaAnalog::parse_set_all_dac_value() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_SET_ALL_DAC, LEN_OA_SET_ALL_DAC,
                           OA_SET_ALL_DAC_LEN)) {
 
-    update_dac_using_LDAC = false;
+    update_dac_using_LDAC = true;
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
     return true;
   }
