@@ -36,8 +36,8 @@
 #define ADD_VERSION_MINOR 11
 #define ADD_VERSION_RELEASE 12
 
-#define I2C_TRANSACTION(m,p,l)    prepare_msg = [this](){return m();}; \
-                                  parse_msg = [this](){return p();};   \
+#define I2C_TRANSACTION(m,p,l)    prepare_msg = [&](){return m();}; \
+                                  parse_msg = [&](){return p();};   \
                                   i2c_transaction(l);
 
 class Controller;
