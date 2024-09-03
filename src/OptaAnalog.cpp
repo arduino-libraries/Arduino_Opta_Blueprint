@@ -120,7 +120,7 @@ void OptaAnalog::configurePwmPulse(uint8_t ch, uint32_t _pulse_us) {
 
 /* -------------------------------------------------------------------------- */
 void OptaAnalog::updatePwm(uint8_t ch) {
-  /* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------ */
   if (ch >= OA_PWM_CHANNELS_NUM) {
     return;
   }
@@ -129,14 +129,13 @@ void OptaAnalog::updatePwm(uint8_t ch) {
     pwm[ch].active = false;
   } else {
     if (pwm[ch].set_pulse_us < pwm[ch].set_period_us) {
-      if (pwm[ch].set_period_us != pwm[ch].period_us) {
+      if (pwm[ch].set_period_us != pwm[ch].period_us || pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
         pwm[ch].pwm.period_us(pwm[ch].set_period_us);
-      }
-      if (pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
         pwm[ch].pwm.pulseWidth_us(pwm[ch].set_pulse_us);
+
+        pwm[ch].period_us = pwm[ch].set_period_us;
+        pwm[ch].pulse_us = pwm[ch].set_pulse_us;
       }
-      pwm[ch].period_us = pwm[ch].set_period_us;
-      pwm[ch].pulse_us = pwm[ch].set_pulse_us;
       if (!pwm[ch].active) {
 #ifdef ARDUINO_OPTA_ANALOG
         pwm[ch].pwm.resume();
@@ -145,6 +144,7 @@ void OptaAnalog::updatePwm(uint8_t ch) {
       }
     }
   }
+
 }
 /* -------------------------------------------------------------------------- */
 void OptaAnalog::suspendPwm(uint8_t ch) {
