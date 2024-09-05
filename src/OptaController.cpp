@@ -558,47 +558,58 @@ void Controller::checkForExpansions() {
      the tmp_exp_add is filled like a circular queue so that in any number
      of temporary address can be used  but only the last 10 value are stored
      - this initialization is useful to exit as soon as we meet 0*/
+  
+  /* INITIALIZING ALL VARIABLE USED THEN IN THE FOLLOWING while loop WHERE
+     ADDRESS are assigned */
   if (enter_while) {
+    
     for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
       tmp_exp_add[i] = 0;
     }
     num_of_exp = 0;
+
+    /* the tmp_address is incremented automatically when an answer for the
+       request get address and type is correctly received */
+    tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
     
-    for(int i = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 1; i < OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 2*OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
+    /* with this for loop a reset command is sent to every device (with temporary
+       or final addresses )*/
+    for(int i = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 1; 
+        i < OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 2*OPTA_CONTROLLER_MAX_EXPANSION_NUM; 
+        i++) {
       _send(i, msg_opta_reset(), 0);
     }
+
     delay(OPTA_CONTROLLER_SETUP_INIT_DELAY);
   }
   
-  tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
-  bool send_new_address = true;
+  /* #################################
+   * TEMPORARY ADDRESS ASSIGNMENT LOOP
+   * ################################# */
   
   while (enter_while) {
-
-    if(send_new_address) {
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println("[LOG]:  - DETECT pin is LOW (expansions without address)");
     Serial.println("        - Sending SET temp address message 0x" + String(tmp_address,HEX));
 #endif
-      _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
-      delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
-    }
-
-    send_new_address = false;
-
+    
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     * 1. SENDING new temporary address to the device using DEFAULT address 
+     *    (no answer is expected)
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+    _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
+    delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
+        
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println("        - Sending GET address message");
 #endif
 
-#ifdef BP_USE_CRC
-    uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN_CRC;
-#else
-    uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN;
-#endif
-
-    /* send the request and waits for 4 bytes answer */
-    _send(tmp_address, msg_get_address_and_type(), req);
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * 2. SENDING request: get address and type to the device used the previouslu
+     *    assigned temporary address (to ensure proper address has been accepted) 
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+    _send(tmp_address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.print("        - Receiving answer from device: ");
@@ -610,26 +621,48 @@ void Controller::checkForExpansions() {
        tmp_num_of_exp so that tmp_exp_add array is filled in a circular way
      */
 
-    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
-      if(parse_address_and_type(tmp_address)) {
-        #ifdef USE_CONFIRM_RX_MESSAGE
-        delay(5);
-        _send(tmp_address, msg_confirm_rx_address(),0);
-        #endif
-        send_new_address = true;
-        #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-        Serial.println("        GOT IT! ");
-        #endif
-      } 
-      else {
-        #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-        Serial.println("          TIMEOUT ");
-        #endif  
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * 3. RECEIVING ANSWER - try more 3 times before to send again the request
+     *    to assign the address
+     * NOTE: upon correct answer reception (within the function parse_address_and_type
+     * the tmp address is incresed for the next possible device in the chain)    
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
+    uint8_t attempts = 3;
+    /* exit with break upon correct answer received */
+    while(attempts > 0) {
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+        if(parse_address_and_type(tmp_address)) {
+          #ifdef USE_CONFIRM_RX_MESSAGE
+          delay(5);
+          _send(tmp_address, msg_confirm_rx_address(),0);
+          #endif
+          break;
+          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+          Serial.println("        GOT IT! ");
+          #endif
+        } 
+        else {
+          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+          Serial.println("          TIMEOUT ");
+          #endif 
+          delay(10);
+        }
       }
+      attempts--;
     }
 
-    
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * 4. VERIFY if the detect is gone UP --> if it is high no more device
+     *    without address are present and we can exit the loop
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
+    if (is_detect_high()) {
+      break;
+    }
+  } //while (enter_while)
+
+/* printing found devices with temporary addresses */
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.print("TEMPORARY Number of expansions found ");
     Serial.println(tmp_num_of_exp);
@@ -639,15 +672,8 @@ void Controller::checkForExpansions() {
       Serial.print(" address ");
       Serial.println(tmp_exp_add[i], HEX);
     }
-
-    delay(1000);
+    delay(10000);
 #endif
-
-    /* EXIT FROM LOOP */
-    if (is_detect_high()) {
-      break;
-    }
-  }
 
   /* since the enter_while is no more updated I can use it here to check for
      the transition LOW -> HIGH*/
