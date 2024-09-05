@@ -502,8 +502,17 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
    * the value is already up to date*/
 }
 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 /* get Pwm period in micro seconds */
   uint32_t AnalogExpansion::getPwmPeriod(uint8_t ch) {
+    if (ch >= OA_FIRST_PWM_CH && ch <= OA_LAST_PWM_CH) {
+      ch = ch - OA_FIRST_PWM_CH;
+    }
+    else if(ch >= OA_PWM_CHANNELS_NUM) {
+      return 0;
+    }
+    
     uint32_t per_add = BASE_OA_PWM_ADDRESS + ch;
     if (!addressExist(per_add)) {
       return 0;
@@ -512,8 +521,18 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
       return iregs[per_add];
     }
   }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
   /* get Pwm pulse in micro seconds */
   uint32_t AnalogExpansion::getPwmPulse(uint8_t ch) {
+    if (ch >= OA_FIRST_PWM_CH && ch <= OA_LAST_PWM_CH) {
+      ch = ch - OA_FIRST_PWM_CH;
+    }
+    else if(ch >= OA_PWM_CHANNELS_NUM) {
+      return 0;
+    }
+    
     uint32_t pul_add = BASE_OA_PWM_ADDRESS + ch + OA_PWM_CHANNELS_NUM;
     if (!addressExist(pul_add)) {
       return 0;
@@ -521,8 +540,9 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
     else {
       return iregs[pul_add];
     }
-
   }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
   float AnalogExpansion::getPwmFreqHz(uint8_t ch) {
     float period = (float)getPwmPeriod(ch);
@@ -533,6 +553,8 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
     return 0.0;
 
   }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
   float AnalogExpansion::getPwmPulsePerc(uint8_t ch) {
     float period = (float)getPwmPeriod(ch);
