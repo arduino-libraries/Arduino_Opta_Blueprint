@@ -664,6 +664,7 @@ void Controller::checkForExpansions() {
 
 /* printing found devices with temporary addresses */
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+    Serial.println("[LOG]:  - TRANSITION of detect from LOW to HIGH");
     Serial.print("TEMPORARY Number of expansions found ");
     Serial.println(tmp_num_of_exp);
     for (int i = 0; i < tmp_num_of_exp; i++) {
@@ -673,75 +674,59 @@ void Controller::checkForExpansions() {
       Serial.println(tmp_exp_add[i], HEX);
     }
     delay(10000);
+
 #endif
+  /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * At this point all expansions have been found and have a temporary
+     * address
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+  
+  /* initializing variable */
+  address = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS;
+  num_of_exp = 0;
 
-  /* since the enter_while is no more updated I can use it here to check for
-     the transition LOW -> HIGH*/
+  /* * FIX Controller not re-assigning address when reset *
+     Since now the tmp_exp_add array is filled in circular way we need to
+     find the index of the array with the maximum value (this is always
+     the address of the expansion closest to the controller and the
+     re-assignment of address must begin from this expansion that will
+     take the first address and the first position in the array of
+     expansion) */
 
-  if (enter_while) {
-
-#if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-    Serial.println("[LOG]:  - TRANSITION of detect from LOW to HIGH");
-#endif
-    /* reset the available address for an other possible assign address
-     * process
-     */
-    tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
-
-    /* here all the slave known so far get new addresses starting from
-       OPTA_DEFAULT_SLAVE_I2C_ADDRESS in this way addresses are reassigned
-       starting from the device closer to the controller so the first device
-       on the right of the Controller gets OPTA_DEFAULT_SLAVE_I2C_ADDRESS
-       the second one OPTA_DEFAULT_SLAVE_I2C_ADDRESS + 1 and so on all the
-       job is done inside the parse_rx address
-    */
-    address = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS;
-    num_of_exp = 0;
-
-    /* * FIX Controller not re-assigning address when reset *
-       Since now the tmp_exp_add array is filled in circular way we need to
-       find the index of the array with the maximum value (this is always
-       the address of the expansion closest to the controller and the
-       re-assignment of address must begin from this expansion that will
-       take the first address and the first position in the array of
-       expansion) */
-
-    int initial_value = -1;
-    uint8_t max_value = 0x00;
-    for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
-      if (tmp_exp_add[i] > max_value) {
-        max_value = tmp_exp_add[i];
-        initial_value = i;
-      }
+  int initial_value = -1;
+  uint8_t max_value = 0x00;
+  for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
+    if (tmp_exp_add[i] > max_value) {
+      max_value = tmp_exp_add[i];
+      initial_value = i;
     }
+  }
 
-    /* * FIX Controller not re-assigning address when reset *
-       tmp_num_of_exp will be decreased in circular way (when it becomes
-       lower than 0 it will be assigned to OPTA_CONTROLLER_MAX_EXPANSION_NUM
-       - 1 using DEC_WITH_MAX macro that does that) */
-    tmp_num_of_exp = initial_value;
+  /* * FIX Controller not re-assigning address when reset *
+     tmp_num_of_exp will be decreased in circular way (when it becomes
+     lower than 0 it will be assigned to OPTA_CONTROLLER_MAX_EXPANSION_NUM
+     - 1 using DEC_WITH_MAX macro that does that) */
+  tmp_num_of_exp = initial_value;
 
-    /* * FIX Controller not re-assigning address when reset *
-       In case of unwanted expansion reset (btw this is fixed also in the
-       expansion so that is a case should never happen) it can happen that
-       some temporary addresses is not working properly, this is fine...
-       just try and then skip the address, the attemps is used to to so
-        */
-    int attempts = 0;
+  /* * FIX Controller not re-assigning address when reset *
+     In case of unwanted expansion reset (btw this is fixed also in the
+     expansion so that is a case should never happen) it can happen that
+     some temporary addresses is not working properly, this is fine...
+     just try and then skip the address, the attemps is used to to so
+      */
+  int attempts = 0;
 
-    bool remain_in_while_loop = true;
-    do {
-      _send(tmp_exp_add[tmp_num_of_exp], msg_set_address(address), 0);
+  bool remain_in_while_loop = true;
+  do {
+    #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+    Serial.print("Sending to address 0x" + String(tmp_exp_add[tmp_num_of_exp], HEX) );
+    Serial.println(" new address 0x" + String(address,HEX) );
+    #endif
+    _send(tmp_exp_add[tmp_num_of_exp], msg_set_address(address), 0);
 
-      delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
+    delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
 
-#ifdef BP_USE_CRC
-      uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN_CRC;
-#else
-      uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN;
-#endif
-
-      _send(address, msg_get_address_and_type(), req);
+    _send(address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
 
       /* * FIX Controller not re-assigning address when reset *
       when the address is correcly received as answer to the previous the
@@ -750,7 +735,7 @@ void Controller::checkForExpansions() {
       after 3 failed attemps the address is skipped and then the
       tmp_num_of_exp is decreased in the else branch */
 
-      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
         if (parse_address_and_type(address)) {
           remain_in_while_loop = (tmp_num_of_exp != initial_value);
         }
@@ -833,15 +818,15 @@ void Controller::checkForExpansions() {
       } else if (exp_type[i] == EXPANSION_OPTA_DIGITAL_MEC ||
                  exp_type[i] == EXPANSION_OPTA_DIGITAL_STS) {
         Serial.println("EXPANSION_OPTA_DIGITAL");
-      } else {
-        Serial.println("expansion code unknown!!!!!!");
+      } else if(exp_type[i] == EXPANSION_OPTA_ANALOG )  {
+        Serial.println("EXPANSION_OPTA_ANALOG");
+      }
+      else {
+        Serial.println("expansion type custom " + String(exp_type[i]));
       }
     }
 #endif
-  }
-
-  else {
-  }
+   
 }
 
 void Controller::setFailedCommCb(CommErr_f f) { failed_i2c_comm = f; }
