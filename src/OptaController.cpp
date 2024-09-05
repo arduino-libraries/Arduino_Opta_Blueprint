@@ -186,7 +186,7 @@ void Controller::beginOdDefaults(uint8_t device, bool d[OPTA_DIGITAL_OUT_NUM],
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t Controller::send(int add, int device, unsigned int type, int n, int r) {
-  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && type != EXPANSION_NOT_VALID) {
     if (type == exp_type[device] && add == exp_add[device]) {
       if (n > 0) {
 
