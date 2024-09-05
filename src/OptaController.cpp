@@ -30,6 +30,39 @@
 #define INC_WITH_MAX(x, M) (x = (++x >= M) ? 0 : x)
 #define DEC_WITH_MAX(x, M) (x = (--x < 0) ? (M - 1) : x)
 
+class ExpType {
+
+private:
+  makeExpansion_f make;
+  int type;
+  std::string product;
+  static int next_expansion_type;
+
+public:
+  startUp_f startUp;
+  ExpType() : make(nullptr), type(-1), startUp(nullptr) {}
+  void setType(int t) { type = t; }
+  int setType() {
+    type = next_expansion_type;
+    next_expansion_type++;
+    return type;
+  }
+  Expansion *allocateExpansion() {
+    if (make != nullptr) {
+      return make();
+    }
+    return nullptr;
+  }
+  int getType() { return type; }
+  void setMake(makeExpansion_f f) { make = f; }
+  void setProduct(std::string s) { product = s; }
+  bool isProduct(std::string s) { return (product == s); }
+  void setStart(startUp_f f) { startUp = f; }
+  std::string getProduct() {return product;}
+};
+
+int ExpType::next_expansion_type = EXPANSION_CUSTOM + 20;
+
 // namespace Opta {
 
 /* -------------------------------------------------------------------------- */
@@ -44,43 +77,45 @@ Controller::Controller()
       tmp_address(OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS), tmp_num_of_exp(0),
       address(OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS), num_of_exp(0),
       failed_i2c_comm(nullptr) {
+  init_exp_type_list();      
   for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
     expansions[i] = nullptr;
   }
 }
 
 void Controller::init_exp_type_list() {
-  ExpType et;
+    ExpType et;
 
-  et.setType((uint8_t)EXPANSION_DIGITAL_INVALID);
-  et.setMake(DigitalExpansion::makeExpansion);
-  et.setProduct(DigitalExpansion::getProduct());
-  et.setStart(DigitalExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_DIGITAL_INVALID);
+    et.setMake(DigitalExpansion::makeExpansion);
+    et.setProduct(DigitalExpansion::getProduct());
+    et.setStart(DigitalExpansion::startUp);
 
-  add_exp_type(et);
+    exp_type_list.push_back(et);
 
-  et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_MEC);
-  et.setMake(DigitalMechExpansion::makeExpansion);
-  et.setProduct(DigitalMechExpansion::getProduct());
-  et.setStart(DigitalExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_MEC);
+    et.setMake(DigitalMechExpansion::makeExpansion);
+    et.setProduct(DigitalMechExpansion::getProduct());
+    et.setStart(DigitalExpansion::startUp);
 
-  add_exp_type(et);
+    exp_type_list.push_back(et);;
 
-  et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_STS);
-  et.setMake(DigitalStSolidExpansion::makeExpansion);
-  et.setProduct(DigitalStSolidExpansion::getProduct());
-  et.setStart(DigitalExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_STS);
+    et.setMake(DigitalStSolidExpansion::makeExpansion);
+    et.setProduct(DigitalStSolidExpansion::getProduct());
+    et.setStart(DigitalExpansion::startUp);
 
-  add_exp_type(et);
+    exp_type_list.push_back(et);
 
-  et.setType((uint8_t)EXPANSION_OPTA_ANALOG);
-  et.setMake(AnalogExpansion::makeExpansion);
-  et.setProduct(AnalogExpansion::getProduct());
-  et.setStart(AnalogExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_OPTA_ANALOG);
+    et.setMake(AnalogExpansion::makeExpansion);
+    et.setProduct(AnalogExpansion::getProduct());
+    et.setStart(AnalogExpansion::startUp);
 
-  add_exp_type(et);
-  next_available_custom_type = EXPANSION_CUSTOM + 20;
+    exp_type_list.push_back(et);
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 int Controller::getExpansionType(std::string pr) {
   int rv = -1;
@@ -95,46 +130,24 @@ int Controller::getExpansionType(std::string pr) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+
 int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
                                         startUp_f su) {
-
-  int rv = -1;
-  bool found = false;
-  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-    if (exp_type_list[i].isProduct(pr)) {
-      exp_type_list[i].setMake(f);
-      exp_type_list[i].setStart(su);
-      found = true;
-      rv = exp_type_list[i].getType();
-      break;
-    }
-  }
-  if (!found) {
+  int rv = getExpansionType(pr);
+  /* product not registered... add it */
+  if (rv == -1) {
     ExpType et;
-
     et.setMake(f);
     et.setProduct(pr);
     et.setStart(su);
-    add_exp_type(et);
+    /* automatically increment the type so that is ready for another 
+       call*/
+    rv = et.setType();
+    exp_type_list.push_back(et);
   }
   return rv;
 }
 
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-void Controller::add_exp_type(ExpType et) {
-
-  bool found = false;
-  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-    if (exp_type_list[i].isProduct(et.getProduct())) {
-      found = true;
-      return;
-    }
-  }
-  if (!found) {
-    exp_type_list.push_back(et);
-  }
-}
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -755,19 +768,18 @@ void Controller::checkForExpansions() {
     /* give some time to analog to reset Analog Devices */
     delay(OPTA_CONTROLLER_DELAY_EXPANSION_RESET);
 
-    /* it clear and reinitialize the list of expansion types */
-    init_exp_type_list();
-    /* NOW ask for the Product type -------------------------------*/
+    /* for known expansion type (no custom) the type has already been assigned 
+       here we assing a type on custom expansion */
     
     for (int i = 0; i < num_of_exp; i++) {
       if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE) {
         _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
         if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
                                    CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
-          if (parse_get_product()) {
-            exp_type[i] = next_available_custom_type;
-            next_available_custom_type++;
-          }
+          exp_type[i] = parse_get_product();
+          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+          Serial.println("EXPANSION " + String(i) + " is custom with type " + exp_type[i]);
+          #endif
         }
       }
     }
@@ -901,29 +913,20 @@ void Controller::resetRxBuffer() { memset(rx_buffer, 0, OPTA_I2C_BUFFER_DIM); }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-bool Controller::parse_get_product() {
-  if (checkAnsGetReceived(rx_buffer, ANS_ARG_GET_PRODUCT_TYPE, ANS_LEN_GET_PRODUCT_TYPE,
+int Controller::parse_get_product() {
+  int rv = EXPANSION_NOT_VALID;
+
+  if (checkAnsGetReceived(rx_buffer, 
+                          ANS_ARG_GET_PRODUCT_TYPE, 
+                          ANS_LEN_GET_PRODUCT_TYPE,
                           LEN_ANS_GET_PRODUCT_TYPE)) {
+    
     std::string pr((const char *)(rx_buffer + ANS_GET_PRODUCT_SIZE_POS + 1),
                    rx_buffer[ANS_GET_PRODUCT_SIZE_POS]);
-
-    bool found = false;
-    for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-      if (exp_type_list[i].isProduct(pr)) {
-        found = true;
-        exp_type_list[i].setType(next_available_custom_type);
-        break;
-      }
-    }
-    if (!found) {
-      ExpType et;
-      et.setType(next_available_custom_type);
-      et.setProduct(pr);
-      add_exp_type(et);
-    }
-    return true;
+    
+    rv = getExpansionType(pr);
   }
-  return false;
+  return (rv == -1) ? EXPANSION_NOT_VALID : rv;
 }
 
 bool Controller::parse_opta_reboot() {

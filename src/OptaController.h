@@ -56,44 +56,21 @@ public:
 using makeExpansion_f = Expansion *(*)();
 using startUp_f = void (*)(Controller *);
 
-class ExpType {
-
-private:
-  makeExpansion_f make;
-  int type;
-  std::string product;
-
-public:
-  startUp_f startUp;
-  ExpType() : make(nullptr), type(-1), startUp(nullptr) {}
-  void setType(int t) { type = t; }
-  Expansion *allocateExpansion() {
-    if (make != nullptr) {
-      return make();
-    }
-    return nullptr;
-  }
-  int getType() { return type; }
-  void setMake(makeExpansion_f f) { make = f; }
-  void setProduct(std::string s) { product = s; }
-  bool isProduct(std::string s) { return (product == s); }
-  void setStart(startUp_f f) { startUp = f; }
-  std::string getProduct() {return product;}
-};
-// namespace Opta {
+class ExpType;
 
 class Controller {
 public:
   Controller();
   ~Controller();
 
-  /* this function will allow to register a new expansion TYPE to the controller
-   * -1 is returned in case the controller has not any expansion of that type
-   *    currently attached
-   *  a positive integer corresponding to a unique "enumerative" type is
-   *  returned in case an expansion of that type is currently attached to the
-   *  controller
-   *  This positive integer can be retrieved using getType() Expansion function
+  /* 
+   Returns a positive number  corresponding to the "type" of the custom expansion that
+   has been registered
+   Please note that this number (identifing the type of the expansion) might 
+   change depending on the application 
+   In other word it is not guarantee htat a custom expansion always get the same 
+   type "number"
+   To get the number again use getExpansionType(std::string pr);
    */
   int registerCustomExpansion(std::string pr, makeExpansion_f f, startUp_f su);
 
@@ -170,7 +147,7 @@ public:
 
 private:
   void init_exp_type_list();
-  void add_exp_type(ExpType et);
+  
   std::vector<ExpType> exp_type_list;
   /* controller receiving buffer */
   uint8_t rx_buffer[OPTA_I2C_BUFFER_DIM];
@@ -218,7 +195,7 @@ private:
   #endif
   /* -------------------- parse message functions ------------------------ */
 
-  bool parse_get_product();
+  int parse_get_product();
   bool parse_address_and_type(int slave_address);
   bool parse_opta_reboot();
 
@@ -229,8 +206,6 @@ private:
   bool is_detect_low();
 
   CommErr_f failed_i2c_comm;
-
-  unsigned int next_available_custom_type;
 };
 
 extern Controller OptaController;
