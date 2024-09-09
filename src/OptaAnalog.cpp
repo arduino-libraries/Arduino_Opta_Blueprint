@@ -1758,7 +1758,14 @@ void OptaAnalog::update_live_status() {
  * The purpose of this function is to verify if the adc conversion is finished
  * for THAT channel (ch) */
 bool OptaAnalog::is_adc_conversion_finished(uint8_t ch) {
-  update_live_status(get_dummy_channel(ch));
+
+  uint8_t dummy = OA_DUMMY_CHANNEL_DEVICE_0;
+  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
+    dummy = OA_DUMMY_CHANNEL_DEVICE_0;
+  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
+    dummy = OA_DUMMY_CHANNEL_DEVICE_1;
+  }
+  update_live_status(dummy);
   // depending on the channel the device is different
   // and we select the device in this way (see
   // get_device function)
@@ -1772,7 +1779,7 @@ bool OptaAnalog::is_adc_conversion_finished(uint8_t ch) {
     // but we need to to convert "our" channel (from 0
     // to 7) to "device" channel (from 0 to 3)
     if (get_add_offset(ch) == ch_used) {
-      write_reg(OA_LIVE_STATUS, ADC_DATA_READY, get_dummy_channel(ch));
+      write_reg(OA_LIVE_STATUS, ADC_DATA_READY, dummy);
       return true;
     }
   }
