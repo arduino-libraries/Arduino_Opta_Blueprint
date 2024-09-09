@@ -32,7 +32,7 @@
 // #define DEBUG_SERIAL
 // #define DEBUG_ANALOG_PARSE_MESSAGE
 //
-#define BUFF_DIM 4
+#define SPI_COMM_BUFF_DIM 4
 
 
 
@@ -70,7 +70,7 @@ private:
   /* ---------------------------------------------------------------------
    * SPI communication buffer and functions
    * --------------------------------------------------------------------- */
-  uint8_t com_buffer[BUFF_DIM];
+  uint8_t com_buffer[SPI_COMM_BUFF_DIM];
 
   uint8_t adc_ch_mask_0 = 0;
   uint8_t adc_ch_mask_1 = 0;

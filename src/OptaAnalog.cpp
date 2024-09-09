@@ -448,12 +448,12 @@ void OptaAnalog::write_direct_reg(uint8_t device, uint8_t addr,
   delay(1);
 #endif
   SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE1));
-  SPI.transfer(com_buffer, 4);
+  SPI.transfer(com_buffer, SPI_COMM_BUFF_DIM);
   SPI.endTransaction();
 
 #if defined DEBUG_SERIAL && defined DEBUG_SPI_COMM
   Serial.print("RX: ");
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < SPI_COMM_BUFF_DIM; i++) {
     if (com_buffer[i] < 0x10) {
       Serial.print('0');
     }
