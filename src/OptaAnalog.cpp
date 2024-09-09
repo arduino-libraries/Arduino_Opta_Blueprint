@@ -2482,7 +2482,7 @@ void print_adc_configuration(uint16_t v) {
 }
 
 void print_adc_control(uint16_t v, int d) {
-  int ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 1 : 2;
+  int ch = (d == OA_AN_DEVICE_0) ? 1 : 2;
   Serial.print(" ");
   int ch = (d == OA_AN_DEVICE_0) ? 1 : 2;
   Serial.print("# ADC CONTROL: ");
@@ -2491,43 +2491,43 @@ void print_adc_control(uint16_t v, int d) {
   } else {
     Serial.print(String(ch) + " NO ");
   }
-  ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 0 : 3;
+  ch = (d == OA_AN_DEVICE_0) ? 0 : 3;
   if (v & 2) {
     Serial.print(String(ch) + " YES ");
   } else {
     Serial.print(String(ch) + " NO ");
   }
-  ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 6 : 4;
+  ch = (d == OA_AN_DEVICE_0) ? 6 : 4;
   if (v & 4) {
     Serial.print(String(ch) + " YES ");
   } else {
     Serial.print(String(ch) + " NO ");
   }
-  ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 7 : 5;
+  ch = (d == OA_AN_DEVICE_0) ? 7 : 5;
   if (v & 8) {
     Serial.print(String(ch) + " YES ");
   } else {
     Serial.print(String(ch) + " NO ");
   }
-  ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 1 : 2;
+  ch = (d == OA_AN_DEVICE_0) ? 1 : 2;
   if (v & 16) {
     // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
     // Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
   }
-  ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 0 : 3;
+  ch = (d == OA_AN_DEVICE_0) ? 0 : 3;
   if (v & 32) {
     // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
     // Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
   }
-  ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 6 : 4;
+  ch = (d == OA_AN_DEVICE_0) ? 6 : 4;
   if (v & 64) {
     // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
     // Serial.println("- Ch " + String(ch) + " ADC diag DISABLED");
   }
-  ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 7 : 5;
+  ch = (d == OA_AN_DEVICE_0) ? 7 : 5;
   if (v & 128) {
     // Serial.println("- Ch " + String(ch) + " ADC diag enabled");
   } else {
@@ -2777,14 +2777,16 @@ void OptaAnalog::displayOaDebugInformation() {
     debugDiConfiguration(i);
   }
 #ifdef ARDUINO_OPTA_ANALOG
-  read_reg(0x23, reg, OA_DUMMY_CHANNEL_DEVICE_0);
-  print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_0);
-  read_reg(0x23, reg, OA_DUMMY_CHANNEL_DEVICE_1);
-  print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_1);
+  read_direct_reg(OA_AN_DEVICE_0, 0x23, reg);
+  
+  print_adc_control(reg, OA_AN_DEVICE_0);
+  read_direct_reg(OA_AN_DEVICE_1, 0x23, reg);
+  
+  print_adc_control(reg, OA_AN_DEVICE_1);
   Serial.println();
 #else
-  read_reg(0x23, reg, OA_DUMMY_CHANNEL_DEVICE_0);
-  print_adc_control(reg, OA_DUMMY_CHANNEL_DEVICE_0);
+  read_direct_reg(OA_AN_DEVICE_0, 0x23, reg);
+  print_adc_control(reg, OA_AN_DEVICE_0);
 #endif
 }
 
