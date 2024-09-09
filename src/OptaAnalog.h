@@ -143,7 +143,8 @@ private:
   bool read_reg(uint8_t add, uint16_t &value, uint8_t ch);
   uint8_t get_add_offset(uint8_t ch);
   uint8_t get_device(uint8_t ch);
-  uint8_t get_dummy_channel(uint8_t ch);
+  
+
   bool read_direct_reg(uint8_t device, uint8_t addr, uint16_t &value);
   void write_direct_reg(uint8_t device, uint8_t addr, uint16_t value);
 
