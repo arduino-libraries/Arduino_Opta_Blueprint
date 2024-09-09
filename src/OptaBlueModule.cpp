@@ -503,11 +503,7 @@ bool Module::is_detect_out_low() {
 
   if (dtcout == LOW) {
     int num = 0;
-    while (
-        dtcout == LOW &&
-        num <
-            OPTA_MODULE_DEBOUNCE_NUMBER_OUT) { // OPTA_DIGITAL_DEBOUNCE_NUMBER)
-                                               // {
+    while ( dtcout == LOW && num < OPTA_MODULE_DEBOUNCE_NUMBER_OUT) {                   
       dtcout = digitalRead(detect_out);
       if (dtcout == HIGH) {
         break;
@@ -541,8 +537,7 @@ bool Module::is_detect_out_high() {
 }
 /* ------------------------------------------------------------------------ */
 void Module::updatePinStatus() {
-  /* ----------------------------------------------------------------------
-   */
+/* ------------------------------------------------------------------------ */
 
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
   Serial.print("- UPDATE PIN ");
