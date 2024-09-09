@@ -1707,6 +1707,11 @@ bool OptaAnalog::parse_setup_di_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_DI, LEN_OA_CH_DI,
                           OA_CH_DI_LEN)) {
     uint8_t ch = rx_buffer[OA_CH_DI_CHANNEL_POS];
+    
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      return true;
+    }
+
     write_function_configuration[ch] = true;
     if (ch < OA_AN_CHANNELS_NUM) {
       rtd[ch].is_rtd = false;
@@ -1756,6 +1761,11 @@ bool OptaAnalog::parse_setup_dac_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_DAC, LEN_OA_CH_DAC,
                           OA_CH_DAC_LEN)) {
     uint8_t ch = rx_buffer[OA_CH_DAC_CHANNEL_POS];
+
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      return true;
+    }
+
     write_function_configuration[ch] = true;
 
     if (ch < OA_AN_CHANNELS_NUM) {
@@ -1840,6 +1850,11 @@ bool OptaAnalog::parse_setup_rtd_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_RTD, LEN_OA_CH_RTD,
                           OA_CH_RTD_LEN)) {
     uint8_t ch = rx_buffer[OA_CH_RTD_CHANNEL_POS];
+
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      return true;
+    }
+
     write_function_configuration[ch] = true;
     Float_u v;
     for (int i = 0; i < 4; i++) {
@@ -1862,6 +1877,11 @@ bool OptaAnalog::parse_setup_high_imp_channel() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_CH_HIGH_IMPEDENCE,
                           LEN_OA_CH_HIGH_IMPEDENCE, OA_CH_HIGH_IMPEDENCE_LEN)) {
     uint8_t ch = rx_buffer[OA_HIGH_IMPEDENCE_CH_POS];
+
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      return true;
+    }
+
     write_function_configuration[ch] = true;
     configureFunction(ch, CH_FUNC_HIGH_IMPEDENCE);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
@@ -1876,14 +1896,17 @@ bool OptaAnalog::parse_setup_adc_channel() {
                           OA_CH_ADC_LEN)) {
 
     uint8_t ch = rx_buffer[OA_CH_ADC_CHANNEL_POS];
+    
+    if (ch >= OA_AN_CHANNELS_NUM) {
+       return true;
+    }
+
     write_function_configuration[ch] = true;
     if (rx_buffer[OA_CH_ADC_ADDING_ADC_POS] == OA_ENABLE) {
       write_function_configuration[ch] = false;
     }
 
-    if (ch < OA_AN_CHANNELS_NUM) {
-      rtd[ch].is_rtd = false;
-    }
+    rtd[ch].is_rtd = false;
 
     if (fun[ch] == CH_FUNC_VOLTAGE_OUTPUT &&
         write_function_configuration[ch] == false &&
@@ -1943,6 +1966,10 @@ bool OptaAnalog::parse_get_rtd_value() {
                           OA_GET_RTD_LEN)) {
     uint8_t ch = rx_buffer[OA_CH_RTD_CHANNEL_POS];
 
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      ch = 0;
+    }
+
     tx_buffer[ANS_OA_GET_RTD_CHANNEL_POS] = ch;
     if (ch < OA_AN_CHANNELS_NUM) {
       Float_u _rtd;
@@ -1985,6 +2012,10 @@ bool OptaAnalog::parse_set_dac_value() {
 
     uint8_t ch = rx_buffer[OA_SET_DAC_CHANNEL_POS];
 
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      return true;
+    }
+
     uint16_t value = rx_buffer[OA_SET_DAC_VALUE_POS];
     value += (rx_buffer[OA_SET_DAC_VALUE_POS + 1] << 8);
 
@@ -2022,6 +2053,11 @@ bool OptaAnalog::parse_get_adc_value() {
   if (checkGetMsgReceived(rx_buffer, ARG_OA_GET_ADC, LEN_OA_GET_ADC,
                           OA_GET_ADC_LEN)) {
     uint8_t ch = rx_buffer[OA_CH_ADC_CHANNEL_POS];
+
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      ch = 0;
+    }
+
     tx_buffer[ANS_OA_ADC_CHANNEL_POS] = ch;
     if (ch < OA_AN_CHANNELS_NUM) {
       uint16_t value = 0;
@@ -2077,6 +2113,10 @@ bool OptaAnalog::parse_set_pwm_value() {
   if (checkSetMsgReceived(rx_buffer, ARG_OA_SET_PWM, LEN_OA_SET_PWM,
                           OA_SET_PWM_LEN)) {
     uint8_t ch = rx_buffer[OA_SET_PWM_CHANNEL_POS];
+
+    if(ch >= OA_PWM_CHANNELS_NUM) {
+       return true;
+    }
 
     uint32_t value = rx_buffer[OA_SET_PWM_PERIOD_POS];
     value += (rx_buffer[OA_SET_PWM_PERIOD_POS + 1] << 8);
