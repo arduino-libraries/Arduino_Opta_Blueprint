@@ -1673,8 +1673,8 @@ void OptaAnalog::sychLDAC() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::update_live_status() {
-  read_direct_reg(OA_AN_DEVICE_0, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_0]);
-  read_direct_reg(OA_AN_DEVICE_1, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_1]);
+  read_direct_reg(OA_AN_DEVICE_0, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, live_state[OA_AN_DEVICE_0]);
+  read_direct_reg(OA_AN_DEVICE_1, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, live_state[OA_AN_DEVICE_1]);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -1687,8 +1687,8 @@ void OptaAnalog::update_alert_mask(int8_t ch) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::update_alert_status() {
-  read_direct_reg(OA_AN_DEVICE_0, OA_REG_ALERT_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_0]);
-  read_direct_reg(OA_AN_DEVICE_1, OA_REG_ALERT_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_1]);
+  read_direct_reg(OA_AN_DEVICE_0, OA_REG_ALERT_STATUS___SINGLE_PER_DEVICE, alert_state[OA_AN_DEVICE_0]);
+  read_direct_reg(OA_AN_DEVICE_1, OA_REG_ALERT_STATUS___SINGLE_PER_DEVICE, alert_state[OA_AN_DEVICE_1]);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */

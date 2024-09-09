@@ -53,9 +53,10 @@ private:
   volatile bool dac_value_updated[OA_AN_CHANNELS_NUM];
   volatile uint16_t dac_values[OA_AN_CHANNELS_NUM];
 
-  //uint16_t alert[OA_AN_DEVICES_NUM];
-  //uint16_t aMask[OA_AN_DEVICES_NUM]; // a[lert]Mask
-  uint16_t state[OA_AN_DEVICES_NUM];
+  
+  uint16_t live_state[OA_AN_DEVICES_NUM];
+  uint16_t alert_state[OA_AN_DEVICES_NUM];
+
 
   bool en_adc_diag_rej[OA_AN_DEVICES_NUM];
   bool di_scaled[OA_AN_DEVICES_NUM];
