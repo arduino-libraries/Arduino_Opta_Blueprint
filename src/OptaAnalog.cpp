@@ -14,6 +14,9 @@
 #include "AnalogCommonCfg.h"
 #include <cstdint>
 #include <stdint.h>
+
+#define GET_DEVICE_FROM_CHANNEL(ch)   ((ch >= 2 && ch <= 5) ? OA_AN_DEVICE_1 : OA_AN_DEVICE_0)
+
 #ifndef ARDUINO_OPTA
 
 #if defined ARDUINO_OPTA_ANALOG || defined ARDUINO_UNO_TESTALOG_SHIELD
@@ -490,8 +493,8 @@ void OptaAnalog::write_direct_reg(uint8_t device, uint8_t addr,
 
 bool OptaAnalog::read_direct_reg(uint8_t device, uint8_t addr,
                                  uint16_t &value) {
-  write_direct_reg(device, OPTA_AN_READ_SELECT, (addr | 0x100));
-  write_direct_reg(device, OPTA_AN_NOP, OPTA_AN_NOP);
+  write_direct_reg(device, OA_REG_READ_SELECT___SINGLE_PER_DEVICE, (addr | 0x100));
+  write_direct_reg(device, OPTA_AN_NOP___SINGLE_PER_DEVICE, 0x00);
   if (OptaCrc8::verify(com_buffer[3], com_buffer, 3)) {
     value = com_buffer[2] | ((uint16_t)com_buffer[1] << 8);
     return true;
@@ -708,7 +711,7 @@ void OptaAnalog::sendAdcConfiguration(uint8_t ch) {
 /* -------------------------------------------------------- */
 bool OptaAnalog::is_adc_started(uint8_t device) {
   uint16_t r = 0;
-  read_direct_reg(device, OA_ADC_CONV_CTRL, r);
+  read_direct_reg(device, OA_REG_ADC_CONV_CTRL___SINGLE_PER_DEVICE, r);
   uint16_t v = (r & (3 << 8)) >> 8;
   if (v == 1 || v == 2) {
     return true;
@@ -729,8 +732,8 @@ void OptaAnalog::stop_adc(uint8_t device, bool power_down) {
   uint16_t r = 0;
   if (is_adc_started(device)) {
     do {
-      write_direct_reg(device, OPTA_AN_ADC_CONV_CTRL, stop_value);
-      read_direct_reg(device, OA_LIVE_STATUS, r);
+      write_direct_reg(device, OA_REG_ADC_CONV_CTRL___SINGLE_PER_DEVICE, stop_value);
+      read_direct_reg(device, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, r);
     } while (r & ADC_BUSY_MASK);
   }
 }
@@ -777,11 +780,11 @@ void OptaAnalog::start_adc(uint8_t device, bool single_acquisition) {
 
     uint16_t r = 0;
 
-    write_direct_reg(device, OA_LIVE_STATUS, ADC_DATA_READY);
+    write_direct_reg(device, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, ADC_DATA_READY);
 
     do {
-      write_direct_reg(device, OA_ADC_CONV_CTRL, reg_cfg);
-      read_direct_reg(device, OA_LIVE_STATUS, r);
+      write_direct_reg(device, OA_REG_ADC_CONV_CTRL___SINGLE_PER_DEVICE, reg_cfg);
+      read_direct_reg(device, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, r);
     } while ((r & ADC_BUSY_MASK) == 0);
   }
 }
@@ -845,15 +848,15 @@ bool OptaAnalog::is_adc_updatable(uint8_t device, bool wait_for_conversion) {
       /* if wait_for_conversion is true, then the function is blocking
        * and wait until the ADC has finished the conversion */
       do {
-        read_direct_reg(device, OA_LIVE_STATUS, r);
+        read_direct_reg(device, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, r);
         delay(1);
       } while ((r & ADC_DATA_READY) == 0);
       rv = true;
     } else {
-      read_direct_reg(device, OA_LIVE_STATUS, r);
+      read_direct_reg(device, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, r);
       if (r & ADC_DATA_READY) {
         rv = true;
-        write_direct_reg(device, OA_LIVE_STATUS, ADC_DATA_READY);
+        write_direct_reg(device, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, ADC_DATA_READY);
       }
     }
   }
@@ -867,7 +870,7 @@ void OptaAnalog::updateAdc(bool wait_for_conversion /*= false*/) {
     update_adc_value(OA_CH_1);
     update_adc_value(OA_CH_6);
     update_adc_value(OA_CH_7);
-    write_reg(OA_LIVE_STATUS, ADC_DATA_READY, OA_DUMMY_CHANNEL_DEVICE_0);
+    write_direct_reg(OA_AN_DEVICE_0, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, ADC_DATA_READY);
   }
 
 #ifdef ARDUINO_OPTA_ANALOG
@@ -876,7 +879,7 @@ void OptaAnalog::updateAdc(bool wait_for_conversion /*= false*/) {
     update_adc_value(OA_CH_3);
     update_adc_value(OA_CH_4);
     update_adc_value(OA_CH_5);
-    write_reg(OA_LIVE_STATUS, ADC_DATA_READY, OA_DUMMY_CHANNEL_DEVICE_1);
+    write_direct_reg(OA_AN_DEVICE_1, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, ADC_DATA_READY);
   }
 
 #endif
@@ -1526,18 +1529,15 @@ void OptaAnalog::sendDinConfiguration(uint8_t ch) {
 
     reg_cfg = 0;
 
-    uint8_t d = get_device(ch);
-    if (!di_scaled[d]) {
+    uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
+
+    if (!di_scaled[device]) {
       reg_cfg = TH_FIXED_TO_16V;
     }
 
-    COMPARATOR_TH(reg_cfg, di_th[d]);
+    COMPARATOR_TH(reg_cfg, di_th[device]);
 
-    if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
-      write_reg(OA_REG_DIN_THRESH, reg_cfg, OA_DUMMY_CHANNEL_DEVICE_0);
-    } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
-      write_reg(OA_REG_DIN_THRESH, reg_cfg, OA_DUMMY_CHANNEL_DEVICE_1);
-    }
+    write_direct_reg(device, OA_REG_DIN_THRESH___SINGLE_PER_DEVICE, reg_cfg);
   }
 }
 
@@ -1550,7 +1550,7 @@ void OptaAnalog::updateDinReadings() {
    * this trick to use get_device function on channel 0
    */
 
-  read_reg(OA_REG_DIN_COMP_OUT, read_value, OA_DUMMY_CHANNEL_DEVICE_0);
+  read_direct_reg(OA_AN_DEVICE_0, OA_REG_DIN_COMP_OUT___SINGLE_PER_DEVICE, read_value);
 #ifdef ARDUINO_UNO_TESTALOG_SHIELD
   digital_ins |= (read_value & 0x0F);
 #else
@@ -1562,7 +1562,7 @@ void OptaAnalog::updateDinReadings() {
    * use this trick to use get_device function on
    * channel 2 */
 
-  read_reg(OA_REG_DIN_COMP_OUT, read_value, OA_DUMMY_CHANNEL_DEVICE_1);
+  read_direct_reg(OA_AN_DEVICE_1, OA_REG_DIN_COMP_OUT___SINGLE_PER_DEVICE, read_value);
   digital_ins |= (read_value & 0xF) << 2;
 }
 
@@ -1709,10 +1709,10 @@ void OptaAnalog::swAnalogDevReset() {
 
 void OptaAnalog::sychLDAC() {
 #ifdef ARDUINO_OPTA_ANALOG
-  write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_LDAC);
-  write_direct_reg(1, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_LDAC);
+  write_direct_reg(OA_AN_DEVICE_0, OA_REG_CMD_REGISTER___SINGLE_PER_DEVICE, OPTA_AN_KEY_LDAC);
+  write_direct_reg(OA_AN_DEVICE_1, OA_REG_CMD_REGISTER___SINGLE_PER_DEVICE, OPTA_AN_KEY_LDAC);
 #else
-  write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_LDAC);
+  write_direct_reg(OA_AN_DEVICE_0, OA_REG_CMD_REGISTER___SINGLE_PER_DEVICE, OPTA_AN_KEY_LDAC);
 #endif
 }
 
@@ -1741,10 +1741,8 @@ void OptaAnalog::update_live_status(uint8_t ch) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::update_live_status() {
-  update_live_status(OA_DUMMY_CHANNEL_DEVICE_0);
-#ifndef ARDUINO_UNO_TESTALOG_SHIELD
-  update_live_status(OA_DUMMY_CHANNEL_DEVICE_1);
-#endif
+  read_direct_reg(OA_AN_DEVICE_0, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_0]);
+  read_direct_reg(OA_AN_DEVICE_1, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_1]);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -1797,10 +1795,8 @@ void OptaAnalog::update_alert_mask(int8_t ch) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::update_alert_status() {
-  read_reg(OA_ALERT_STATUS, state[OA_AN_DEVICE_0], OA_DUMMY_CHANNEL_DEVICE_0);
-#ifndef ARDUINO_UNO_TESTALOG_SHIELD
-  read_reg(OA_ALERT_STATUS, state[OA_AN_DEVICE_1], OA_DUMMY_CHANNEL_DEVICE_1);
-#endif
+  read_direct_reg(OA_AN_DEVICE_0, OA_REG_ALERT_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_0]);
+  read_direct_reg(OA_AN_DEVICE_1, OA_REG_ALERT_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_1]);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
