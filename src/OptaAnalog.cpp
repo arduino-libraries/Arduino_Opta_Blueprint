@@ -1646,31 +1646,7 @@ void OptaAnalog::digitalWriteAnalog(uint8_t ch, GpoState_t s) {
 #endif
 }
 
-void OptaAnalog::digitalParallelWrite(GpoState_t a, GpoState_t b, GpoState_t c,
-                                      GpoState_t d) {
-#ifndef ARDUINO_OPTA_ANALOG
-  uint16_t cfg = 0;
-  if (a == GPO_HIGH) {
-    PARALLEL_HIGH_CH_A(cfg);
-  }
-  if (b == GPO_HIGH) {
-    PARALLEL_HIGH_CH_B(cfg);
-  }
-  if (c == GPO_HIGH) {
-    PARALLEL_HIGH_CH_C(cfg);
-  }
-  if (d == GPO_HIGH) {
-    PARALLEL_HIGH_CH_D(cfg);
-  }
-  write_reg(OPTA_AN_GPO_PARALLEL, cfg,
-            -1); // TODO check if -1 is correct
-#else
-  (void)a;
-  (void)b;
-  (void)c;
-  (void)d;
-#endif
-}
+
 
 void OptaAnalog::swAnalogDevReset() {
 #ifdef ARDUINO_OPTA_ANALOG
@@ -1686,18 +1662,11 @@ void OptaAnalog::swAnalogDevReset() {
   adc_ch_mask_1 = 0;
   adc_ch_mask_0_last = 0;
   adc_ch_mask_1_last = 0;
-
-  // write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_1);
-  // write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_2);
-  // write_direct_reg(1, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_1);
-  // write_direct_reg(1, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_2);
 #else
   digitalWrite(DIO_RESET_1, LOW);
   delay(50);
   digitalWrite(DIO_RESET_1, HIGH);
   delay(100);
-  // write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_1);
-  // write_direct_reg(0, OPTA_AN_CMD_REGISTER, OPTA_AN_KEY_RESET_2);
 #endif
   for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
     fun[i] = CH_FUNC_HIGH_IMPEDENCE;
@@ -1716,27 +1685,6 @@ void OptaAnalog::sychLDAC() {
 #endif
 }
 
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-bool OptaAnalog::is_adc_busy(uint8_t ch) {
-  update_live_status(ch);
-  if (ch == OA_DUMMY_CHANNEL_DEVICE_0) {
-    return (bool)((state[OA_AN_DEVICE_0] & ADC_BUSY_MASK));
-  } else if (ch == OA_DUMMY_CHANNEL_DEVICE_0) {
-    return (bool)((state[OA_AN_DEVICE_1] & ADC_BUSY_MASK));
-  }
-  return false;
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-void OptaAnalog::update_live_status(uint8_t ch) {
-  if (ch == OA_DUMMY_CHANNEL_DEVICE_0) {
-    read_reg(OA_LIVE_STATUS, state[OA_AN_DEVICE_0], ch);
-  } else if (ch == OA_DUMMY_CHANNEL_DEVICE_1) {
-    read_reg(OA_LIVE_STATUS, state[OA_AN_DEVICE_1], ch);
-  }
-}
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -1744,46 +1692,6 @@ void OptaAnalog::update_live_status() {
   read_direct_reg(OA_AN_DEVICE_0, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_0]);
   read_direct_reg(OA_AN_DEVICE_1, OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE, state[OA_AN_DEVICE_1]);
 }
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-/* the live status register contains:
- * - bit 14 -> adc data ready
- * - bit 13 -> adc busy
- * - bit 10..12 -> channel being converted
- * This register is 1 for each device
- * The purpose of this function is to verify if the adc conversion is finished
- * for THAT channel (ch) */
-bool OptaAnalog::is_adc_conversion_finished(uint8_t ch) {
-
-  uint8_t dummy = OA_DUMMY_CHANNEL_DEVICE_0;
-  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
-    dummy = OA_DUMMY_CHANNEL_DEVICE_0;
-  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
-    dummy = OA_DUMMY_CHANNEL_DEVICE_1;
-  }
-  update_live_status(dummy);
-  // depending on the channel the device is different
-  // and we select the device in this way (see
-  // get_device function)
-  uint8_t _ch = get_device(ch);
-  // there is a state for each device
-  if (state[_ch] & ADC_DATA_READY) {
-    // here we get the channel being converted from the
-    // live status register
-    uint16_t ch_used = (state[_ch] & ADC_DATA_READY);
-    ch_used = ch_used >> 10;
-    // but we need to to convert "our" channel (from 0
-    // to 7) to "device" channel (from 0 to 3)
-    if (get_add_offset(ch) == ch_used) {
-      write_reg(OA_LIVE_STATUS, ADC_DATA_READY, dummy);
-      return true;
-    }
-  }
-  return false;
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 

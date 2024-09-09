@@ -57,8 +57,8 @@ private:
   volatile bool dac_value_updated[OA_AN_CHANNELS_NUM];
   volatile uint16_t dac_values[OA_AN_CHANNELS_NUM];
 
-  uint16_t alert[OA_AN_DEVICES_NUM];
-  uint16_t aMask[OA_AN_DEVICES_NUM]; // a[lert]Mask
+  //uint16_t alert[OA_AN_DEVICES_NUM];
+  //uint16_t aMask[OA_AN_DEVICES_NUM]; // a[lert]Mask
   uint16_t state[OA_AN_DEVICES_NUM];
 
   bool en_adc_diag_rej[OA_AN_DEVICES_NUM];
@@ -162,8 +162,7 @@ private:
   bool is_adc_updatable(uint8_t device, bool wait_for_conversion);
   bool adc_enable_channel(uint8_t ch, uint16_t &reg);
 
-  bool is_adc_busy(uint8_t ch);
-  bool is_adc_conversion_finished(uint8_t ch);
+
 
   /* SPI Sending and receiving messages functions */
 
@@ -298,8 +297,7 @@ public:
   void configureGpo(uint8_t ch, CfgGpo_t f, GpoState_t state);
   void updateGpo(uint8_t ch);
   void digitalWriteAnalog(uint8_t ch, GpoState_t s);
-  void digitalParallelWrite(GpoState_t a, GpoState_t b, GpoState_t c,
-                            GpoState_t d);
+
 
   /* ##################################################################### */
   /*                         DAC FUNCTIONs                                 */
