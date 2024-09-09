@@ -397,25 +397,9 @@ uint8_t OptaAnalog::get_add_offset(uint8_t ch) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-uint8_t OptaAnalog::get_device(uint8_t ch) {
-  if (ch == OA_DUMMY_CHANNEL_DEVICE_0) {
-    return 0;
-  } else if (ch == OA_DUMMY_CHANNEL_DEVICE_1) {
-    return 1;
-  } else if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
-    /* those channels belongs to device 0 */
-    return 0;
-  } else {
-    return 1;
-  }
-}
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 void OptaAnalog::write_reg(uint8_t addr, uint16_t value, uint8_t ch) {
   uint8_t ad = addr + get_add_offset(ch);
-  uint8_t device = get_device(ch);
+  uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
   write_direct_reg(device, ad, value);
 }
 
@@ -429,7 +413,7 @@ bool OptaAnalog::read_reg(uint8_t addr, uint16_t &value, uint8_t ch) {
    * alert flags, and the four digital input outputs are returned
    * in Bits[30:24] of any subsequent SPI read. */
   uint8_t ad = addr + get_add_offset(ch);
-  uint8_t device = get_device(ch);
+  uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
   return read_direct_reg(device, ad, value);
 }
 
