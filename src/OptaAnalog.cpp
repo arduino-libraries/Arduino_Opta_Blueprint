@@ -2597,6 +2597,8 @@ void print_adc_configuration(uint16_t v) {
 void print_adc_control(uint16_t v, int d) {
   int ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 1 : 2;
   Serial.print(" ");
+  int ch = (d == OA_AN_DEVICE_0) ? 1 : 2;
+  Serial.print("# ADC CONTROL: ");
   if (v & 1) {
     Serial.print(String(ch) + " YES ");
   } else {
@@ -2865,7 +2867,9 @@ void OptaAnalog::debugDiConfiguration(uint8_t ch) {
   uint16_t r2 = 0;
   uint16_t reg = 0;
   read_reg(0x09, reg, ch);
-  read_reg(0x22, r2, get_dummy_channel(ch));
+  uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
+
+  read_direct_reg(device, 0x22, r2);
   print_digital_input_configuration(reg, r2);
 }
 
