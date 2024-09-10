@@ -560,7 +560,7 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
     float period = (float)getPwmPeriod(ch);
     float pulse = (float)getPwmPulse(ch);
     if(period > 0 && pulse <= period) {
-      return pulse / period;
+      return pulse * 100.0 / period;
     }
     return 0.0;
 
