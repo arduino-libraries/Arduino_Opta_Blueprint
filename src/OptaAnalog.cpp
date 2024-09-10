@@ -131,20 +131,15 @@ void OptaAnalog::updatePwm(uint8_t ch) {
   } 
   else {
     if (pwm[ch].set_pulse_us < pwm[ch].set_period_us) {
-
       if (pwm[ch].set_period_us != pwm[ch].period_us || pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
-        Serial.println("Setting PWM ch " + String(ch));
-
         pwm[ch].pwm.resume();
-
         pwm[ch].pwm.period_us(pwm[ch].set_period_us);
-        pwm[ch].pwm.pulseWidth_us(pwm[ch].set_pulse_us);
-
-        pwm[ch].period_us = pwm[ch].set_period_us;
-        pwm[ch].pulse_us = pwm[ch].set_pulse_us;
+        pwm[ch].pwm.pulseWidth_us(pwm[ch].set_pulse_us);      
       }
     }
   }
+  pwm[ch].period_us = pwm[ch].set_period_us;
+  pwm[ch].pulse_us = pwm[ch].set_pulse_us;
 
 }
 /* -------------------------------------------------------------------------- */
