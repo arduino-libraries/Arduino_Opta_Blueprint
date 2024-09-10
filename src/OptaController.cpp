@@ -95,33 +95,6 @@ int Controller::getExpansionType(std::string pr) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
-                                        startUp_f su) {
-
-  int rv = -1;
-  bool found = false;
-  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-    if (exp_type_list[i].isProduct(pr)) {
-      exp_type_list[i].setMake(f);
-      exp_type_list[i].setStart(su);
-      found = true;
-      rv = exp_type_list[i].getType();
-      break;
-    }
-  }
-  if (!found) {
-    ExpType et;
-
-    et.setMake(f);
-    et.setProduct(pr);
-    et.setStart(su);
-    add_exp_type(et);
-  }
-  return rv;
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 void Controller::add_exp_type(ExpType et) {
 
   bool found = false;

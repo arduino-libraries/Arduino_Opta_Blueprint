@@ -55,6 +55,7 @@ public:
 
 using makeExpansion_f = Expansion *(*)();
 using startUp_f = void (*)(Controller *);
+using string_name_f = std::string (*)();
 
 class ExpType {
 
@@ -95,7 +96,28 @@ public:
    *  controller
    *  This positive integer can be retrieved using getType() Expansion function
    */
-  int registerCustomExpansion(std::string pr, makeExpansion_f f, startUp_f su);
+  template <typename T> int _registerCustomExpansion() {
+    int rv = -1;
+    bool found = false;
+    for (unsigned int i = 0; i < exp_type_list.size(); i++) {
+      if (exp_type_list[i].isProduct(T::getProduct())) {
+        exp_type_list[i].setMake(T::makeExpansion);
+        exp_type_list[i].setStart(T::startUp);
+        found = true;
+        rv = exp_type_list[i].getType();
+        break;
+      }
+    }
+    if (!found) {
+      ExpType et;
+
+      et.setMake(T::makeExpansion);
+      et.setProduct(T::getProduct());
+      et.setStart(T::startUp);
+      add_exp_type(et);
+    }
+    return rv;
+  }
 
   /* ----------------------------------------------------------- */
 
@@ -234,6 +256,8 @@ private:
 };
 
 extern Controller OptaController;
+
+#define registerCustomExpansion(x) _registerCustomExpansion<x>()
 
 //} // namespace Opta
 
