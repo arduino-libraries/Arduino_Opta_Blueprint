@@ -395,18 +395,6 @@ uint8_t OptaAnalog::get_add_offset(uint8_t ch) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-uint8_t OptaAnalog::get_dummy_channel(uint8_t ch) {
-  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
-    /* those channels belongs to device 0 */
-    return OA_DUMMY_CHANNEL_DEVICE_0;
-  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
-    return OA_DUMMY_CHANNEL_DEVICE_1;
-  }
-  return ch;
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 uint8_t OptaAnalog::get_device(uint8_t ch) {
   if (ch == OA_DUMMY_CHANNEL_DEVICE_0) {
     return 0;
@@ -624,7 +612,13 @@ void OptaAnalog::configureAdcDiagnostic(uint8_t ch, bool en) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::configureAdcDiagRejection(uint8_t ch, bool en) {
-  en_adc_diag_rej[ch] = en;
+  uint8_t device = 0;
+  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
+    device = 0;
+  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
+    device = 1;
+  }
+  en_adc_diag_rej[device] = en;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -1458,8 +1452,13 @@ void OptaAnalog::configureDinDebounceSimple(uint8_t ch, bool en) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::configureDinScaleComp(uint8_t ch, bool en) {
-  uint8_t d = get_device(ch);
-  di_scaled[d] = en;
+  uint8_t device = 0;
+  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
+    device = 0;
+  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
+    device = 1;
+  }
+  di_scaled[device] = en;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -1468,8 +1467,13 @@ void OptaAnalog::configureDinCompTh(uint8_t ch, uint8_t v) {
   if (v >= 32) { // only 5 bits available
     v = 31;
   }
-  uint8_t d = get_device(ch);
-  di_th[d] = v;
+  uint8_t device = 0;
+  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
+    device = 0;
+  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
+    device = 1;
+  }
+  di_th[device] = v;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -1530,7 +1534,11 @@ void OptaAnalog::sendDinConfiguration(uint8_t ch) {
 
     COMPARATOR_TH(reg_cfg, di_th[d]);
 
-    write_reg(OA_REG_DIN_THRESH, reg_cfg, get_dummy_channel(ch));
+    if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
+      write_reg(OA_REG_DIN_THRESH, reg_cfg, OA_DUMMY_CHANNEL_DEVICE_0);
+    } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
+      write_reg(OA_REG_DIN_THRESH, reg_cfg, OA_DUMMY_CHANNEL_DEVICE_1);
+    }
   }
 }
 
@@ -1750,7 +1758,14 @@ void OptaAnalog::update_live_status() {
  * The purpose of this function is to verify if the adc conversion is finished
  * for THAT channel (ch) */
 bool OptaAnalog::is_adc_conversion_finished(uint8_t ch) {
-  update_live_status(get_dummy_channel(ch));
+
+  uint8_t dummy = OA_DUMMY_CHANNEL_DEVICE_0;
+  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
+    dummy = OA_DUMMY_CHANNEL_DEVICE_0;
+  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
+    dummy = OA_DUMMY_CHANNEL_DEVICE_1;
+  }
+  update_live_status(dummy);
   // depending on the channel the device is different
   // and we select the device in this way (see
   // get_device function)
@@ -1764,7 +1779,7 @@ bool OptaAnalog::is_adc_conversion_finished(uint8_t ch) {
     // but we need to to convert "our" channel (from 0
     // to 7) to "device" channel (from 0 to 3)
     if (get_add_offset(ch) == ch_used) {
-      write_reg(OA_LIVE_STATUS, ADC_DATA_READY, get_dummy_channel(ch));
+      write_reg(OA_LIVE_STATUS, ADC_DATA_READY, dummy);
       return true;
     }
   }
@@ -1832,11 +1847,11 @@ bool OptaAnalog::parse_setup_di_channel() {
       configureDinDebounceSimple(ch, false);
     }
     if (rx_buffer[OA_CH_DI_SCALE_COMP_POS] == OA_ENABLE) {
-      configureDinScaleComp(get_dummy_channel(ch), true);
+      configureDinScaleComp(ch, true);
     } else {
-      configureDinScaleComp(get_dummy_channel(ch), false);
+      configureDinScaleComp(ch, false);
     }
-    configureDinCompTh(get_dummy_channel(ch), rx_buffer[OA_CH_DI_COMP_TH_POS]);
+    configureDinCompTh(ch, rx_buffer[OA_CH_DI_COMP_TH_POS]);
 
     configureDinCurrentSink(ch, rx_buffer[OA_CH_DI_CURR_SINK_POS]);
     configureDinDebounceTime(ch, rx_buffer[OA_CH_DI_DEBOUNCE_TIME_POS]);
@@ -2015,10 +2030,10 @@ bool OptaAnalog::parse_setup_adc_channel() {
 
     if (rx_buffer[OA_CH_ADC_REJECTION_POS] == OA_ENABLE) {
       configureAdcRejection(ch, true);
-      configureAdcDiagRejection(get_dummy_channel(ch), true);
+      configureAdcDiagRejection(ch, true);
     } else if (rx_buffer[OA_CH_ADC_REJECTION_POS] == OA_DISABLE) {
       configureAdcRejection(ch, false);
-      configureAdcDiagRejection(get_dummy_channel(ch), false);
+      configureAdcDiagRejection(ch, false);
     }
     if (rx_buffer[OA_CH_ADC_DIAGNOSTIC_POS] == OA_ENABLE) {
       configureAdcDiagnostic(ch, true);
@@ -2582,6 +2597,8 @@ void print_adc_configuration(uint16_t v) {
 void print_adc_control(uint16_t v, int d) {
   int ch = (d == OA_DUMMY_CHANNEL_DEVICE_0) ? 1 : 2;
   Serial.print(" ");
+  int ch = (d == OA_AN_DEVICE_0) ? 1 : 2;
+  Serial.print("# ADC CONTROL: ");
   if (v & 1) {
     Serial.print(String(ch) + " YES ");
   } else {
@@ -2850,7 +2867,9 @@ void OptaAnalog::debugDiConfiguration(uint8_t ch) {
   uint16_t r2 = 0;
   uint16_t reg = 0;
   read_reg(0x09, reg, ch);
-  read_reg(0x22, r2, get_dummy_channel(ch));
+  uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
+
+  read_direct_reg(device, 0x22, r2);
   print_digital_input_configuration(reg, r2);
 }
 
