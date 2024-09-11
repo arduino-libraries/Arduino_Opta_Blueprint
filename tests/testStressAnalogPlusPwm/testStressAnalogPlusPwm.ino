@@ -13,13 +13,13 @@
 
 /* this is testDAC setting plus an additional expansion with RTD and Digital Input*/
 
-
+#include <cstdlib>
 #include "OptaBlue.h"
 
 AnalogExpansion out_expansion;
 AnalogExpansion in_expansion;
 
-#define RTD_EXPANSION_INDEX 4
+#define RTD_EXPANSION_INDEX 2
 
 
 
@@ -95,7 +95,7 @@ void setExpansionAsInput_2(AnalogExpansion &a) { //rejection active
 
 void initForward_1() {
    /* expansion 0 out / expansion 1 is in with configuration 1 */
-   out_expansion = OptaController.getExpansion(1);
+   out_expansion = OptaController.getExpansion(0);
    if(out_expansion) {
       setExpansionAsOutput_1(out_expansion);
    }
@@ -105,7 +105,7 @@ void initForward_1() {
    }
 
    
-   in_expansion = OptaController.getExpansion(2);
+   in_expansion = OptaController.getExpansion(1);
    if(in_expansion) {
       setExpansionAsInput_1(in_expansion);
    }
@@ -118,7 +118,7 @@ void initForward_1() {
 
 void initForward_2() {
    /* expansion 0 out / expansion 1 is in with configuration 2 */
-   out_expansion = OptaController.getExpansion(1);
+   out_expansion = OptaController.getExpansion(0);
    if(out_expansion) {
       setExpansionAsOutput_2(out_expansion);
    }
@@ -128,7 +128,7 @@ void initForward_2() {
    }
 
    
-   in_expansion = OptaController.getExpansion(2);
+   in_expansion = OptaController.getExpansion(1);
    if(in_expansion) {
       setExpansionAsInput_2(in_expansion);
    }
@@ -141,7 +141,7 @@ void initForward_2() {
 
 void initReverse_1() {
    /* expansion 0 in / expansion 1 is out with configuration 1 */
-   out_expansion = OptaController.getExpansion(2);
+   out_expansion = OptaController.getExpansion(1);
    if(out_expansion) {
       setExpansionAsOutput_1(out_expansion);
    }
@@ -151,12 +151,12 @@ void initReverse_1() {
    }
 
    
-   in_expansion = OptaController.getExpansion(1);
+   in_expansion = OptaController.getExpansion(0);
    if(in_expansion) {
       setExpansionAsInput_1(in_expansion);
    }
    else {
-      if(Serial) Serial.println("Analog Expansion 1 not found... looping forever...");
+      if(Serial) Serial.println("Analog Expansion 0 not found... looping forever...");
       while(1) {}
    }
 }
@@ -164,22 +164,22 @@ void initReverse_1() {
 
 void initReverse_2() {
    /* expansion 0 input / expansion 1 is output with configuration 2 */
-   out_expansion = OptaController.getExpansion(2);
+   out_expansion = OptaController.getExpansion(1);
    if(out_expansion) {
       setExpansionAsOutput_2(out_expansion);
    }
    else {
-      if(Serial) Serial.println("Analog Expansion 0 not found... looping forever...");
+      if(Serial) Serial.println("Analog Expansion 1 not found... looping forever...");
       while(1) {}
    }
 
    
-   in_expansion = OptaController.getExpansion(1);
+   in_expansion = OptaController.getExpansion(0);
    if(in_expansion) {
       setExpansionAsInput_2(in_expansion);
    }
    else {
-      if(Serial) Serial.println("Analog Expansion 1 not found... looping forever...");
+      if(Serial) Serial.println("Analog Expansion 0 not found... looping forever...");
       while(1) {}
    }
 }
@@ -216,7 +216,7 @@ void digitalTask() {
             }
          }
          else {
-            if(Serial) Serial.println(" ---------- NOT FOUND!");
+            if(Serial) Serial.println(" DIGITAL Expansion ---------- NOT FOUND!");
          }
       }
       if(status) {
@@ -237,6 +237,8 @@ void setup() {
 /* -------------------------------------------------------------------------- */    
    Serial.begin(115200);
    delay(5000);
+
+   srand(millis());
 
    OptaController.begin();
    initReverse_1();
@@ -278,6 +280,12 @@ int myrand(int _min, int _max) {
 
 #define RANDOMFUNCTION myrand(0,6)
 
+uint32_t pwm_periods[10] = {100, 50000, 0, 45000, 27000, 38000, 0, 750000, 80000, 106000};
+uint32_t pwm_pulse[10] = {14, 2500, 10000, 36000, 4000, 12000, 15000, 47000, 40000, 75000};
+
+
+
+
 /* -------------------------------------------------------------------------- */
 /*                                  LOOP                                      */
 /* -------------------------------------------------------------------------- */
@@ -286,7 +294,7 @@ void loop() {
    static uint8_t configuration = 0;
 
    OptaController.update();
-   
+
    /* TEST adc and dac ---- expansion 0 and 1 */
    
    if(in_expansion && out_expansion) {
@@ -355,6 +363,51 @@ void loop() {
       if(Serial) Serial.println("Analog expansion at index 0 and 1 not found");
    }
 
+   static int in = 0;
+
+   if(in_expansion) {
+      for(int i = OA_PWM_CH_FIRST; i <= OA_PWM_CH_LAST; i++) {
+         //int in = (rand()%10)+1; 
+         if(Serial) Serial.print("Exp " + String(in_expansion.getIndex()) + " SET PWM " + String(i - OA_PWM_CH_FIRST) + " periodo " +
+            String(pwm_periods[in]) + " pulse " +  String(pwm_pulse[in]));
+         in_expansion.setPwm(i,pwm_periods[in],pwm_pulse[in]);
+         if(Serial) {
+
+            // TO BE REMOVED the - OA_PWM_CH_FIRST
+            int c = i - OA_PWM_CH_FIRST;
+
+            
+            Serial.println("\n  * Getting back PWM information:\n  - periodo " + String(in_expansion.getPwmPeriod(c)) + "\n  - pulse " + String(in_expansion.getPwmPulse(c)) + "\n  - freq " + String(in_expansion.getPwmFreqHz(c)) + "\n  - duty " + String(in_expansion.getPwmPulsePerc(c)));
+            Serial.println();
+         }
+      }   
+   }
+
+   if(out_expansion) {
+      for(int i = OA_PWM_CH_FIRST; i <= OA_PWM_CH_LAST; i++) {
+         //int in = (rand()%10)+1; 
+         if(Serial) Serial.print("Exp " + String(out_expansion.getIndex()) + " SET PWM " + String(i - OA_PWM_CH_FIRST) + " periodo " +
+            String(pwm_periods[in]) + " pulse " +  String(pwm_pulse[in]));
+         out_expansion.setPwm(i,pwm_periods[in],pwm_pulse[in]);
+         if(Serial) {
+
+            // TO BE REMOVED the - OA_PWM_CH_FIRST
+            int c = i - OA_PWM_CH_FIRST;
+          
+            Serial.println("\n  * Getting back PWM information:\n  -  periodo " + String(out_expansion.getPwmPeriod(c)) + "\n  - pulse " + String(out_expansion.getPwmPulse(c)) + "\n  - freq " + String(out_expansion.getPwmFreqHz(c)) + "\n  - duty " + String(out_expansion.getPwmPulsePerc(c)));
+            Serial.println();
+         }
+      }   
+   }
+
+   in++;
+   if(in >= 10) {
+    in = 0;
+   }
+
+
+   delay(2000);
+
    AnalogExpansion rtd_in = OptaController.getExpansion(RTD_EXPANSION_INDEX);
    if(rtd_in) {
    	for(int i = 0; i < 8; i++) {
@@ -369,6 +422,10 @@ void loop() {
    				if(Serial) Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " reading value LOW (DIGITAL)");
    			}
    		}
+         else if(rtd_in.isChDac(i)) {
+            if(Serial) Serial.println("RTD expansion " + String(rtd_in.getIndex()) + " - channel " + String(i) + " is DAC");
+         }
+
          else {
             if(Serial) Serial.println("Exp " + String(rtd_in.getIndex()) + " ch " + String(i));  
             if(Serial) Serial.println("BOH?");
@@ -378,13 +435,13 @@ void loop() {
       rtd_in.setPwm(OA_PWM_CH_0,10000,5000);
       rtd_in.setPwm(OA_PWM_CH_1,8000,2000);
       rtd_in.setPwm(OA_PWM_CH_2,20000,5000);
-      rtd_in.setPwm(OA_PWM_CH_2,20000,10000);
+      rtd_in.setPwm(OA_PWM_CH_3,20000,10000);
    	delay(2000);
       if(Serial) Serial.println("------------ PWM OFF -----------");
       rtd_in.setPwm(OA_PWM_CH_0,0,5000);
       rtd_in.setPwm(OA_PWM_CH_1,0,2000);
       rtd_in.setPwm(OA_PWM_CH_2,0,5000);
-      rtd_in.setPwm(OA_PWM_CH_2,0,10000);
+      rtd_in.setPwm(OA_PWM_CH_3,0,10000);
       delay(1000);
 	}
 

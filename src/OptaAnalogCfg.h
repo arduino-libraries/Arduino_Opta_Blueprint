@@ -16,7 +16,7 @@
 
 #define FW_VERSION_MAJOR 0
 #define FW_VERSION_MINOR 1
-#define FW_VERSION_RELEASE 5
+#define FW_VERSION_RELEASE 8
 
 /* DEBUG CONFIGURATION */
 #define DEBUG_ANALOG_RTD
@@ -58,58 +58,74 @@
 #define AN_DEV_DIAG_CHANNELS_NUM 4
 #define AN_DEV_GPO_NUM 4
 
-#define AN_DEV_CH_A 0
-#define AN_DEV_CH_B 1
-#define AN_DEV_CH_C 2
-#define AN_DEV_CH_D 3
-
-#define AN_DEV_NUM 2
-#define AN_DEV_A 0
-#define AN_DEV_B 1
 
 /** The value of the sense resistor in ohms */
 #define AN_DEV_RSENSE 100
 /** 16 bit ADC */
 #define AN_DEV_ADC_MAX_VALUE 65535
 
-/** Register map */
+/*
+ * Register map 
+ */
 
-#define OPTA_AN_NOP 0x00
-/* -------------------------------------------------------------------------- */
-/* CHANNEL SETUP                                                              */
-/* -------------------------------------------------------------------------- */
-#define OA_REG_FUNC_SETUP (0x01)
-#define OA_REG_ADC_CONFIG (0x05)
-#define OA_ADC_CONV_CTRL (0x23)
-#define OA_REG_ADC_RESULT (0x26)
-#define OA_REG_DIAG_RESULT (0x2A)
-#define OA_REG_DAC_CONFIG (0x12)
-#define OA_REG_DAC_CODE (0x16)
-#define OA_REC_DAC_CLEAR_CODE (0x1A)
-#define OA_REG_DAC_ACTIVE (0x1E)
-#define OA_REG_DIN_CONFIG (0x09)
-#define OA_REG_DIN_THRESH (0x22)
-#define OA_REG_DIN_COMP_OUT (0x25)
-#define OA_REG_GPO_CONFIG (0x0E)
-#define OA_REG_GPO_PARALLEL (0x0D)
-#define OA_LIVE_STATUS (0x2F)
-#define OA_ALERT_STATUS (0x2E)
+#define OPTA_AN_NOP___SINGLE_PER_DEVICE                  (0x00)
+
+#define OA_REG_FUNC_SETUP                                (0x01)
+#define OA_REG_ADC_CONFIG                                (0x05)
+#define OA_REG_DIN_CONFIG                                (0x09)
+
+#define OA_REG_GPO_PARALLEL___SINGLE_PER_DEVICE          (0x0D)
+
+#define OA_REG_GPO_CONFIG                                (0x0E)
+#define OA_REG_DAC_CONFIG                                (0x12)
+#define OA_REG_DAC_CODE                                  (0x16)
+#define OA_REC_DAC_CLEAR_CODE                            (0x1A)
+#define OA_REG_DAC_ACTIVE                                (0x1E)
+
+#define OA_REG_DIN_THRESH___SINGLE_PER_DEVICE            (0x22)
+#define OA_REG_ADC_CONV_CTRL___SINGLE_PER_DEVICE         (0x23)
+#define OA_REG_DIAG_SELECT___SINGLE_PER_DEVICE           (0x24)
+#define OA_REG_DIN_COMP_OUT___SINGLE_PER_DEVICE          (0x25)
+
+#define OA_REG_ADC_RESULT                                (0x26)
+#define OA_REG_DIAG_RESULT                               (0x2A)
+
+#define OA_REG_ALERT_STATUS___SINGLE_PER_DEVICE          (0x2E)
+#define OA_REG_LIVE_STATUS___SINGLE_PER_DEVICE           (0x2F)
+#define OA_REG_ALERT_MASK___SINGLE_PER_DEVICE            (0x3C)
+
+#define OA_REG_READ_SELECT___SINGLE_PER_DEVICE           (0x41)
+#define OA_REG_80_SPS_ACD_CONV___SINGLE_PER_DEVICE       (0x42)
+#define OA_REG_THERMAL_RESET_ENABLE___SINGLE_PER_DEVICE  (0x43)
+#define OA_REG_CMD_REGISTER___SINGLE_PER_DEVICE          (0x44)
+#define OA_REG__SCRATCH___SINGLE_PER_DEVICE              (0x45)
+#define OA_REG_SILICON_REV___SINGLE_PER_DEVICE           (0x46)
+
+
+/* write the following 2 keys into the CMD_REGISTER to reset the device */
+#define OPTA_AN_KEY_RESET_1 0x15FA
+#define OPTA_AN_KEY_RESET_2 0xAF51
+/* write the following KEY to synch DAC output on different channels (must be
+ * activate via a specific PIN (not available at the present) */
+#define OPTA_AN_KEY_LDAC 0x953A
+/* write this key to reset the DAC to the reset Value */
+#define OPTA_AN_KEY_CLEAR_DAC 0x73D1
+
+
 
 /* -------------------------------------------------------------------------- */
 
 #define OPTA_AN_CH_FUNC_SETUP(x) (0x01 + x)
 
-#define CH_HIGH_IMP 0x0 // ADC
-#define CH_VO 0x1       // Voltage Output
-#define CH_CO 0x2       // Current output
-#define CH_VI 0x3       // Voltage Input
-#define CH_CI_EP                                                               \
-  0x4                // Current Input Externally
-                     // Powered
-#define CH_CI_LP 0x5 // Current Input Loop Powered
-#define CH_RM 0x6    // Resistance Measurement
-#define CH_DI 0x7    // Digital Input
-#define CH_DI_LP 0x8 // Digital Input Loop Powered
+#define CH_HIGH_IMP 0x0   // ADC
+#define CH_VO       0x1   // Voltage Output
+#define CH_CO       0x2   // Current output
+#define CH_VI       0x3   // Voltage Input
+#define CH_CI_EP    0x4   // Current Input Externally Powered
+#define CH_CI_LP    0x5   // Current Input Loop Powered
+#define CH_RM       0x6   // Resistance Measurement
+#define CH_DI       0x7   // Digital Input
+#define CH_DI_LP    0x8   // Digital Input Loop Powered
 
 /* -------------------------------------------------------------------------- */
 /* ADC configuration                                                          */
@@ -168,8 +184,6 @@
 /* -------------------------------------------------------------------------- */
 /* GPO PARALLEL REGISTER                                                      */
 /* -------------------------------------------------------------------------- */
-#define OPTA_AN_GPO_PARALLEL 0x0D
-
 #define PARALLEL_CH_A_BIT (1 << 0)
 #define PARALLEL_CH_B_BIT (1 << 1)
 #define PARALLEL_CH_C_BIT (1 << 2)
@@ -188,7 +202,6 @@
 /* -------------------------------------------------------------------------- */
 /* GPO CONFIGURATION                                                          */
 /* -------------------------------------------------------------------------- */
-#define OPTA_AN_GPO_CONFIG(x) (0x0E + x)
 
 #define GPO_SELECT_PULL_DOWN 0x0
 #define GPO_SELECT_DRIVE_VIA_CONFIG 0x1
@@ -203,8 +216,6 @@
 /* -------------------------------------------------------------------------- */
 /* OUTPUT CONFIGURATION                                                       */
 /* -------------------------------------------------------------------------- */
-
-#define OPTA_AN_OUTPUT_CONFIG(x) (0x12 + x)
 
 #define CURRENT_LIMIT_30mA 0
 #define CURRENT_LIMIT_7_5mA 1
@@ -235,24 +246,8 @@
 #define SET_SLEW_RATE(v, x) (v |= x)
 
 /* -------------------------------------------------------------------------- */
-/* DAC CODE REGISTER                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_DAC_CODE(x) (0x16 + x)
-
-/* -------------------------------------------------------------------------- */
-/* DAC CLEAR CODE                                                             */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_DAC_CLR_CODE(x) (0x1A + x)
-
-/* -------------------------------------------------------------------------- */
-/* DAC ACTIVE                                                         */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_DAC_ACTIVE(x) (0x1E + x)
-
-/* -------------------------------------------------------------------------- */
 /* DI THRESHOLD                                                          */
 /* -------------------------------------------------------------------------- */
-#define OPTA_AN_DIN_THRESH 0x22
 
 #define TH_SCALE_TO_AVDD (0)
 #define TH_FIXED_TO_16V (1)
@@ -262,7 +257,6 @@
 /* -------------------------------------------------------------------------- */
 /* CONVERSION CONTROL                                                         */
 /* -------------------------------------------------------------------------- */
-#define OPTA_AN_ADC_CONV_CTRL 0x23
 
 #define DIAG_OFFSET 4
 
@@ -284,83 +278,6 @@
 #define ENABLE_DIAG_REJECTION(v) (v |= EN_REJECTION_BIT)
 #define DISABLE_DIAG_REJECTION(v) (v &= ~EN_REJECTION_BIT)
 
-/* -------------------------------------------------------------------------- */
-/* DIGITAL OUTPUT LEVEL REGISTER                                              */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_DIN_COMP_OUT 0x25
-
-#define DIN_A_HIGH(x) ((x & (1 << 0)) == (1 << 0))
-#define DIN_B_HIGH(x) ((x & (1 << 1)) == (1 << 1))
-#define DIN_C_HIGH(x) ((x & (1 << 2)) == (1 << 2))
-#define DIN_D_HIGH(x) ((x & (1 << 3)) == (1 << 3))
-
-/* -------------------------------------------------------------------------- */
-
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_DIAG_ASSIGN 0x24
-/* -------------------------------------------------------------------------- */
-/*                                                         */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_ADC_RESULT(x) (0x26 + x)
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_DIAG_RESULT(x) (0x2A + x)
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_ALERT_STATUS 0x2E
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_LIVE_STATUS 0x2F
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_ALERT_MASK 0x3C
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_DIN_COUNTER(x) (0x3D + x)
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_READ_SELECT 0x41
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_THERM_RST 0x43
-
-/* -------------------------------------------------------------------------- */
-/* COMMAND REGISTER -> specific operation are performed when a certain key is
- * written in this register                                                   */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_CMD_REGISTER 0x44
-/* write the following 2 keys into the CMD_REGISTER to reset the device */
-#define OPTA_AN_KEY_RESET_1 0x15FA
-#define OPTA_AN_KEY_RESET_2 0xAF51
-/* write the following KEY to synch DAC output on different channels (must be
- * activate via a specific PIN (not available at the present) */
-#define OPTA_AN_KEY_LDAC 0x953A
-/* write this key to reset the DAC to the reset Value */
-#define OPTA_AN_KEY_CLEAR_DAC 0x73D1
-
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_SCRATCH 0x45
-/* -------------------------------------------------------------------------- */
-/* ADC configuration                                                          */
-/* -------------------------------------------------------------------------- */
-#define OPTA_AN_SILICON_REV 0x46
-
-#define CH_CFG_ADC (0x0 << 5)
-#define CH_CFG_RTD (0x1 << 5)
-#define CH_CFG_CUR (0x2 << 5)
-#define CH_CFG_BICUR (0x3 << 5)
 
 #define OPTA_AN_ALERT_VI_ERR_MASK_A (1 << 0)
 #define OPTA_AN_ALERT_VI_ERR_MASK_B (1 << 1)
