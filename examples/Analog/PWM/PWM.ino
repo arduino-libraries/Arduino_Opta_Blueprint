@@ -101,6 +101,7 @@ void optaAnalogTask() {
          rising = 1;
       }
     }
+
     for(int i = 0; i < OptaController.getExpansionNum(); i++) {
 
       AnalogExpansion aexp = OptaController.getExpansion(i);
@@ -120,6 +121,25 @@ void optaAnalogTask() {
 	  aexp.setPwm(OA_FIRST_PWM_CH + 2, period, pulse);
 	  aexp.setPwm(OA_FIRST_PWM_CH + 3, period, pulse);
 	}
+      }
+    }
+    for(int i = 0; i < OptaController.getExpansionNum(); i++) {
+
+      AnalogExpansion aexp = OptaController.getExpansion(i);
+
+      if(aexp) {
+	Serial.println("PWM ch 0 period " +
+	String(aexp.getPwmPeriod(OA_FIRST_PWM_CH))+ 
+	  " pulse " + aexp.getPwmPulse(OA_FIRST_PWM_CH));
+	Serial.println("PWM ch 1 period " +
+	String(aexp.getPwmPeriod(OA_FIRST_PWM_CH + 1)) + 
+	" pulse " + aexp.getPwmPulse(OA_FIRST_PWM_CH + 1));
+	Serial.println("PWM ch 2 period " +
+	String(aexp.getPwmPeriod(OA_FIRST_PWM_CH + 2)) + 
+	  " pulse " + aexp.getPwmPulse(OA_FIRST_PWM_CH + 2));
+	Serial.println("PWM ch 3 period " +
+	String(aexp.getPwmPeriod(OA_FIRST_PWM_CH + 3))+ 
+	    " pulse " + aexp.getPwmPulse(OA_FIRST_PWM_CH + 2));
       }
     }
   }
