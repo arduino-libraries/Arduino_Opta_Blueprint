@@ -15,7 +15,7 @@ Each Expansion is identified by a type: this is essentially a number identifing
 the type of the hardware attached (so that the Opta controller can recognize 
 different kind of hardware).
 
-Official Arduino expasions have a predefined type number: for example Arduino
+Official Arduino expansions have a predefined type number: for example Arduino
 Analog expansion has ALWAYS type equal to EXPANSION_OPTA_ANALOG (which is 4).
 
 Custom expansion do not have a fixed type number, after all how the Opta BluePrint
@@ -39,6 +39,12 @@ Pay attention: this type can be different depending on your application (in part
 will depend from the number of custom expansion registered and the order they are
 registered), you must not rely on a particular value in your code because it is
 not guarantee that you will get always the same _number_.
+
+IMPORTANT NOTE: the best approach to register an expansion is to call 
+`registerCustomExpansion` _before_ the OptaController.begin() call.
+All works also if expansion are registered after the OptaController.begin() however
+this approach is slower because it requires the Controller to look for an
+espansion with no custom type associated.
 
 ## How to retrieve the type of a register expansion
 

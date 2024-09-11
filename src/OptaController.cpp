@@ -145,6 +145,17 @@ int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
     rv = et.setType();
     exp_type_list.push_back(et);
   }
+
+  /* looking for expansions registered after begin() (slower) */
+  for (int i = 0; i < num_of_exp; i++) {
+    if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
+      _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
+                                   CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
+        exp_type[i] = parse_get_product();
+      }
+    }
+  }
   return rv;
 }
 
@@ -772,7 +783,7 @@ void Controller::checkForExpansions() {
        here we assing a type on custom expansion */
     
     for (int i = 0; i < num_of_exp; i++) {
-      if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE) {
+      if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
         _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
         if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
                                    CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
