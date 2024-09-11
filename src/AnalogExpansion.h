@@ -233,17 +233,42 @@ public:
 
   void beginChannelAsHighImpedance(uint8_t ch);
 
-  /*
-   * Set /get channel functions
+  /* PWM Functions:
+   * valid channels number for PWM functions from OA_PWM_CH_0 to OA_PWM_CH_3
+   * there is also OA_PWM_CH_FIRST (equal to OA_PWM_CH_0) and OA_PWM_CH_LAST 
+   * (OA_PWM_CH_3)
    */
-  /* period and pulse in micro seconds */
+  /* Set period and pulse in micro seconds for the channel ch 
+     valid channels are from OA_PWM_CH_0 to OA_PWM_CH_3 */
   void setPwm(uint8_t ch, uint32_t period, uint32_t pulse);
-  /* get Pwm period in micro seconds */
-  uint32_t getPwmPeriod(uint8_t ch);
-  /* get Pwm pulse in micro seconds */
-  uint32_t getPwmPulse(uint8_t ch);
 
+  /* Get period in micro seconds for the channel ch 
+     valid channels are from OA_PWM_CH_0 to OA_PWM_CH_3 
+     for compatibility reason this function also accept value from 0 to 3 however
+     this is deprecated 
+     Please note that this function only return the last value send to the
+     expansion */
+  uint32_t getPwmPeriod(uint8_t ch);
+  /* Get period in micro seconds for the channel ch 
+     valid channels are from OA_PWM_CH_0 to OA_PWM_CH_3 
+     for compatibility reason this function also accept value from 0 to 3 however
+     this is deprecated 
+     Please note that this function only return the last value send to the
+     expansion */
+  uint32_t getPwmPulse(uint8_t ch);
+  /* Get frequency in Hz for the channel ch 
+     valid channels are from OA_PWM_CH_0 to OA_PWM_CH_3 
+     for compatibility reason this function also accept value from 0 to 3 however
+     this is deprecated 
+     Please note that this function only return the last value send to the
+     expansion*/
   float getPwmFreqHz(uint8_t ch);
+  /* Get duty cycle in % for the channel ch 
+     valid channels are from OA_PWM_CH_0 to OA_PWM_CH_3 
+     for compatibility reason this function also accept value from 0 to 3 however
+     this is deprecated 
+     Please note that this function only return the last value send to the
+     expansion*/
   float getPwmPulsePerc(uint8_t ch);
 
   /* get adc converter bits of channel ch (if ch is configured as ADC)*/

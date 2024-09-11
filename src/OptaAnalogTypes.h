@@ -97,7 +97,6 @@ public:
 class CfgPwm {
 public:
   PwmOut pwm;
-  bool active;
   /* period_us is the period set to the pwm (it is updated only when different
    * from set_period_us, this is necessary because if the period is continuously
    * updated the timer does not work as expected and the is not set properly)*/
@@ -109,7 +108,7 @@ public:
   /* set_pulse_us is the pulse set point */
   uint32_t set_pulse_us;
   CfgPwm(int p)
-      : pwm(p), active(false), period_us(0), pulse_us(0), set_period_us(0),
+      : pwm(p), period_us(0), pulse_us(0), set_period_us(0),
         set_pulse_us(0) {}
   void begin() {
     pwm.begin();

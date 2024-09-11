@@ -120,31 +120,27 @@ void OptaAnalog::configurePwmPulse(uint8_t ch, uint32_t _pulse_us) {
 
 /* -------------------------------------------------------------------------- */
 void OptaAnalog::updatePwm(uint8_t ch) {
-  /* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------ */
+  
   if (ch >= OA_PWM_CHANNELS_NUM) {
     return;
   }
-  if (pwm[ch].set_period_us == 0 && pwm[ch].active) {
+  
+  if (pwm[ch].set_period_us == 0) {
     pwm[ch].pwm.suspend();
-    pwm[ch].active = false;
-  } else {
+  } 
+  else {
     if (pwm[ch].set_pulse_us < pwm[ch].set_period_us) {
-      if (pwm[ch].set_period_us != pwm[ch].period_us) {
-        pwm[ch].pwm.period_us(pwm[ch].set_period_us);
-      }
-      if (pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
-        pwm[ch].pwm.pulseWidth_us(pwm[ch].set_pulse_us);
-      }
-      pwm[ch].period_us = pwm[ch].set_period_us;
-      pwm[ch].pulse_us = pwm[ch].set_pulse_us;
-      if (!pwm[ch].active) {
-#ifdef ARDUINO_OPTA_ANALOG
+      if (pwm[ch].set_period_us != pwm[ch].period_us || pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
         pwm[ch].pwm.resume();
-        pwm[ch].active = true;
-#endif
+        pwm[ch].pwm.period_us(pwm[ch].set_period_us);
+        pwm[ch].pwm.pulseWidth_us(pwm[ch].set_pulse_us);      
       }
     }
   }
+  pwm[ch].period_us = pwm[ch].set_period_us;
+  pwm[ch].pulse_us = pwm[ch].set_pulse_us;
+
 }
 /* -------------------------------------------------------------------------- */
 void OptaAnalog::suspendPwm(uint8_t ch) {
@@ -153,10 +149,12 @@ void OptaAnalog::suspendPwm(uint8_t ch) {
     return;
   }
 
-  if (pwm[ch].active) {
-    pwm[ch].pwm.suspend();
-    pwm[ch].active = false;
-  }
+  pwm[ch].pwm.suspend();
+  pwm[ch].period_us = 0;
+  pwm[ch].pulse_us = 0;
+  pwm[ch].set_period_us = 0;
+  pwm[ch].set_pulse_us = 0;
+
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -198,6 +196,7 @@ OptaAnalog::OptaAnalog()
   }
   /* ------------------------------------------------------------------------ */
 }
+
 
 /* BEGIN */
 /* -------------------------------------------------------------------------- */
