@@ -30,6 +30,39 @@
 #define INC_WITH_MAX(x, M) (x = (++x >= M) ? 0 : x)
 #define DEC_WITH_MAX(x, M) (x = (--x < 0) ? (M - 1) : x)
 
+class ExpType {
+
+private:
+  makeExpansion_f make;
+  int type;
+  std::string product;
+  static int next_expansion_type;
+
+public:
+  startUp_f startUp;
+  ExpType() : make(nullptr), type(-1), startUp(nullptr) {}
+  void setType(int t) { type = t; }
+  int setType() {
+    type = next_expansion_type;
+    next_expansion_type++;
+    return type;
+  }
+  Expansion *allocateExpansion() {
+    if (make != nullptr) {
+      return make();
+    }
+    return nullptr;
+  }
+  int getType() { return type; }
+  void setMake(makeExpansion_f f) { make = f; }
+  void setProduct(std::string s) { product = s; }
+  bool isProduct(std::string s) { return (product == s); }
+  void setStart(startUp_f f) { startUp = f; }
+  std::string getProduct() {return product;}
+};
+
+int ExpType::next_expansion_type = EXPANSION_CUSTOM + 20;
+
 // namespace Opta {
 
 /* -------------------------------------------------------------------------- */
@@ -44,43 +77,45 @@ Controller::Controller()
       tmp_address(OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS), tmp_num_of_exp(0),
       address(OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS), num_of_exp(0),
       failed_i2c_comm(nullptr) {
+  init_exp_type_list();      
   for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
     expansions[i] = nullptr;
   }
 }
 
 void Controller::init_exp_type_list() {
-  ExpType et;
+    ExpType et;
 
-  et.setType((uint8_t)EXPANSION_DIGITAL_INVALID);
-  et.setMake(DigitalExpansion::makeExpansion);
-  et.setProduct(DigitalExpansion::getProduct());
-  et.setStart(DigitalExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_DIGITAL_INVALID);
+    et.setMake(DigitalExpansion::makeExpansion);
+    et.setProduct(DigitalExpansion::getProduct());
+    et.setStart(DigitalExpansion::startUp);
 
-  add_exp_type(et);
+    exp_type_list.push_back(et);
 
-  et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_MEC);
-  et.setMake(DigitalMechExpansion::makeExpansion);
-  et.setProduct(DigitalMechExpansion::getProduct());
-  et.setStart(DigitalExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_MEC);
+    et.setMake(DigitalMechExpansion::makeExpansion);
+    et.setProduct(DigitalMechExpansion::getProduct());
+    et.setStart(DigitalExpansion::startUp);
 
-  add_exp_type(et);
+    exp_type_list.push_back(et);;
 
-  et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_STS);
-  et.setMake(DigitalStSolidExpansion::makeExpansion);
-  et.setProduct(DigitalStSolidExpansion::getProduct());
-  et.setStart(DigitalExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_OPTA_DIGITAL_STS);
+    et.setMake(DigitalStSolidExpansion::makeExpansion);
+    et.setProduct(DigitalStSolidExpansion::getProduct());
+    et.setStart(DigitalExpansion::startUp);
 
-  add_exp_type(et);
+    exp_type_list.push_back(et);
 
-  et.setType((uint8_t)EXPANSION_OPTA_ANALOG);
-  et.setMake(AnalogExpansion::makeExpansion);
-  et.setProduct(AnalogExpansion::getProduct());
-  et.setStart(AnalogExpansion::startUp);
+    et.setType((uint8_t)EXPANSION_OPTA_ANALOG);
+    et.setMake(AnalogExpansion::makeExpansion);
+    et.setProduct(AnalogExpansion::getProduct());
+    et.setStart(AnalogExpansion::startUp);
 
-  add_exp_type(et);
-  next_available_custom_type = EXPANSION_CUSTOM + 20;
+    exp_type_list.push_back(et);
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 int Controller::getExpansionType(std::string pr) {
   int rv = -1;
@@ -95,46 +130,35 @@ int Controller::getExpansionType(std::string pr) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+
 int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
                                         startUp_f su) {
-
-  int rv = -1;
-  bool found = false;
-  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-    if (exp_type_list[i].isProduct(pr)) {
-      exp_type_list[i].setMake(f);
-      exp_type_list[i].setStart(su);
-      found = true;
-      rv = exp_type_list[i].getType();
-      break;
-    }
-  }
-  if (!found) {
+  int rv = getExpansionType(pr);
+  /* product not registered... add it */
+  if (rv == -1) {
     ExpType et;
-
     et.setMake(f);
     et.setProduct(pr);
     et.setStart(su);
-    add_exp_type(et);
+    /* automatically increment the type so that is ready for another 
+       call*/
+    rv = et.setType();
+    exp_type_list.push_back(et);
+  }
+
+  /* looking for expansions registered after begin() (slower) */
+  for (int i = 0; i < num_of_exp; i++) {
+    if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
+      _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
+                                   CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
+        exp_type[i] = parse_get_product();
+      }
+    }
   }
   return rv;
 }
 
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-void Controller::add_exp_type(ExpType et) {
-
-  bool found = false;
-  for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-    if (exp_type_list[i].isProduct(et.getProduct())) {
-      found = true;
-      return;
-    }
-  }
-  if (!found) {
-    exp_type_list.push_back(et);
-  }
-}
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -173,7 +197,7 @@ void Controller::beginOdDefaults(uint8_t device, bool d[OPTA_DIGITAL_OUT_NUM],
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t Controller::send(int add, int device, unsigned int type, int n, int r) {
-  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && type != EXPANSION_NOT_VALID) {
     if (type == exp_type[device] && add == exp_add[device]) {
       if (n > 0) {
 
@@ -558,47 +582,58 @@ void Controller::checkForExpansions() {
      the tmp_exp_add is filled like a circular queue so that in any number
      of temporary address can be used  but only the last 10 value are stored
      - this initialization is useful to exit as soon as we meet 0*/
+  
+  /* INITIALIZING ALL VARIABLE USED THEN IN THE FOLLOWING while loop WHERE
+     ADDRESS are assigned */
   if (enter_while) {
+    
     for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
       tmp_exp_add[i] = 0;
     }
     num_of_exp = 0;
+
+    /* the tmp_address is incremented automatically when an answer for the
+       request get address and type is correctly received */
+    tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
     
-    for(int i = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 1; i < OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 2*OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
+    /* with this for loop a reset command is sent to every device (with temporary
+       or final addresses )*/
+    for(int i = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 1; 
+        i < OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 2*OPTA_CONTROLLER_MAX_EXPANSION_NUM; 
+        i++) {
       _send(i, msg_opta_reset(), 0);
     }
+
     delay(OPTA_CONTROLLER_SETUP_INIT_DELAY);
   }
   
-  tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
-  bool send_new_address = true;
+  /* #################################
+   * TEMPORARY ADDRESS ASSIGNMENT LOOP
+   * ################################# */
   
   while (enter_while) {
-
-    if(send_new_address) {
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println("[LOG]:  - DETECT pin is LOW (expansions without address)");
     Serial.println("        - Sending SET temp address message 0x" + String(tmp_address,HEX));
 #endif
-      _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
-      delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
-    }
-
-    send_new_address = false;
-
+    
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+     * 1. SENDING new temporary address to the device using DEFAULT address 
+     *    (no answer is expected)
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+    _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
+    delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
+        
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println("        - Sending GET address message");
 #endif
 
-#ifdef BP_USE_CRC
-    uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN_CRC;
-#else
-    uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN;
-#endif
-
-    /* send the request and waits for 4 bytes answer */
-    _send(tmp_address, msg_get_address_and_type(), req);
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * 2. SENDING request: get address and type to the device used the previouslu
+     *    assigned temporary address (to ensure proper address has been accepted) 
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+    _send(tmp_address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.print("        - Receiving answer from device: ");
@@ -610,27 +645,50 @@ void Controller::checkForExpansions() {
        tmp_num_of_exp so that tmp_exp_add array is filled in a circular way
      */
 
-    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
-      if(parse_address_and_type(tmp_address)) {
-        #ifdef USE_CONFIRM_RX_MESSAGE
-        delay(5);
-        _send(tmp_address, msg_confirm_rx_address(),0);
-        #endif
-        send_new_address = true;
-        #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-        Serial.println("        GOT IT! ");
-        #endif
-      } 
-      else {
-        #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-        Serial.println("          TIMEOUT ");
-        #endif  
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * 3. RECEIVING ANSWER - try more 3 times before to send again the request
+     *    to assign the address
+     * NOTE: upon correct answer reception (within the function parse_address_and_type
+     * the tmp address is incresed for the next possible device in the chain)    
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
+    uint8_t attempts = 3;
+    /* exit with break upon correct answer received */
+    while(attempts > 0) {
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+        if(parse_address_and_type(tmp_address)) {
+          #ifdef USE_CONFIRM_RX_MESSAGE
+          delay(5);
+          _send(tmp_address, msg_confirm_rx_address(),0);
+          #endif
+          break;
+          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+          Serial.println("        GOT IT! ");
+          #endif
+        } 
+        else {
+          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+          Serial.println("          TIMEOUT ");
+          #endif 
+          delay(10);
+        }
       }
+      attempts--;
     }
 
-    
+    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * 4. VERIFY if the detect is gone UP --> if it is high no more device
+     *    without address are present and we can exit the loop
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
+    if (is_detect_high()) {
+      break;
+    }
+  } //while (enter_while)
+
+/* printing found devices with temporary addresses */
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+    Serial.println("[LOG]:  - TRANSITION of detect from LOW to HIGH");
     Serial.print("TEMPORARY Number of expansions found ");
     Serial.println(tmp_num_of_exp);
     for (int i = 0; i < tmp_num_of_exp; i++) {
@@ -639,83 +697,60 @@ void Controller::checkForExpansions() {
       Serial.print(" address ");
       Serial.println(tmp_exp_add[i], HEX);
     }
+    delay(10000);
 
-    delay(1000);
 #endif
+  /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+     * At this point all expansions have been found and have a temporary
+     * address
+     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+  
+  /* initializing variable */
+  address = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS;
+  num_of_exp = 0;
 
-    /* EXIT FROM LOOP */
-    if (is_detect_high()) {
-      break;
+  /* * FIX Controller not re-assigning address when reset *
+     Since now the tmp_exp_add array is filled in circular way we need to
+     find the index of the array with the maximum value (this is always
+     the address of the expansion closest to the controller and the
+     re-assignment of address must begin from this expansion that will
+     take the first address and the first position in the array of
+     expansion) */
+
+  int initial_value = -1;
+  uint8_t max_value = 0x00;
+  for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
+    if (tmp_exp_add[i] > max_value) {
+      max_value = tmp_exp_add[i];
+      initial_value = i;
     }
   }
 
-  /* since the enter_while is no more updated I can use it here to check for
-     the transition LOW -> HIGH*/
+  /* * FIX Controller not re-assigning address when reset *
+     tmp_num_of_exp will be decreased in circular way (when it becomes
+     lower than 0 it will be assigned to OPTA_CONTROLLER_MAX_EXPANSION_NUM
+     - 1 using DEC_WITH_MAX macro that does that) */
+  tmp_num_of_exp = initial_value;
 
-  if (enter_while) {
+  /* * FIX Controller not re-assigning address when reset *
+     In case of unwanted expansion reset (btw this is fixed also in the
+     expansion so that is a case should never happen) it can happen that
+     some temporary addresses is not working properly, this is fine...
+     just try and then skip the address, the attemps is used to to so
+      */
+  int attempts = 0;
 
-#if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-    Serial.println("[LOG]:  - TRANSITION of detect from LOW to HIGH");
-#endif
-    /* reset the available address for an other possible assign address
-     * process
-     */
-    tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
+  bool remain_in_while_loop = true;
+  do {
+    #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+    Serial.print("Sending to address 0x" + String(tmp_exp_add[tmp_num_of_exp], HEX) );
+    Serial.println(" new address 0x" + String(address,HEX) );
+    #endif
+    _send(tmp_exp_add[tmp_num_of_exp], msg_set_address(address), 0);
 
-    /* here all the slave known so far get new addresses starting from
-       OPTA_DEFAULT_SLAVE_I2C_ADDRESS in this way addresses are reassigned
-       starting from the device closer to the controller so the first device
-       on the right of the Controller gets OPTA_DEFAULT_SLAVE_I2C_ADDRESS
-       the second one OPTA_DEFAULT_SLAVE_I2C_ADDRESS + 1 and so on all the
-       job is done inside the parse_rx address
-    */
-    address = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS;
-    num_of_exp = 0;
+    delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
 
-    /* * FIX Controller not re-assigning address when reset *
-       Since now the tmp_exp_add array is filled in circular way we need to
-       find the index of the array with the maximum value (this is always
-       the address of the expansion closest to the controller and the
-       re-assignment of address must begin from this expansion that will
-       take the first address and the first position in the array of
-       expansion) */
-
-    int initial_value = -1;
-    uint8_t max_value = 0x00;
-    for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
-      if (tmp_exp_add[i] > max_value) {
-        max_value = tmp_exp_add[i];
-        initial_value = i;
-      }
-    }
-
-    /* * FIX Controller not re-assigning address when reset *
-       tmp_num_of_exp will be decreased in circular way (when it becomes
-       lower than 0 it will be assigned to OPTA_CONTROLLER_MAX_EXPANSION_NUM
-       - 1 using DEC_WITH_MAX macro that does that) */
-    tmp_num_of_exp = initial_value;
-
-    /* * FIX Controller not re-assigning address when reset *
-       In case of unwanted expansion reset (btw this is fixed also in the
-       expansion so that is a case should never happen) it can happen that
-       some temporary addresses is not working properly, this is fine...
-       just try and then skip the address, the attemps is used to to so
-        */
-    int attempts = 0;
-
-    bool remain_in_while_loop = true;
-    do {
-      _send(tmp_exp_add[tmp_num_of_exp], msg_set_address(address), 0);
-
-      delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
-
-#ifdef BP_USE_CRC
-      uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN_CRC;
-#else
-      uint8_t req = ANS_MSG_ADDRESS_AND_TYPE_LEN;
-#endif
-
-      _send(address, msg_get_address_and_type(), req);
+    _send(address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
 
       /* * FIX Controller not re-assigning address when reset *
       when the address is correcly received as answer to the previous the
@@ -724,7 +759,7 @@ void Controller::checkForExpansions() {
       after 3 failed attemps the address is skipped and then the
       tmp_num_of_exp is decreased in the else branch */
 
-      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
         if (parse_address_and_type(address)) {
           remain_in_while_loop = (tmp_num_of_exp != initial_value);
         }
@@ -744,19 +779,18 @@ void Controller::checkForExpansions() {
     /* give some time to analog to reset Analog Devices */
     delay(OPTA_CONTROLLER_DELAY_EXPANSION_RESET);
 
-    /* it clear and reinitialize the list of expansion types */
-    init_exp_type_list();
-    /* NOW ask for the Product type -------------------------------*/
+    /* for known expansion type (no custom) the type has already been assigned 
+       here we assing a type on custom expansion */
     
     for (int i = 0; i < num_of_exp; i++) {
-      if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE) {
+      if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
         _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
         if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
                                    CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
-          if (parse_get_product()) {
-            exp_type[i] = next_available_custom_type;
-            next_available_custom_type++;
-          }
+          exp_type[i] = parse_get_product();
+          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+          Serial.println("EXPANSION " + String(i) + " is custom with type " + exp_type[i]);
+          #endif
         }
       }
     }
@@ -807,15 +841,15 @@ void Controller::checkForExpansions() {
       } else if (exp_type[i] == EXPANSION_OPTA_DIGITAL_MEC ||
                  exp_type[i] == EXPANSION_OPTA_DIGITAL_STS) {
         Serial.println("EXPANSION_OPTA_DIGITAL");
-      } else {
-        Serial.println("expansion code unknown!!!!!!");
+      } else if(exp_type[i] == EXPANSION_OPTA_ANALOG )  {
+        Serial.println("EXPANSION_OPTA_ANALOG");
+      }
+      else {
+        Serial.println("expansion type custom " + String(exp_type[i]));
       }
     }
 #endif
-  }
-
-  else {
-  }
+   
 }
 
 void Controller::setFailedCommCb(CommErr_f f) { failed_i2c_comm = f; }
@@ -890,29 +924,20 @@ void Controller::resetRxBuffer() { memset(rx_buffer, 0, OPTA_I2C_BUFFER_DIM); }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-bool Controller::parse_get_product() {
-  if (checkAnsGetReceived(rx_buffer, ANS_ARG_GET_PRODUCT_TYPE, ANS_LEN_GET_PRODUCT_TYPE,
+int Controller::parse_get_product() {
+  int rv = EXPANSION_NOT_VALID;
+
+  if (checkAnsGetReceived(rx_buffer, 
+                          ANS_ARG_GET_PRODUCT_TYPE, 
+                          ANS_LEN_GET_PRODUCT_TYPE,
                           LEN_ANS_GET_PRODUCT_TYPE)) {
+    
     std::string pr((const char *)(rx_buffer + ANS_GET_PRODUCT_SIZE_POS + 1),
                    rx_buffer[ANS_GET_PRODUCT_SIZE_POS]);
-
-    bool found = false;
-    for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-      if (exp_type_list[i].isProduct(pr)) {
-        found = true;
-        exp_type_list[i].setType(next_available_custom_type);
-        break;
-      }
-    }
-    if (!found) {
-      ExpType et;
-      et.setType(next_available_custom_type);
-      et.setProduct(pr);
-      add_exp_type(et);
-    }
-    return true;
+    
+    rv = getExpansionType(pr);
   }
-  return false;
+  return (rv == -1) ? EXPANSION_NOT_VALID : rv;
 }
 
 bool Controller::parse_opta_reboot() {
