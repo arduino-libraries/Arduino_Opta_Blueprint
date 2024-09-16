@@ -55,6 +55,7 @@ protected:
 
   static uint16_t timeouts[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
   static uint8_t defaults[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
+  static uint8_t last_expansion_output[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 
 public:
   DigitalExpansion();
