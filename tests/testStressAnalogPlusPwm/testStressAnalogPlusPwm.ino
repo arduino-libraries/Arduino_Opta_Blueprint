@@ -15,6 +15,8 @@
 
 #include <cstdlib>
 #include "OptaBlue.h"
+#include "R4DisplayExpansion.h"
+
 
 AnalogExpansion out_expansion;
 AnalogExpansion in_expansion;
@@ -37,6 +39,37 @@ AnalogExpansion in_expansion;
 
 
    */
+
+/* -------------------------------------------------------------------------- */
+void printExpansionType(ExpansionType_t t) {
+/* -------------------------------------------------------------------------- */
+  if(t == EXPANSION_NOT_VALID) {
+    Serial.print("TYPE NOT VALID (perhaps custom expansion has not been registered?)");
+  }
+  else if(t == EXPANSION_OPTA_DIGITAL_MEC) {
+    Serial.print("Opta --- DIGITAL [Mechanical]  ---");
+  }
+  else if(t == EXPANSION_OPTA_DIGITAL_STS) {
+    Serial.print("Opta --- DIGITAL [Solid State] ---");
+  }
+  else if(t == EXPANSION_DIGITAL_INVALID) {
+    Serial.print("Opta --- DIGITAL [!!Invalid!!] ---");
+  }
+  else if(t == OptaController.getExpansionType(R4DisplayExpansion::getProduct()))
+  {
+     Serial.print("*** UnoR4 Display ***");
+  }
+  else if(t == OptaController.getExpansionType("ARDUINO UNO R4 WIFI"))
+  {
+     Serial.print("+++ UnoR4 WIFI ++++");
+  }
+  else if(t == EXPANSION_OPTA_ANALOG) {
+    Serial.print("Opta ~~~ ANALOG ~~~ ");
+  }
+  else {
+    Serial.print("Unknown!");
+  }
+}
 
 
 void setExpansionAsOutput_1(AnalogExpansion &a) {
@@ -229,6 +262,10 @@ void digitalTask() {
    }
 }
 
+std::string debug_getProduct() {
+  std::string rv("ARDUINO UNO R4 WIFI");
+  return rv;
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                 SETUP                                      */
@@ -241,6 +278,17 @@ void setup() {
    srand(millis());
 
    OptaController.begin();
+
+   int type = OptaController.registerCustomExpansion(R4DisplayExpansion::getProduct(),
+                                         R4DisplayExpansion::makeExpansion,
+                                         R4DisplayExpansion::startUp);
+
+   Serial.println("Custom expansion type for R4 display " + String(type));
+   type = OptaController.registerCustomExpansion(debug_getProduct(),
+                                         R4DisplayExpansion::makeExpansion,
+                                         R4DisplayExpansion::startUp);
+   Serial.println("Custom expansion type for R4 WIFI " + String(type));
+
    initReverse_1();
 
    AnalogExpansion rtd_in = OptaController.getExpansion(RTD_EXPANSION_INDEX);
@@ -294,6 +342,15 @@ void loop() {
    static uint8_t configuration = 0;
 
    OptaController.update();
+
+   for(int i = 0; i < OptaController.getExpansionNum(); i++) {
+      Serial.print("Expansion n. ");
+      Serial.print(i);
+      Serial.print(" type ");
+      printExpansionType(OptaController.getExpansionType(i));
+      Serial.print(" I2C address ");
+      Serial.println(OptaController.getExpansionI2Caddress(i));
+   }
 
    /* TEST adc and dac ---- expansion 0 and 1 */
    
