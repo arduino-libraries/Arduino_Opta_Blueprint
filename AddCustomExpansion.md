@@ -487,8 +487,19 @@ must be always implemented in the NewExpansionExpansion class:
   This function will be passed to the controller so that controller can
   re-initialize the expansions every time a discovery expansion process is
   finished.
-  If your expansion type does not need such function just write an empty
-  function. This will used in the copy constructor definition.
+  The startUp function are always called after the assign address process is completed.
+  Each startUp callback has to set up properly all the expansion of a certain type
+  in 2 possible situations:
+  - when the controller is re-programmed (since single expansion are not reset)
+    the startUp must send to all the expansions all that is need to put the expansion
+    in its "default state" (output off and so on...)
+  - when a single expansion is hot plug in into the chain (or one of the expansion
+    is reset for some reason) the startUp function must send to all the expansions 
+    of that type, all that is needed to put the expansion in last known state.
+  This is the approach used with digital and Analog expansion, however he behavior 
+  of a start up function could depend on how expansion FW works:
+  if your custom expansion type does not need such function just write an empty
+  function. 
 
 Then the new expansion class can define whatever custom additional function: the
 important point here is to remain to read / write / execute paradigm.
