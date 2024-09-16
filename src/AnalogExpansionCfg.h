@@ -218,12 +218,6 @@ public:
   int8_t restore(uint8_t *dst, uint8_t ch) {
     if (ch < OA_CFG_MSG_NUM) {
       if (size[ch] != -1 && cfg[ch] != nullptr) {
-        Serial.print("-> ");
-        for(int i = 0; i < size[ch]; i++) {
-          Serial.print(cfg[ch][i],HEX);
-          Serial.print(" ");
-        }
-        
         memcpy(dst, cfg[ch], size[ch]);
         return size[ch];
       }
