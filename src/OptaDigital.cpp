@@ -135,11 +135,9 @@ void OptaDigital::_resetOutputs() {
 
 /* -------------------------------------------------------------------------- */
 void OptaDigital::reset() {
-  /* --------------------------------------------------------------------------
-   */
+/* -------------------------------------------------------------------------- */
   /* reset output must be called first otherwise we get some delay from
      module reset and that make the output reset uneffective */
-  _resetOutputs();
   Module::reset();
 }
 
