@@ -139,7 +139,11 @@ uint8_t AnalogExpansion::msg_begin_adc() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_begin_di() {
-  //
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
+      index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
+
   if (ctrl != nullptr) {
     if (di_registers_defined()) {
       ctrl->setTx(iregs[ADD_OA_PIN], OA_CH_DI_CHANNEL_POS);
@@ -154,11 +158,11 @@ uint8_t AnalogExpansion::msg_begin_di() {
 
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_DI,
                                  LEN_OA_CH_DI, OA_CH_DI_LEN);
-      if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
-        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN],
-                           CFG_OA_CH_DI_LEN);
-      }
+      
+      AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
+      AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
+                         iregs[ADD_OA_PIN] + OFFSET_CHANNEL_CONFIG,
+                         rv);
       return rv;
     }
   }
@@ -333,6 +337,11 @@ void AnalogExpansion::beginChannelAsCurrentDac(uint8_t ch) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_begin_dac() {
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
+    index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
+
   if (ctrl != nullptr) {
     if (dac_registers_defined()) {
       ctrl->setTx(iregs[ADD_OA_PIN], OA_CH_DAC_CHANNEL_POS);
@@ -343,17 +352,26 @@ uint8_t AnalogExpansion::msg_begin_dac() {
 
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_DAC,
                                  LEN_OA_CH_DAC, OA_CH_DAC_LEN);
-      if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
-        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN], rv);
-      }
+      
+      AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
+      AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
+                         iregs[ADD_OA_PIN] + OFFSET_CHANNEL_CONFIG, 
+                         rv);
+      
       return rv;
     }
   }
   return 0;
 }
 
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 uint8_t AnalogExpansion::msg_begin_high_imp() {
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
+    index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
+
   if (ctrl != nullptr) {
 
     ctrl->setTx(iregs[ADD_OA_PIN], OA_HIGH_IMPEDENCE_CH_POS);
@@ -361,8 +379,10 @@ uint8_t AnalogExpansion::msg_begin_high_imp() {
         prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_HIGH_IMPEDENCE,
                       LEN_OA_CH_HIGH_IMPEDENCE, OA_CH_HIGH_IMPEDENCE_LEN);
     if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-      cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
-      cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN], rv);
+      AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
+      AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
+                         iregs[ADD_OA_PIN] + OFFSET_CHANNEL_CONFIG, 
+                         rv);
     }
     return rv;
   }
@@ -408,20 +428,24 @@ void AnalogExpansion::beginRtdUpdateTime(uint16_t time) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_set_rtd_time() {
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
+    index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
+
   if (ctrl != nullptr) {
     if (addressExist(ADD_OA_RTD_TIME)) {
       ctrl->setTx((uint8_t)(iregs[ADD_OA_RTD_TIME] & 0xFF),
                   OA_SET_RTD_UPDATE_TIME_POS);
       ctrl->setTx((uint8_t)((iregs[ADD_OA_RTD_TIME] & 0xFF00) >> 8),
                   OA_SET_RTD_UPDATE_TIME_POS + 1);
-
-      uint8_t rv =
-          prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_RTD_UPDATE_TIME,
+      
+      uint8_t rv =  prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_RTD_UPDATE_TIME,
                         LEN_OA_SET_RTD_UPDATE_TIME, OA_SET_RTD_UPDATE_TIME_LEN);
-      if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        cfgs[index].backup(ctrl->getTxBuffer(), OA_RTD_UTIME_POS, rv);
-      }
+      cfgs[index].backup(ctrl->getTxBuffer(), OFFSET_RTD_UPDATE_TIME, rv);
+
       return rv;
+
     }
   }
   return 0;
@@ -430,6 +454,11 @@ uint8_t AnalogExpansion::msg_set_rtd_time() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_begin_rtd() {
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
+    index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
+
   if (ctrl != nullptr) {
     if (rtd_registers_defined()) {
       ctrl->setTx(iregs[ADD_OA_PIN], OA_CH_RTD_CHANNEL_POS);
@@ -444,10 +473,11 @@ uint8_t AnalogExpansion::msg_begin_rtd() {
 
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_RTD,
                                  LEN_OA_CH_RTD, OA_CH_RTD_LEN);
-      if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
-        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN], rv);
-      }
+      
+      cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
+      cfgs[index].backup(ctrl->getTxBuffer(), 
+                         iregs[ADD_OA_PIN] + OFFSET_CHANNEL_CONFIG, 
+                         rv);
       return rv;
     }
   }
@@ -592,7 +622,7 @@ uint8_t AnalogExpansion::msg_set_pwm() {
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_PWM,
                                  LEN_OA_SET_PWM, OA_SET_PWM_LEN);
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN] + OA_FIRST_PWM_CH, rv);
+        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN] + OFFSET_PWM_CONFIG, rv);
       }
       return rv;
     }
@@ -620,17 +650,8 @@ uint8_t AnalogExpansion::msg_get_adc() {
     if (addressExist(ADD_OA_PIN)) {
       ctrl->setTx(iregs[ADD_OA_PIN], OA_CH_ADC_CHANNEL_POS);
 
-      uint8_t rv = prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_ADC,
+      return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_ADC,
                                  LEN_OA_GET_ADC, OA_GET_ADC_LEN);
-
-#ifdef DEBUG_GET_MSG_ADC
-      for (int i = 0; i < OA_GET_ADC_LEN_CRC; i++) {
-        Serial.print(ctrl->getTxBuffer()[i], HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
-#endif
-      return rv;
     }
   }
   return 0;
@@ -724,6 +745,11 @@ void AnalogExpansion::setDac(uint8_t ch, uint16_t value,
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_set_dac() {
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
+    index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
+
   if (ctrl != nullptr) {
     if (addressExist(ADD_OA_PIN) &&
         addressExist(BASE_OA_DAC_ADDRESS + iregs[ADD_OA_PIN])) {
@@ -739,6 +765,11 @@ uint8_t AnalogExpansion::msg_set_dac() {
       ctrl->setTx(iregs[ADD_UPDATE_ANALOG_OUTPUT], OA_SET_DAC_UPDATE_VALUE);
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_DAC,
                                  LEN_OA_SET_DAC, OA_SET_DAC_LEN);
+
+      AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
+      AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
+                         iregs[ADD_OA_PIN] + OFFSET_DAC_VALUE, 
+                         rv);
 
       return rv;
     }
@@ -854,19 +885,19 @@ void AnalogExpansion::updateLeds() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_set_led() {
+  if( iregs[ADD_OA_PIN] >= OA_LED_NUM && 
+    index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
   if (ctrl != nullptr) {
-
     if (addressExist(ADD_OA_LED_VALUE)) {
       ctrl->setTx(iregs[ADD_OA_LED_VALUE], OA_SET_LED_VALUE_POS);
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_LED,
                                  LEN_OA_SET_LED, OA_SET_LED_LEN);
-#ifdef DEBUG_SET_LED_MSG
-      for (int i = 0; i < rv; i++) {
-        Serial.print(ctrl->getTxBuffer()[i], HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
-#endif
+
+      cfgs[index].backup(ctrl->getTxBuffer(), 
+                         OFFSET_LED_VALUE, 
+                         rv);
       return rv;
     }
   }
@@ -1146,9 +1177,6 @@ void AnalogExpansion::beginChannelAsAdc(Controller &ctrl, uint8_t device,
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
     AnalogExpansion exp = ctrl.getExpansion(device);
     exp.beginChannelAsAdc(ch, type, pull_down, rejection, diagnostic, ma);
-    // if (!exp) {
-    // cfgs[device].backup(ctrl.getTxBuffer(), ch, CFG_OA_CH_ADC_LEN);
-    //}
   }
 }
 
@@ -1200,9 +1228,6 @@ void AnalogExpansion::beginChannelAsDigitalInput(
     /* expansion is already attached */
     exp.beginChannelAsDigitalInput(ch, filter, invert, simple_deb, sink_cur,
                                    deb_time, scale, th, Vcc);
-    // if (!exp) {
-    // cfgs[device].backup(ctrl.getTxBuffer(), ch, CFG_OA_CH_DI_LEN);
-    //}
   }
 }
 void AnalogExpansion::beginChannelAsDigitalInput(Controller &ctrl,
@@ -1220,9 +1245,6 @@ void AnalogExpansion::beginChannelAsRtd(Controller &ctrl, uint8_t device,
     AnalogExpansion exp = ctrl.getExpansion(device);
     /* expansion is already attached */
     exp.beginChannelAsRtd(ch, use_3_wires, current);
-    // if (!exp) {
-    // cfgs[device].backup(ctrl.getTxBuffer(), ch, CFG_OA_CH_RTD_LEN);
-    //}
   }
 }
 
@@ -1232,10 +1254,6 @@ void AnalogExpansion::beginRtdUpdateTime(Controller &ctrl, uint8_t device,
     AnalogExpansion exp = ctrl.getExpansion(device);
     /* expansion is already attached */
     exp.beginRtdUpdateTime(time);
-    // if (!exp) {
-    // cfgs[device].backup(ctrl.getTxBuffer(), OA_RTD_UTIME_POS,
-    //   CTRL_SET_RTD_TIME_LEN);
-    //}
   }
 }
 
@@ -1247,9 +1265,6 @@ void AnalogExpansion::beginChannelAsDac(Controller &ctrl, uint8_t device,
     AnalogExpansion exp = ctrl.getExpansion(device);
     /* expansion is already attached */
     exp.beginChannelAsDac(ch, type, limit_current, enable_slew, sr);
-    // if (!exp) {
-    // cfgs[device].backup(ctrl.getTxBuffer(), ch, CFG_OA_CH_DAC_LEN);
-    //}
   }
 }
 void AnalogExpansion::beginChannelAsVoltageDac(Controller &ctrl, uint8_t device,
