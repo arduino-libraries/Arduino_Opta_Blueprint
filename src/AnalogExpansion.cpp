@@ -74,23 +74,28 @@ void AnalogExpansion::startUp(Controller *ptr) {
   for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
     AnalogExpansion exp = ptr->getExpansion(i);
     if (exp) {
-      for (int k = 0; k < OA_CFG_MSG_NUM; k++) {
-        uint8_t tx_bytes =
-            AnalogExpansion::cfgs[i].restore(ptr->getTxBuffer(), k);
-        if (tx_bytes) {
-// #define DEBUG_RESTORE
-#ifdef DEBUG_RESTORE
-          Serial.println("************from restore");
-          for (int i = 0; i < tx_bytes; i++) {
-            Serial.print(ptr->getTxBuffer()[i], HEX);
-            Serial.print(" ");
+      if(AnalogExpansion::cfgs[i].isExpansionUsed()) {
+        for (int k = 0; k < OA_CFG_MSG_NUM; k++) {
+          uint8_t tx_bytes = AnalogExpansion::cfgs[i].restore(ptr->getTxBuffer(), k);
+          if (tx_bytes) {
+            ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(),
+                      tx_bytes, CTRL_ANS_OA_LEN);
           }
-          Serial.println();
-#endif
-          ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(),
-                    tx_bytes, CTRL_ANS_OA_LEN);
-          delay(10);
         }
+        exp.updateAnalogOutputs();
+      }
+      else {
+        for (int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
+          exp.beginChannelAsHighImpedance(ch);
+        }
+        for (int ch = OA_PWM_CH_FIRST; ch <= OA_PWM_CH_LAST; ch++) {
+          exp.setPwm(ch,0,0);
+        }
+        for (int ch = OA_LED_1; ch < OA_LED_NUM; ch++) {
+          exp.switchLedOff(ch,false);
+        }
+        exp.updateLeds();
+        exp.beginRtdUpdateTime(1000);
       }
     }
   }
@@ -98,42 +103,33 @@ void AnalogExpansion::startUp(Controller *ptr) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_begin_adc() {
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
+      index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    return 0;
+  }
+
   if (ctrl != nullptr) {
     if (adc_registers_defined()) {
-
+      
       ctrl->setTx(iregs[ADD_OA_PIN], OA_CH_ADC_CHANNEL_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_TYPE], OA_CH_ADC_TYPE_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_USE_PULL_DOWN], OA_CH_ADC_PULL_DOWN_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_USE_REJECTION], OA_CH_ADC_REJECTION_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_USE_DIAGNOSTIC], OA_CH_ADC_DIAGNOSTIC_POS);
       ctrl->setTx(iregs[ADD_OA_ADC_MOVE_AVERAGE], OA_CH_ADC_MOVING_AVE_POS);
-      int offset_add_adc_messages = 0;
+      int offset_add_adc_messages = OFFSET_CHANNEL_CONFIG;
       if (iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] == 1) {
         ctrl->setTx(OA_ENABLE, OA_CH_ADC_ADDING_ADC_POS);
-        offset_add_adc_messages = OFFSET_ADD_ADC_MESSAGE;
+        offset_add_adc_messages = OFFSET_ADD_ADC_CONFIG;
       } else {
         ctrl->setTx(OA_DISABLE, OA_CH_ADC_ADDING_ADC_POS);
       }
       iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_ADC,
                                  LEN_OA_CH_ADC, OA_CH_ADC_LEN);
-#ifdef DEBUG_BEGIN_ADC
-      Serial.println("from begin");
-      for (int i = 0; i < rv; i++) {
-        Serial.print(ctrl->getTxBuffer()[i], HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
-#endif
-      if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-#ifdef DEBUG_BEGIN_ADC
-        Serial.println("BACKUP ADC begin " + String(offset_add_adc_messages) +
-                       " " + String(iregs[ADD_OA_PIN]));
-#endif
-        cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
-        cfgs[index].backup(ctrl->getTxBuffer(),
+      AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
+      AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(),
                            iregs[ADD_OA_PIN] + offset_add_adc_messages, rv);
-      }
       return rv;
     }
   }
