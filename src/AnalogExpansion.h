@@ -145,13 +145,7 @@ public:
    *    - MUX is on the 100R resistor
    *    - RANGE is 0-2.5V volt externally powered
    *    - PULL DOWN is DISABLE (the parameter 'pull_down' is disregarded)
-   *
-   * Note: in case OA_ADC_NOT_USED is used as 'type' parameter this function
-   * does nothing (since it makes no sense to "begin" a channel as ADC and tell
-   * the ADC is not used). This value is used when the channel is configured for
-   * "other" than ADC (typically DAC or DI) and the ADC function is used "in
-   * parallel" to the primary function to say there is no need of additional ADC
-   * configuration*/
+   */
   void beginChannelAsAdc(uint8_t ch, OaAdcType_t type, bool pull_down,
                          bool rejection, bool diagnostic, uint8_t ma);
   void addAdcOnChannel(uint8_t ch, OaAdcType_t type, bool pull_down,
