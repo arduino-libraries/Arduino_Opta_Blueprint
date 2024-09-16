@@ -15,7 +15,7 @@
 void printExpansionType(ExpansionType_t t) {
 /* -------------------------------------------------------------------------- */
   if(t == EXPANSION_NOT_VALID) {
-    Serial.print("Unknown!");
+    Serial.print("Unknown! (Might be an Unregistered custom expansion?)");
   }
   else if(t == EXPANSION_OPTA_DIGITAL_MEC) {
     Serial.print("Opta --- DIGITAL [Mechanical]  ---");

@@ -598,12 +598,7 @@ void OptaAnalog::configureAdcDiagnostic(uint8_t ch, bool en) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::configureAdcDiagRejection(uint8_t ch, bool en) {
-  uint8_t device = 0;
-  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
-    device = 0;
-  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
-    device = 1;
-  }
+  uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
   en_adc_diag_rej[device] = en;
 }
 
@@ -1438,12 +1433,7 @@ void OptaAnalog::configureDinDebounceSimple(uint8_t ch, bool en) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::configureDinScaleComp(uint8_t ch, bool en) {
-  uint8_t device = 0;
-  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
-    device = 0;
-  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
-    device = 1;
-  }
+  uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
   di_scaled[device] = en;
 }
 
@@ -1453,12 +1443,7 @@ void OptaAnalog::configureDinCompTh(uint8_t ch, uint8_t v) {
   if (v >= 32) { // only 5 bits available
     v = 31;
   }
-  uint8_t device = 0;
-  if (ch == 0 || ch == 1 || ch == 6 || ch == 7) {
-    device = 0;
-  } else if (ch == 2 || ch == 3 || ch == 4 || ch == 5) {
-    device = 1;
-  }
+  uint8_t device = GET_DEVICE_FROM_CHANNEL(ch);
   di_th[device] = v;
 }
 
