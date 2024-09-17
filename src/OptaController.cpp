@@ -547,7 +547,7 @@ bool Controller::is_detect_high() {
   if (detect_st == HIGH) {
     int num = 0;
 
-    while (detect_st == LOW && num < OPTA_CONTROLLER_DEBOUNCE_UP_TIME) {
+    while (detect_st == HIGH && num < OPTA_CONTROLLER_DEBOUNCE_UP_NUMBER) {
       detect_st = digitalRead(OPTA_CONTROLLER_DETECT_PIN);
       if (detect_st == LOW) {
         break;
@@ -589,9 +589,10 @@ void Controller::checkForExpansions() {
     
     for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
       tmp_exp_add[i] = 0;
+      tmp_exp_type[i] = 0;
     }
     num_of_exp = 0;
-
+    tmp_num_of_exp = 0;
     /* the tmp_address is incremented automatically when an answer for the
        request get address and type is correctly received */
     tmp_address = OPTA_CONTROLLER_FIRST_TEMPORARY_ADDRESS;
@@ -610,6 +611,8 @@ void Controller::checkForExpansions() {
   /* #################################
    * TEMPORARY ADDRESS ASSIGNMENT LOOP
    * ################################# */
+
+  uint8_t temporary_address_sent = tmp_address;
   
   while (enter_while) {
 
@@ -622,56 +625,53 @@ void Controller::checkForExpansions() {
      * 1. SENDING new temporary address to the device using DEFAULT address 
      *    (no answer is expected)
      * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+    temporary_address_sent = tmp_address;
     _send(OPTA_DEFAULT_SLAVE_I2C_ADDRESS, msg_set_address(tmp_address), 0);
     delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
-        
-#if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-    Serial.println("        - Sending GET address message");
-#endif
-
-    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-     * 2. SENDING request: get address and type to the device used the previouslu
-     *    assigned temporary address (to ensure proper address has been accepted) 
-     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-    _send(tmp_address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
-
-#if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-    Serial.print("        - Receiving answer from device: ");
-#endif
-
-    /* * FIX Controller not re-assigning address when reset *
-       when the address is correcly received as answer to the previous the
-       parse_address_and_type function increase in a circular way
-       tmp_num_of_exp so that tmp_exp_add array is filled in a circular way
-     */
-
-    /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
-     * 3. RECEIVING ANSWER - try more 3 times before to send again the request
-     *    to assign the address
-     * NOTE: upon correct answer reception (within the function parse_address_and_type
-     * the tmp address is incresed for the next possible device in the chain)    
-     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
-
+    
     uint8_t attempts = 3;
     /* exit with break upon correct answer received */
     while(attempts > 0) {
+      #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+      Serial.println("        - Sending GET address message");
+      #endif
+
+      /* 2. SENDING request: get address and type to the device to ensure 
+            proper address has been accepted  */
+
+      _send(tmp_address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
+
+      #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+      Serial.print("        - Receiving answer from device: ");
+      #endif
+
+      /*  3. RECEIVING ANSWER */
+
       if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+        /* when the address is correcly received as answer to the previous the
+          parse_address_and_type function increase in a circular way
+          tmp_num_of_exp so that tmp_exp_add array is filled in a circular way */
         if(parse_address_and_type(tmp_address)) {
           #ifdef USE_CONFIRM_RX_MESSAGE
           delay(5);
           _send(tmp_address, msg_confirm_rx_address(),0);
           #endif
-          break;
+          delay(10);
           #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
           Serial.println("        GOT IT! ");
           #endif
+          break;
         } 
         else {
-          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-          Serial.println("          TIMEOUT ");
-          #endif 
-          delay(10);
+          delay(20);
         }
+       
+      }
+      else {
+        #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+        Serial.println("          TIMEOUT ");
+        #endif 
+        delay(20);
       }
       attempts--;
     }
@@ -682,7 +682,9 @@ void Controller::checkForExpansions() {
      * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
 
     if (is_detect_high()) {
-      break;
+      if(temporary_address_sent == (tmp_address - 1)) {
+        break;
+      }
     }
   } //while (enter_while)
 
@@ -691,11 +693,13 @@ void Controller::checkForExpansions() {
     Serial.println("[LOG]:  - TRANSITION of detect from LOW to HIGH");
     Serial.print("TEMPORARY Number of expansions found ");
     Serial.println(tmp_num_of_exp);
-    for (int i = 0; i < tmp_num_of_exp; i++) {
+    for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
       Serial.print("Expansion index ");
       Serial.print(i);
       Serial.print(" address ");
-      Serial.println(tmp_exp_add[i], HEX);
+      Serial.print(tmp_exp_add[i], HEX);
+      Serial.print(" type ");
+      Serial.println(tmp_exp_type[i], HEX);
     }
     delay(10000);
 

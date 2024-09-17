@@ -156,6 +156,7 @@ void Module::reset() {
   setStatusLedWaitingForAddress();
   /* put address to invalid */
   wire_i2c_address = OPTA_DEFAULT_SLAVE_I2C_ADDRESS;
+  rx_i2c_address = OPTA_DEFAULT_SLAVE_I2C_ADDRESS; 
   
   /* detect_in (toward Controller) as Output */
   pinMode(detect_in, OUTPUT);
@@ -175,7 +176,7 @@ void Module::reset() {
   
   /* put I2C address to the default one */
   if (Module::expWire != nullptr) {
-    Module::expWire->begin(wire_i2c_address);
+    Module::expWire->begin(OPTA_DEFAULT_SLAVE_I2C_ADDRESS);
   }
   
 }
@@ -547,6 +548,12 @@ void Module::updatePinStatus() {
 #if defined DEBUG_SERIAL && defined DEBUG_UPDATE_PIN_ENABLE
     Serial.println("ADDRESS not ACQUIRED");
 #endif
+
+    pinMode(detect_out, INPUT_PULLUP);
+    if(digitalRead(detect_out) == LOW) {
+      reset();
+    }
+
     setStatusLedReadyForAddress();
     /* detect_in (toward Controller) as Output */
     pinMode(detect_in, OUTPUT);
