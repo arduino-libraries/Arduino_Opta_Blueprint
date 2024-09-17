@@ -106,7 +106,7 @@ void DigitalExpansion::startUp(Controller *ptr) {
                        LEN_OPTDIG_DIGITAL_OUT,
                        MSG_SET_OPTDIG_DIGITAL_OUT_LEN);
       if(tx_bytes) {
-        uint8_t res = ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(), tx_bytes,
+        ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(), tx_bytes,
                 CTRL_ANS_MSG_OD_DIGITAL_OUT);
       }
     }
