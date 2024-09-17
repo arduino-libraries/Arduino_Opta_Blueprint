@@ -80,6 +80,8 @@ void AnalogExpansion::startUp(Controller *ptr) {
           if (tx_bytes) {
             ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(),
                       tx_bytes, CTRL_ANS_OA_LEN);
+            /* channel configuration takes some times on the expansion side*/
+            delay(50);
           }
         }
         exp.updateAnalogOutputs();
@@ -766,7 +768,6 @@ uint8_t AnalogExpansion::msg_set_dac() {
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_DAC,
                                  LEN_OA_SET_DAC, OA_SET_DAC_LEN);
 
-      AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
       AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
                          iregs[ADD_OA_PIN] + OFFSET_DAC_VALUE, 
                          rv);
