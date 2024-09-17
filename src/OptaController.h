@@ -39,20 +39,6 @@ using namespace Opta;
 class Controller;
 
 using CommErr_f = void (*)(int device, int code);
-
-using reset_exp_f = void (*)(Controller *ptr);
-
-class ResetCb {
-public:
-  reset_exp_f fnc;
-  ResetCb() : fnc(nullptr) {}
-  void call(Controller *ptr) {
-    if (fnc != nullptr) {
-      fnc(ptr);
-    }
-  }
-};
-
 using makeExpansion_f = Expansion *(*)();
 using startUp_f = void (*)(Controller *);
 
@@ -71,9 +57,12 @@ public:
    In other word it is not guarantee htat a custom expansion always get the same 
    type "number"
    To get the number again use getExpansionType(std::string pr);
+   This is the only function that can be called before the begin() (and actually
+   it is better to call it _before_ however all works also if the custom
+   expansion is registered after the begin())
    */
   int registerCustomExpansion(std::string pr, makeExpansion_f f, startUp_f su);
-
+  void assign_custom_type_and_call_start_up();
   /* ----------------------------------------------------------- */
 
   /* initialize the controller it perform the assign address process */
@@ -117,7 +106,6 @@ public:
   /* ----------------------------------------------------------- */
 
   bool rebootExpansion(uint8_t i);
-  void setExpStartUpCb(reset_exp_f f);
   void setFailedCommCb(CommErr_f f);
 
   void updateRegs(Expansion &exp);
@@ -176,8 +164,7 @@ private:
   uint8_t exp_type[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
   /* expansions arrays */
   Expansion *expansions[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
-  /* vector of expansions callbacks, one for each expansion type */
-  std::vector<ResetCb> reset_cbs;
+  
 
   /* ---------------  generic message handling functions ----------------- */
 

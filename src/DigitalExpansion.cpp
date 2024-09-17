@@ -76,9 +76,16 @@ uint8_t DigitalExpansion::defaults[OPTA_CONTROLLER_MAX_EXPANSION_NUM] = {
 uint16_t DigitalExpansion::timeouts[OPTA_CONTROLLER_MAX_EXPANSION_NUM] = {
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
 
+uint8_t DigitalExpansion::last_expansion_output[OPTA_CONTROLLER_MAX_EXPANSION_NUM] = {
+    0, 0, 0, 0, 0};
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-/* This callback is called by controller when one of the expansion
- * is reset or a new expansion is added to the chain */
+/* This function is called every time an assign address process is finished
+   If the assign address process is due to a Controller reset the static 
+   variable it uses are set to default value so that the expansion is 
+   is actually reset to its default
+   If the reset is due to the insertion of a new expansion then this function
+   refresh the expansion output with the last used value */
 void DigitalExpansion::startUp(Controller *ptr) {
 
   if (ptr == nullptr) {
@@ -87,10 +94,20 @@ void DigitalExpansion::startUp(Controller *ptr) {
   for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
     DigitalExpansion exp = ptr->getExpansion(i);
     if (exp) {
+      /* send timeout and default value */
       uint8_t tx_bytes = exp.msgDefault(ptr, i);
       if (tx_bytes) {
         ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(), tx_bytes,
                   CTRL_ANS_MSG_OD_SET_DEFAULT_LEN);
+      }
+      /* send intial value of outputs */
+      ptr->setTx(last_expansion_output[i], BP_PAYLOAD_START_POS);
+      tx_bytes = prepareSetMsg(ptr->getTxBuffer(), ARG_OPTDIG_DIGITAL_OUT,
+                       LEN_OPTDIG_DIGITAL_OUT,
+                       MSG_SET_OPTDIG_DIGITAL_OUT_LEN);
+      if(tx_bytes) {
+        uint8_t res = ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(), tx_bytes,
+                CTRL_ANS_MSG_OD_DIGITAL_OUT);
       }
     }
   }
@@ -163,6 +180,13 @@ uint8_t DigitalExpansion::calcDefault(bool p0, bool p1, bool p2, bool p3,
 
 uint8_t DigitalExpansion::msg_set_di() {
   if (ctrl != nullptr) {
+    /* change note: this code has been added in order to save the last
+       output values so that they can be restored when a reassign address
+       process happens */
+    if(getIndex() < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+      last_expansion_output[getIndex()] = iregs[ADD_DIGITAL_OUTPUT];
+    }
+
     ctrl->setTx(iregs[ADD_DIGITAL_OUTPUT], BP_PAYLOAD_START_POS);
     return prepareSetMsg(ctrl->getTxBuffer(), ARG_OPTDIG_DIGITAL_OUT,
                          LEN_OPTDIG_DIGITAL_OUT,

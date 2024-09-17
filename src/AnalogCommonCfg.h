@@ -17,7 +17,7 @@
 #ifndef COMMONANALOG
 #define COMMONANALOG
 
-typedef enum { OA_VOLTAGE_ADC, OA_CURRENT_ADC, OA_ADC_NOT_USED } OaAdcType_t;
+typedef enum { OA_VOLTAGE_ADC, OA_CURRENT_ADC } OaAdcType_t;
 typedef enum { OA_VOLTAGE_DAC, OA_CURRENT_DAC } OaDacType_t;
 
 #if defined ARDUINO_UNO_TESTALOG_SHIELD

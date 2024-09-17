@@ -14,15 +14,33 @@
 #ifndef ANALOGEXPANSIONCFG
 #define ANALOGEXPANSIONCFG
 
-
 #include "OptaAnalogProtocol.h"
 #include "OptaMsgCommon.h"
 #include <cstdint>
 #include <cstring>
-#define OA_CFG_MSG_NUM                                                         \
-  (OA_AN_CHANNELS_NUM + OA_PWM_CHANNELS_NUM + 1 + OA_AN_CHANNELS_NUM)
-#define OA_RTD_UTIME_POS (OA_AN_CHANNELS_NUM + OA_PWM_CHANNELS_NUM)
-#define OFFSET_ADD_ADC_MESSAGE (OA_AN_CHANNELS_NUM + OA_PWM_CHANNELS_NUM + 1)
+
+/* channels maps:
+   - first 8 cfgs are channels configuration (ADC, RTD, DAC etc)
+   - second 4 cfg are PWM channels configuration 
+   - then there is 1 position for RTD timing configuration
+   - then there are 8 position for additional ADC configuration
+   - then there are 8 position for last value channel output value (DAC)
+   - then there are 8 position for the last LED channel output value  */
+
+#define OA_CFG_MSG_NUM  (OA_AN_CHANNELS_NUM +  \
+                         OA_PWM_CHANNELS_NUM + \
+                         1 +                   \
+                         OA_AN_CHANNELS_NUM +  \
+                         OA_AN_CHANNELS_NUM +  \
+                         1 )
+
+#define OFFSET_CHANNEL_CONFIG  (0)
+#define OFFSET_PWM_CONFIG      (OFFSET_CHANNEL_CONFIG + OA_AN_CHANNELS_NUM)
+#define OFFSET_RTD_UPDATE_TIME (OFFSET_PWM_CONFIG + OA_PWM_CHANNELS_NUM)
+#define OFFSET_ADD_ADC_CONFIG  (OFFSET_RTD_UPDATE_TIME + 1)
+#define OFFSET_DAC_VALUE       (OFFSET_ADD_ADC_CONFIG + OA_AN_CHANNELS_NUM)
+#define OFFSET_LED_VALUE       (OFFSET_DAC_VALUE + OA_AN_CHANNELS_NUM)
+                                
 /* this class is used to store the last 'begin' message sent by the controller
  * to an Opta Analog so that it will be possible to quickly "restore" a device
  * configuration if the device is rebooted. There is 1 message for each channel
@@ -31,6 +49,7 @@ class OaChannelCfg {
 private:
   int8_t size[OA_CFG_MSG_NUM];
   uint8_t *cfg[OA_CFG_MSG_NUM];
+  bool device_is_used = false;
 
   /* function that allocates the configuration i for a size s
    * it deletes the configuration if already present
@@ -68,6 +87,10 @@ public:
     }
   }
 
+  bool isExpansionUsed() {
+    return device_is_used;
+  }
+
   bool isVoltageAdcCh(uint8_t ch) {
     if (is_cfg(ch)) {
       if (*(cfg[ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
@@ -76,9 +99,9 @@ public:
       }
     }
 
-    if (is_cfg(ch + OFFSET_ADD_ADC_MESSAGE)) {
-      if (*(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
-          *(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + OA_CH_ADC_TYPE_POS) ==
+    if (is_cfg(ch + OFFSET_ADD_ADC_CONFIG)) {
+      if (*(cfg[OFFSET_ADD_ADC_CONFIG + ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
+          *(cfg[OFFSET_ADD_ADC_CONFIG + ch] + OA_CH_ADC_TYPE_POS) ==
               OA_VOLTAGE_ADC) {
         return true;
       }
@@ -94,9 +117,9 @@ public:
       }
     }
 
-    if (is_cfg(ch + OFFSET_ADD_ADC_MESSAGE)) {
-      if (*(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
-          *(cfg[OFFSET_ADD_ADC_MESSAGE + ch] + OA_CH_ADC_TYPE_POS) ==
+    if (is_cfg(ch + OFFSET_ADD_ADC_CONFIG)) {
+      if (*(cfg[OFFSET_ADD_ADC_CONFIG + ch] + BP_ARG_POS) == ARG_OA_CH_ADC &&
+          *(cfg[OFFSET_ADD_ADC_CONFIG + ch] + OA_CH_ADC_TYPE_POS) ==
               OA_CURRENT_ADC) {
         return true;
       }
@@ -105,10 +128,10 @@ public:
   }
 
   void resetAdditionalAdcCh(uint8_t ch) {
-    if (is_cfg(ch + OFFSET_ADD_ADC_MESSAGE)) {
-      delete[] cfg[ch + OFFSET_ADD_ADC_MESSAGE];
-      cfg[ch + OFFSET_ADD_ADC_MESSAGE] = nullptr;
-      size[ch + OFFSET_ADD_ADC_MESSAGE] = -1;
+    if (is_cfg(ch + OFFSET_ADD_ADC_CONFIG)) {
+      delete[] cfg[ch + OFFSET_ADD_ADC_CONFIG];
+      cfg[ch + OFFSET_ADD_ADC_CONFIG] = nullptr;
+      size[ch + OFFSET_ADD_ADC_CONFIG] = -1;
     }
   }
 
@@ -173,6 +196,7 @@ public:
   }
 
   void backup(uint8_t *src, uint8_t ch, uint8_t s) {
+    device_is_used = true;
     if (allocate(ch, s)) {
       memcpy(cfg[ch], src, s);
       size[ch] = s;
@@ -193,13 +217,32 @@ public:
 
   int8_t restore(uint8_t *dst, uint8_t ch) {
     if (ch < OA_CFG_MSG_NUM) {
-      if (size[ch] != -1) {
+      if (size[ch] != -1 && cfg[ch] != nullptr) {
         memcpy(dst, cfg[ch], size[ch]);
         return size[ch];
       }
     }
     return 0;
   }
+
+#ifdef DEBUG_ANALOG_CONFIGURRATION
+  void print() {
+    Serial.println("");
+    for(int k = 0; k < OA_CFG_MSG_NUM; k++) {
+      Serial.print("Stored configuration " + String(k) + ": " );
+      if(size[k] != 0 && cfg[k] != nullptr) {
+        for(int i = 0; i < size[k]; i++) {
+          Serial.print(cfg[k][i],HEX);
+          Serial.print(" ");
+        }
+        Serial.println();
+      }
+      else {
+        Serial.println("NOT SET!!!");
+      }
+    }
+  }
+#endif
 
   /* DESTRUCTOR */
   ~OaChannelCfg() {

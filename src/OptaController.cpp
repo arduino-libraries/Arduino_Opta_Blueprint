@@ -34,13 +34,14 @@ class ExpType {
 
 private:
   makeExpansion_f make;
+  bool startUpFuncCalled;
   int type;
   std::string product;
   static int next_expansion_type;
 
 public:
   startUp_f startUp;
-  ExpType() : make(nullptr), type(-1), startUp(nullptr) {}
+  ExpType() : make(nullptr), startUpFuncCalled(false), type(-1), startUp(nullptr) {}
   void setType(int t) { type = t; }
   int setType() {
     type = next_expansion_type;
@@ -59,6 +60,15 @@ public:
   bool isProduct(std::string s) { return (product == s); }
   void setStart(startUp_f f) { startUp = f; }
   std::string getProduct() {return product;}
+  void enableStartUpCallback() {
+    startUpFuncCalled = false;
+  }
+  void callStartUp(Controller *p) {
+    if(startUpFuncCalled == false) {
+      startUp(p);
+      startUpFuncCalled = true;
+    }
+  }
 };
 
 int ExpType::next_expansion_type = EXPANSION_CUSTOM + 20;
@@ -147,15 +157,7 @@ int Controller::registerCustomExpansion(std::string pr, makeExpansion_f f,
   }
 
   /* looking for expansions registered after begin() (slower) */
-  for (int i = 0; i < num_of_exp; i++) {
-    if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
-      _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
-      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
-                                   CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
-        exp_type[i] = parse_get_product();
-      }
-    }
-  }
+  assign_custom_type_and_call_start_up();
   return rv;
 }
 
@@ -258,7 +260,6 @@ Expansion *Controller::getExpansionPtr(int device) {
         #endif
         if (exp_type[device] == exp_type_list[i].getType()) {
           expansions[device] = exp_type_list[i].allocateExpansion();
-          setExpStartUpCb(exp_type_list[i].startUp);
           break;
         }
       }
@@ -346,22 +347,6 @@ int Controller::analogReadOpta(uint8_t device, uint8_t pin,
   // TODO (MAYBE): add analog
 }
 
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-void Controller::setExpStartUpCb(reset_exp_f f) {
-  bool found = false;
-  for (unsigned int i = 0; i < reset_cbs.size(); i++) {
-    if (reset_cbs[i].fnc == f) {
-      found = true;
-      break;
-    }
-  }
-  if (!found) {
-    ResetCb rc;
-    rc.fnc = f;
-    reset_cbs.push_back(rc);
-  }
-}
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 // REVISED
@@ -558,6 +543,42 @@ bool Controller::is_detect_high() {
   }
 
   return (detect_st == HIGH);
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void Controller::assign_custom_type_and_call_start_up() {
+   /* safe to call this in the registerCustomExpansion function because:
+      - if the Controller.begin() function has been called then num_of_exp is
+        different from 0
+      - otherwise is 0 end the for loop does not work */
+   for (int i = 0; i < num_of_exp; i++) {
+      /* assign to expansion in position i a custom expansion type (if custom 
+         expansion has been registered */
+      if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
+        _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
+        if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
+                                   CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
+          /* return expansion not valid if product is not found*/
+          exp_type[i] = parse_get_product();
+          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
+          Serial.println("EXPANSION " + String(i) + " is custom with type " + exp_type[i]);
+          #endif
+        }
+      }
+
+      /* call start up functions */
+      if(exp_type[i] != EXPANSION_NOT_VALID) {
+         for(unsigned int k = 0; k < exp_type_list.size(); k++) {
+            if(exp_type[i] == exp_type_list[k].getType()) {
+               /* start can be called only once after the assign address process
+                  or after a registerCustomExpansion so it contains a flag 
+                  to avoid multiple calls */
+               exp_type_list[k].callStartUp(this);
+            }
+         }
+      }
+   }
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -783,21 +804,11 @@ void Controller::checkForExpansions() {
     /* give some time to analog to reset Analog Devices */
     delay(OPTA_CONTROLLER_DELAY_EXPANSION_RESET);
 
-    /* for known expansion type (no custom) the type has already been assigned 
-       here we assing a type on custom expansion */
-    
-    for (int i = 0; i < num_of_exp; i++) {
-      if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
-        _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
-        if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
-                                   CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
-          exp_type[i] = parse_get_product();
-          #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
-          Serial.println("EXPANSION " + String(i) + " is custom with type " + exp_type[i]);
-          #endif
-        }
-      }
-    }
+    /* reset the start up callback flag so that the callback can be called again*/
+    for(unsigned int i = 0; i < exp_type_list.size(); i++) {
+      exp_type_list[i].enableStartUpCallback();
+    }    
+    assign_custom_type_and_call_start_up();
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.print("FINAL Number of expansions found ");
@@ -812,23 +823,13 @@ void Controller::checkForExpansions() {
     delay(1000);
 #endif
 
-    /* at this point all the expansion have the final address, time to
-       make room for data from and to each expansion */
+    /* delete expansions (new expansions can be different from old ones) */
     for (int i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
       if (expansions[i] != nullptr) {
         delete expansions[i];
         expansions[i] = nullptr;
       }
-    }
-
-    /* IMPORTANT: rest tmp_num_of_exp to 0 so it is ready for an other
-       possible assign address process */
-    tmp_num_of_exp = 0;
-
-    /* once the assign address is finished try to set up default  */
-    for (unsigned int i = 0; i < reset_cbs.size(); i++) {
-      reset_cbs[i].call(this);
-    }
+    }    
 
 #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
     Serial.println();
