@@ -18,8 +18,8 @@
 #define FW_VERSION_MINOR 1
 #define FW_VERSION_RELEASE 9
 
-/* DEBUG CONFIGURATION */
-#define DEBUG_ANALOG_RTD
+
+#define OPTA_ANALOG_WATCHTDOG_TIME_ms 0xFFFF
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~ TIMING CONFIGURATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 

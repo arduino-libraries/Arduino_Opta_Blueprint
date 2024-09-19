@@ -143,8 +143,33 @@ void OptaAnalog::updatePwm(uint8_t ch) {
   }
   pwm[ch].period_us = pwm[ch].set_period_us;
   pwm[ch].pulse_us = pwm[ch].set_pulse_us;
-
 }
+
+/* -------------------------------------------------------------------------- */
+void OptaAnalog::updatePwmWithDefault(uint8_t ch) {
+/* ------------------------------------------------------------------------ */
+  
+  if (ch >= OA_PWM_CHANNELS_NUM) {
+    return;
+  }
+
+  volatile uint32_t pwm_period_defaults[OA_PWM_CHANNELS_NUM];
+  volatile uint32_t pwm_pulse_defaults[OA_PWM_CHANNELS_NUM];
+  /* only if PWM is used */
+  if (pwm[ch].set_period_us != 0) {
+    if (pwm_pulse_defaults[ch] < pwm_period_defaults[ch]) {
+      if (pwm_period_defaults[ch] != pwm[ch].period_us || pwm_pulse_defaults[ch] != pwm[ch].pulse_us) {
+        pwm[ch].pwm.resume();
+        pwm[ch].pwm.period_us(pwm_period_defaults[ch]);
+        pwm[ch].pwm.pulseWidth_us(pwm_pulse_defaults[ch]);      
+      }
+    }
+  }
+  pwm[ch].period_us = pwm_period_defaults[ch];
+  pwm[ch].pulse_us = pwm_pulse_defaults[ch];
+}
+
+
 /* -------------------------------------------------------------------------- */
 void OptaAnalog::suspendPwm(uint8_t ch) {
   /* ------------------------------------------------------------------------ */
@@ -196,7 +221,15 @@ OptaAnalog::OptaAnalog()
     fun[i] = CH_FUNC_HIGH_IMPEDENCE;
     dac_value_updated[i] = true;
     dac_values[i] = 0;
+    dac_defaults[i] = 0;
   }
+
+  for (int i = 0; i < OA_PWM_CHANNELS_NUM; i++) {
+    pwm_period_defaults[i] = 0;
+    pwm_pulse_defaults[i] = 0;
+
+  }
+  
   /* ------------------------------------------------------------------------ */
 }
 
@@ -212,7 +245,7 @@ void OptaAnalog::begin() {
   digitalWrite(DIO_RESET_1,HIGH);
   digitalWrite(DIO_RESET_2,HIGH);
 
-
+  set_up_timer();
 
   Module::begin();
   SPI.begin();
@@ -310,15 +343,25 @@ void OptaAnalog::update() {
 
   // MEMO: always first update DAC and then rtd
   // This ensure synchronization
-  for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
-    updateDac(i);
-    updateDacValue(i, false);
-  }
-  Module::update();
-  if (update_dac_using_LDAC && are_all_dac_updated()) {
-    update_dac_using_LDAC = false;
-    
+  if(use_default_output_values) {
+    for(int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
+      if(is_dac_used(i)) {
+        set_dac_value(i,dac_defaults[i]);
+      }
+    }
     toggle_ldac();
+  }
+  else {
+    for (int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
+      updateDac(i);
+      updateDacValue(i, false);
+    }
+    Module::update();
+    if (update_dac_using_LDAC && are_all_dac_updated()) {
+      update_dac_using_LDAC = false;
+      
+      toggle_ldac();
+    }
   }
   Module::update();
 
@@ -329,8 +372,15 @@ void OptaAnalog::update() {
   }
   Module::update();
 
-  for (int i = 0; i < OA_PWM_CHANNELS_NUM; i++) {
-    updatePwm(i);
+  if(use_default_output_values) {
+    for(int i = 0; i < OA_PWM_CHANNELS_NUM; i++) {
+      updatePwmWithDefault(i);
+    }
+  }
+  else {
+    for (int i = 0; i < OA_PWM_CHANNELS_NUM; i++) {
+      updatePwm(i);
+    }
   }
   Module::update();
 
@@ -1318,30 +1368,30 @@ void OptaAnalog::toggle_ldac() {
 
 void OptaAnalog::reset_dac_value(uint8_t ch) {
   if (ch < OA_AN_CHANNELS_NUM) {
-    write_reg(OA_REG_DAC_CODE, 0, ch);
-    uint16_t set_value = 0;
-    read_reg(OA_REG_DAC_CODE, set_value, ch);
-    while(set_value != 0) {
-      write_reg(OA_REG_DAC_CODE, 0, ch);
-      read_reg(OA_REG_DAC_CODE, set_value, ch);
-    }
-    
+    set_dac_value(ch, 0);
     toggle_ldac();
   }
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void OptaAnalog::set_dac_value(uint8_t ch, uint16_t value) {
+  write_reg(OA_REG_DAC_CODE, value, ch);
+  uint16_t set_value = 0;
+  read_reg(OA_REG_DAC_CODE, set_value, ch);
+  while(set_value != value) {
+    write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
+    read_reg(OA_REG_DAC_CODE, set_value, ch);
+  }
+}
+
 
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::updateDacValue(uint8_t ch, bool toggle /*= true*/) {
   if (ch < OA_AN_CHANNELS_NUM) {
-      write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
-      uint16_t set_value = 0;
-      read_reg(OA_REG_DAC_CODE, set_value, ch);
-      while(set_value != dac_values[ch]) {
-        write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
-        read_reg(OA_REG_DAC_CODE, set_value, ch);
-      }
+      set_dac_value(ch, dac_values[ch]);
       if(!dac_value_updated[ch]) {
         dac_value_updated[ch] = true;
       }
@@ -1977,16 +2027,29 @@ bool OptaAnalog::parse_get_rtd_value() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 bool OptaAnalog::parse_set_rtd_update_rate() {
+  bool rv = false;
+  uint16_t rate = rx_buffer[OA_SET_RTD_UPDATE_TIME_POS];
+  rate += (rx_buffer[OA_SET_RTD_UPDATE_TIME_POS + 1] << 8);
   if (checkSetMsgReceived(rx_buffer, ARG_OA_SET_RTD_UPDATE_TIME,
                           LEN_OA_SET_RTD_UPDATE_TIME,
                           OA_SET_RTD_UPDATE_TIME_LEN)) {
-    uint16_t rate = rx_buffer[OA_SET_RTD_UPDATE_TIME_POS];
-    rate += (rx_buffer[OA_SET_RTD_UPDATE_TIME_POS + 1] << 8);
+    
     rtd_update_time = rate;
-    prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
-    return true;
+    rv = true;
   }
-  return false;
+  else if(checkSetMsgReceived(rx_buffer, ARG_OA_SET_TIMEOUT_TIME,
+                          LEN_OA_SET_RTD_UPDATE_TIME,
+                          OA_SET_RTD_UPDATE_TIME_LEN)) {
+    
+    timer_timout_ms = rate;
+    rv = true;
+
+  }
+  if(rv) {
+    prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+  }
+
+  return rv;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -2015,6 +2078,21 @@ bool OptaAnalog::parse_set_dac_value() {
      * update function */
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
     return true;
+  }
+  else if(checkSetMsgReceived(rx_buffer, ARG_OA_SET_DAC_DEFAULT, LEN_OA_SET_DAC,
+                          OA_SET_DAC_LEN)) {
+    uint8_t ch = rx_buffer[OA_SET_DAC_CHANNEL_POS];
+
+    if(ch >= OA_AN_CHANNELS_NUM) {
+      return true;
+    }
+
+    uint16_t value = rx_buffer[OA_SET_DAC_VALUE_POS];
+    value += (rx_buffer[OA_SET_DAC_VALUE_POS + 1] << 8);
+    dac_defaults[ch] = value;
+    prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    return true;
+
   }
   return false;
 }
@@ -2095,31 +2173,42 @@ bool OptaAnalog::parse_get_all_adc_value() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 bool OptaAnalog::parse_set_pwm_value() {
+  bool rv = false;
+  uint8_t ch = rx_buffer[OA_SET_PWM_CHANNEL_POS];
+  
+
+  uint32_t period = rx_buffer[OA_SET_PWM_PERIOD_POS];
+  period += (rx_buffer[OA_SET_PWM_PERIOD_POS + 1] << 8);
+  period += (rx_buffer[OA_SET_PWM_PERIOD_POS + 2] << 16);
+  period += (rx_buffer[OA_SET_PWM_PERIOD_POS + 3] << 24);
+
+  uint32_t pulse =  rx_buffer[OA_SET_PWM_PULSE_POS];
+  pulse += (rx_buffer[OA_SET_PWM_PULSE_POS + 1] << 8);
+  pulse += (rx_buffer[OA_SET_PWM_PULSE_POS + 2] << 16);
+  pulse += (rx_buffer[OA_SET_PWM_PULSE_POS + 3] << 24);
+
+
   if (checkSetMsgReceived(rx_buffer, ARG_OA_SET_PWM, LEN_OA_SET_PWM,
                           OA_SET_PWM_LEN)) {
-    uint8_t ch = rx_buffer[OA_SET_PWM_CHANNEL_POS];
-
-    if(ch >= OA_PWM_CHANNELS_NUM) {
-       return true;
-    }
-
-    uint32_t value = rx_buffer[OA_SET_PWM_PERIOD_POS];
-    value += (rx_buffer[OA_SET_PWM_PERIOD_POS + 1] << 8);
-    value += (rx_buffer[OA_SET_PWM_PERIOD_POS + 2] << 16);
-    value += (rx_buffer[OA_SET_PWM_PERIOD_POS + 3] << 24);
-
-    configurePwmPeriod(ch, value);
-
-    value = rx_buffer[OA_SET_PWM_PULSE_POS];
-    value += (rx_buffer[OA_SET_PWM_PULSE_POS + 1] << 8);
-    value += (rx_buffer[OA_SET_PWM_PULSE_POS + 2] << 16);
-    value += (rx_buffer[OA_SET_PWM_PULSE_POS + 3] << 24);
-
-    configurePwmPulse(ch, value);
+    if(ch >= OA_PWM_CHANNELS_NUM) { return true; }
+    /* setting present PWM values */
+    configurePwmPeriod(ch, period);
+    configurePwmPulse(ch, pulse);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    rv = true;
+  }
+  else if(checkSetMsgReceived(rx_buffer, ARD_OA_SET_DEFAULT_PWM, LEN_OA_SET_PWM,
+                          OA_SET_PWM_LEN)) {
+    if(ch >= OA_PWM_CHANNELS_NUM) { return true; }
+    pwm_period_defaults[ch] = period;
+    pwm_pulse_defaults[ch] = pulse;
     return true;
   }
-  return false;
+
+  if(rv) {
+    prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+  }
+  return rv;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -2149,6 +2238,7 @@ bool OptaAnalog::parse_set_led() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 int OptaAnalog::parse_rx() {
+  timer_call_num = 0;
   /* call base version because here are handled assign
      addresses messages NOTE: this must be done for
      every other expansion type derived from Module */
@@ -2386,6 +2476,48 @@ std::string OptaAnalog::getProduct() {
   std::string rv(OPTA_ANALOG_DESCRIPTION);
   return rv;
 }
+
+/* -------------------------------------------------------------------------- */
+void OptaAnalog::timer_callback(timer_callback_args_t *arg) {
+  /* ------------------------------------------------------------------------ */
+  OptaAnalog *ptr = nullptr;
+  if (arg != nullptr) {
+    ptr = (OptaAnalog *)arg->p_context;
+  }
+
+  if (ptr != nullptr) {
+    ptr->_incrementTimerCallNum();
+
+    if (ptr->_timerElapsed()) {
+      ptr->_resetTimerCallNum();
+      if (ptr->_timeIsNotForever()) {
+        ptr->_resetOutputs(true);
+      }
+    }
+    else {
+      ptr->_resetOutputs(false);
+    }
+  }
+}
+
+
+void OptaAnalog::set_up_timer() {
+  
+  uint8_t type;
+  int8_t num = FspTimer::get_available_timer(type);
+  if (num >= 0) {
+    timer.begin(TIMER_MODE_PERIODIC, type, num, 1000, 50, timer_callback, this);
+    timer.setup_overflow_irq();
+    timer.open();
+    timer.start();
+  }
+}
+
+
+void OptaAnalog::_resetOutputs(bool flag) {
+  use_default_output_values = flag;
+}
+
 
 void OptaAnalog::goInBootloaderMode() { goBootloader(); }
 
