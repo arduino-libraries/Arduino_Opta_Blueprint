@@ -974,6 +974,50 @@ void AnalogExpansion::updateLeds() {
   /*Serial.println("SET LED RESULT = " + String(err));*/
 }
 
+
+uint8_t AnalogExpansion::msg_get_ch_function() {
+  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM) {
+    return 0;
+  }
+  if (ctrl != nullptr) {
+   
+      ctrl->setTx(iregs[ADD_OA_PIN], GET_CHANNEL_FUNCTION_CH_POS);
+      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_GET_CHANNEL_FUNCTION,
+                                 LEN_GET_CHANNEL_FUNCTION, GET_CHANNEL_FUNCTION_LEN);
+
+      return rv;
+  }
+  return 0;
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+CfgFun_t AnalogExpansion::get_channel_function(uint8_t ch) {
+  iregs[ADD_OA_PIN] = ch;
+  execute(GET_CHANNEL_FUNCTION);
+  if(ch == iregs[ADD_OA_PIN_OUTPUT]) {
+    return (CfgFun_t)iregs[ADD_CH_FUNCTION];
+  }
+  return CH_FUNC_UNDEFINED;
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+bool AnalogExpansion::parse_get_ch_function() {
+  if (ctrl != nullptr) {
+    if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_GET_CHANNEL_FUNCTION,
+                            LEN_ANS_GET_CHANNEL_FUNCTION, CTRL_ANS_GET_CHANNEL_FUNCTION)) {
+
+      iregs[ADD_OA_PIN_OUTPUT] = ctrl->getRx(ANS_GET_CHANNEL_FUNCTION_CH_POS);
+      iregs[ADD_CH_FUNCTION] = ctrl->getRx(ANS_GET_CHANNEL_FUNCTION_FUN_POS);
+      return true;
+    }
+  }
+  return false;
+
+}
+
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_set_led() {
@@ -1200,6 +1244,10 @@ unsigned int AnalogExpansion::execute(uint32_t what) {
       I2C_TRANSACTION(msg_begin_high_imp,
                       parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
+    case GET_CHANNEL_FUNCTION:
+      I2C_TRANSACTION(msg_get_ch_function,
+                      parse_get_ch_function, CTRL_ANS_GET_CHANNEL_FUNCTION);
+      break;  
     
     default:
       i2c_rv = Expansion::execute(what);
@@ -1536,78 +1584,106 @@ void AnalogExpansion::setProductData(uint8_t *data, uint8_t len) {
   Expansion::set_flash_data(data, len, PRODUCTION_DATA_FLASH_ADDRESS);
 }
 
-bool AnalogExpansion::isChDac(uint8_t ch) {
+bool AnalogExpansion::isChDac(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return ((fun == CH_FUNC_VOLTAGE_OUTPUT) || (fun == CH_FUNC_CURRENT_OUTPUT)); 
+    }
     return (AnalogExpansion::cfgs[index].isVoltageDacCh(ch) ||
             AnalogExpansion::cfgs[index].isCurrentDacCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChAdc(uint8_t ch) {
+bool AnalogExpansion::isChAdc(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return ((fun == CH_FUNC_VOLTAGE_INPUT) || (fun == CH_FUNC_CURRENT_INPUT_EXT_POWER)); 
+    }
     return (AnalogExpansion::cfgs[index].isVoltageAdcCh(ch) ||
             AnalogExpansion::cfgs[index].isCurrentAdcCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChVoltageDac(uint8_t ch) {
+bool AnalogExpansion::isChVoltageDac(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return ((fun == CH_FUNC_VOLTAGE_OUTPUT)); 
+    }
     return (AnalogExpansion::cfgs[index].isVoltageDacCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChCurrentDac(uint8_t ch) {
+bool AnalogExpansion::isChCurrentDac(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return ((fun == CH_FUNC_CURRENT_OUTPUT)); 
+    }
     return (AnalogExpansion::cfgs[index].isCurrentDacCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChVoltageAdc(uint8_t ch) {
+bool AnalogExpansion::isChVoltageAdc(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return (fun == CH_FUNC_VOLTAGE_INPUT); 
+    }
     return (AnalogExpansion::cfgs[index].isVoltageAdcCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChCurrentAdc(uint8_t ch) {
+bool AnalogExpansion::isChCurrentAdc(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return (fun == CH_FUNC_CURRENT_INPUT_EXT_POWER); 
+    }
     return (AnalogExpansion::cfgs[index].isCurrentAdcCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChDigitalInput(uint8_t ch) {
+bool AnalogExpansion::isChDigitalInput(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return (fun == CH_FUNC_DIGITAL_INPUT); 
+    }
     return (AnalogExpansion::cfgs[index].isDigitalInputCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChRtd(uint8_t ch) {
+bool AnalogExpansion::isChRtd(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return ((fun == CH_FUNC_RESISTANCE_MEASUREMENT) || (fun == CH_FUNC_RESISTANCE_MEASUREMENT_3_WIRES)); 
+    }
     return (AnalogExpansion::cfgs[index].isRtdCh(ch));
   }
   return false;
 }
 
-bool AnalogExpansion::isChRtd2Wires(uint8_t ch) {
+bool AnalogExpansion::isChRtd2Wires(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
     if(ch > 1) {
       return (AnalogExpansion::cfgs[index].isRtdCh(ch));
     }
     else {
+      if(actual_hw) {
+        CfgFun_t fun = get_channel_function(ch);
+        return (fun == CH_FUNC_RESISTANCE_MEASUREMENT); 
+      }
       if(AnalogExpansion::cfgs[index].isRtdCh(ch) && !AnalogExpansion::cfgs[index].isRtd3WiresCh(ch)) {
         return true;
       }
@@ -1619,18 +1695,25 @@ bool AnalogExpansion::isChRtd2Wires(uint8_t ch) {
 }
 
 
-bool AnalogExpansion::isChRtd3Wires(uint8_t ch) {
+bool AnalogExpansion::isChRtd3Wires(uint8_t ch, bool actual_hw) {
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return (fun == CH_FUNC_RESISTANCE_MEASUREMENT_3_WIRES); 
+    }
     return (AnalogExpansion::cfgs[index].isRtd3WiresCh(ch));
   }
   return false;
 
 }
 
-bool AnalogExpansion::isChHighImpedance(uint8_t ch) {
+bool AnalogExpansion::isChHighImpedance(uint8_t ch, bool actual_hw) {
 
   if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-
+    if(actual_hw) {
+      CfgFun_t fun = get_channel_function(ch);
+      return (fun == CH_FUNC_HIGH_IMPEDENCE); 
+    }
     return (AnalogExpansion::cfgs[index].isHighImpedanceCh(ch));
   }
   return false;

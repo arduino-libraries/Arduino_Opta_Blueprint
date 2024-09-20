@@ -362,7 +362,7 @@ public:
 
   /* static start up function, this function must contains the code
    * needed to initialize the harware correctly for ALL the possible
-   * expansions present (up to 10)
+   * expansions present.
    * This is done to support hot plug, as soon the expansions are
    * discovered by the controller, the controller itself will call
    * this function as a callback set up correctly the expansion */
@@ -370,17 +370,42 @@ public:
 
   void setProductData(uint8_t *data, uint8_t len);
 
-  bool isChDac(uint8_t ch);
-  bool isChAdc(uint8_t ch);
-  bool isChVoltageDac(uint8_t ch);
-  bool isChCurrentDac(uint8_t ch);
-  bool isChVoltageAdc(uint8_t ch);
-  bool isChCurrentAdc(uint8_t ch);
-  bool isChDigitalInput(uint8_t ch);
-  bool isChRtd(uint8_t ch);
-  bool isChRtd2Wires(uint8_t ch);
-  bool isChRtd3Wires(uint8_t ch);
-  bool isChHighImpedance(uint8_t ch);
+  /* the following functions can be called to obtain the current configuration
+     for the channel `ch` 
+    
+     If the actual_hw configuration is `false` (default value) the function
+     returns the status of the last configuration command sent to the expansion
+     (no I2C transaction between controller and expansion)
+
+     The expansion, upon receiving the configuration command, set up the channel
+     as quickly as possible (a few milliseconds) however the time is not deterministic
+     and could depends on the previous channel configuration
+
+     To be sure that expasion has actually set up the channel to the last 
+     requested configuration, the following functions can be called with
+     the parameter `actual_hw` set to true.
+
+     This will trigger an I2C transaction from controller and expansion to check
+     if the expansion itself has actually set up the channel to the function.
+     In most cases this `actual` check is not necessary (the expansion reacts fast)
+     and it is time consuming because the I2C transaction takes time.
+     So it is suggested to keep actual_hw to false as much as possible and use
+     the function with actual_hw set to true only in critical application
+     (for example the output is set once in a while and so the application
+     must be absolutly sure that the channel is ready to get the output value)
+  */
+
+  bool isChDac(uint8_t ch, bool actual_hw = false);
+  bool isChAdc(uint8_t ch, bool actual_hw = false);
+  bool isChVoltageDac(uint8_t ch, bool actual_hw = false);
+  bool isChCurrentDac(uint8_t ch, bool actual_hw = false);
+  bool isChVoltageAdc(uint8_t ch, bool actual_hw = false);
+  bool isChCurrentAdc(uint8_t ch, bool actual_hw = false);
+  bool isChDigitalInput(uint8_t ch, bool actual_hw = false);
+  bool isChRtd(uint8_t ch, bool actual_hw = false);
+  bool isChRtd2Wires(uint8_t ch, bool actual_hw = false);
+  bool isChRtd3Wires(uint8_t ch, bool actual_hw = false);
+  bool isChHighImpedance(uint8_t ch, bool actual_hw = false);
 
 protected:
   bool verify_address(unsigned int add) override;
@@ -409,8 +434,15 @@ protected:
   uint8_t msg_set_led();
   uint8_t msg_set_all_dac();
 
+  uint8_t msg_get_ch_function();
+  bool parse_get_ch_function();
+
   uint8_t msg_get_all_ai();
   bool parse_ans_get_all_ai();
+
+  CfgFun_t get_channel_function(uint8_t ch);
+
+
 };
 
 } // namespace Opta
