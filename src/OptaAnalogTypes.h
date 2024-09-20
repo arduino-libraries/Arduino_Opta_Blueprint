@@ -23,20 +23,6 @@
 #include "sys/_stdint.h"
 #include <stdint.h>
 
-/* ###################### Channel functions ################################# */
-
-typedef enum {
-  CH_FUNC_HIGH_IMPEDENCE,
-  CH_FUNC_VOLTAGE_OUTPUT,
-  CH_FUNC_CURRENT_OUTPUT,
-  CH_FUNC_VOLTAGE_INPUT,
-  CH_FUNC_CURRENT_INPUT_EXT_POWER,
-  CH_FUNC_CURRENT_INPUT_LOOP_POWER,
-  CH_FUNC_RESISTANCE_MEASUREMENT,
-  CH_FUNC_DIGITAL_INPUT,
-  CH_FUNC_DIGITAL_INPUT_LOOP_POWER,
-  CH_FUNC_UNDEFINED
-} CfgFun_t;
 
 /* ########################## ADC configuration ############################# */
 

@@ -2255,6 +2255,31 @@ bool OptaAnalog::parse_set_led() {
   }
   return false;
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+bool OptaAnalog::parse_get_channel_func() {
+   if (checkSetMsgReceived(rx_buffer, ARG_GET_CHANNEL_FUNCTION, LEN_GET_CHANNEL_FUNCTION,
+                          GET_CHANNEL_FUNCTION_LEN)) {
+    uint8_t ch = rx_buffer[GET_CHANNEL_FUNCTION_CH_POS];
+    if(ch < OA_AN_CHANNELS_NUM) {
+      tx_buffer[ANS_GET_CHANNEL_FUNCTION_CH_POS] = ch;
+      tx_buffer[ANS_GET_CHANNEL_FUNCTION_FUN_POS] = output_fun[ch];
+      if(rtd[ch].use_3_wires && rtd[ch].is_rtd) {
+        tx_buffer[ANS_GET_CHANNEL_FUNCTION_FUN_POS] = CH_FUNC_RESISTANCE_MEASUREMENT_3_WIRES;
+      }
+      prepareGetAns(tx_buffer, ANS_GET_CHANNEL_FUNCTION, 
+                     LEN_ANS_GET_CHANNEL_FUNCTION, 
+                     ANS_GET_CHANNEL_FUNCTION_LEN);
+
+    }
+    return true;
+  }
+  return false;
+
+}
+
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 int OptaAnalog::parse_rx() {
@@ -2365,7 +2390,13 @@ int OptaAnalog::parse_rx() {
     Serial.println("begin HIGH IMPEDENCE channel");
 #endif
     rv = CTRL_ANS_OA_LEN;
-  } else {
+  } else if(parse_get_channel_func()) {
+    rv = CTRL_ANS_GET_CHANNEL_FUNCTION;
+#if defined DEBUG_SERIAL && defined DEBUG_ANALOG_PARSE_MESSAGE
+    Serial.println("get channel function");
+#endif    
+  } 
+  else {
     Serial.println(" !!! MESSAGE UNKNOWN !!!");
   }
   return rv;
@@ -2441,6 +2472,10 @@ void OptaAnalog::setup_channels() {
             sendFunction(ch, update_fun[ch]);
           }
           write_function_configuration[ch] = false;
+
+          /* output_fun cannot be equal to fun */
+          output_fun[ch] = update_fun[ch];
+
         } //if(write_function_configuration[ch]) {
            /* update the function so that it will be not updated again */
         fun[ch] = update_fun[ch];

@@ -43,6 +43,7 @@ private:
    * --------------------------------------------------------------------- */
   CfgFun_t fun[OA_AN_CHANNELS_NUM]; // function configuration x channel
   volatile CfgFun_t update_fun[OA_AN_CHANNELS_NUM]; // function update configuration x channel
+  CfgFun_t output_fun[OA_AN_CHANNELS_NUM]; // function for output
   CfgPwm pwm[OA_PWM_CHANNELS_NUM];  // pwm configuration x channel
   CfgAdc adc[OA_AN_CHANNELS_NUM];   // adc configuration x channel
   CfgDi din[OA_AN_CHANNELS_NUM];    // d[igital]i[nput] configuration x channel
@@ -167,6 +168,7 @@ private:
   bool parse_get_rtd_value();
   bool parse_set_rtd_update_rate();
   bool parse_set_led();
+  bool parse_get_channel_func();
 
   void toggle_ldac();
 
