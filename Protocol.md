@@ -152,15 +152,15 @@ inputs.
 - Controller request
   - Header:
     BP_CMD_GET (0x02)
-    ARG_OPDIG_DIGITAL (0x04)
-    LEN_OPDIG_DIGITAL (0x00)
+    ARG_OD_GET_DIGITAL_INPUTS (0x04)
+    LEN_OD_GET_DIGITAL_INPUTS (0x00)
   - Payload: None
   - CRC
 - Expansion answer
   - Header:
     BP_ANS_GET (0x03)
     ANS_ARG_ADDRESS_AND_TYPE (0x04)
-    ANS_LEN_OPDIG_DIGITAL (0x02)
+    ANS_LEN_OD_GET_DIGITAL_INPUTS (0x02)
   - Payload:
     -> the status of digital inputs (2 byte)
   - CRC
@@ -178,16 +178,16 @@ pin received as argument (the analog value is the raw analog value in bits).
 - Controller request
   - Header:
     BP_CMD_GET (0x02)
-    ARG_OPTDIG_ANALOG (0x05)
-    LEN_OPTDIG_ANALOG (0x01)
+    ARG_OD_GET_ANALOG_INPUT (0x05)
+    LEN_OD_GET_ANALOG_INPUT (0x01)
   - Payload:
     -> the number of the PIN (1 byte)
   - CRC
 - Expansion answer
   - Header:
     BP_ANS_GET (0x03)
-    ANS_ARG_OPTDIG_ANALOG (0x05)
-    ANS_LEN_OPTDIG_ANALOG (0x02)
+    ANS_ARG_OD_GET_ANALOG_INPUT (0x05)
+    ANS_LEN_OD_GET_ANALOG_INPUT (0x02)
   - Payload:
     -> the analog value of the PIN (2 byte) - LSB first
   - CRC
@@ -204,15 +204,15 @@ its PINs.
 - Controller request
   - Header:
     BP_CMD_GET (0x02)
-    ARG_OPTDIG_ALL_ANALOG_IN (0x07)
-    LEN_OPTDIG_ALL_ANALOG_IN (0x00)
+    ARG_OD_GET_ALL_ANALOG_INPUTS (0x07)
+    LEN_OD_GET_ALL_ANALOG_INPUTS (0x00)
   - Payload: None
   - CRC
 - Expansion answer
   - Header:
     BP_ANS_GET (0x03)
-    ANS_ARG_OPTDIG_ALL_ANALOG_IN (0x07)
-    ANS_LEN_OPTDIG_ALL_ANALOG_IN (32 bytes)
+    ANS_ARG_OD_GET_ALL_ANALOG_INPUTS (0x07)
+    ANS_LEN_OD_GET_ALL_ANALOG_INPUTS (32 bytes)
   - Payload:
     -> the analog value of all the 16 PINs (each pin is 2 bytes) - LSB first
   - CRC
@@ -230,16 +230,16 @@ one (0x0A) specified in the payload.
 - Controller request
   - Header:
     BP_CMD_SET (0x01)
-    ARG_OPTDIG_DIGITAL_OUT (0x06)
-    LEN_OPTDIG_DIGITAL_OUT (0x01)
+    ARG_OD_SET_DIGITAL_OUTPUTS (0x06)
+    LEN_OD_SET_DIGITAL_OUTPUTS (0x01)
   - Payload:
     -> the status of all digital outputs (1 byte)
   - CRC
 - Expansion answer
   - Header:
     BP_ANS_SET (0x04)
-    ANS_ARG_OPTDIG_DIGITAL_OUT (0x06)
-    ANS_LEN_OPTDIG_DIGITAL_OUT (0x00)
+    ANS_ARG_OD_SET_DIGITAL_OUTPUTS (0x06)
+    ANS_LEN_OD_SET_DIGITAL_OUTPUTS (0x00)
   - Payload: None
   - CRC
 
@@ -266,8 +266,8 @@ A timeout equal to 0xFFFF means no timeout.
 - Controller request
   - Header:
     BP_CMD_SET (0x01)
-    ARG_OPTDIG_DEFAULT_OUT_AND_TIMEOUT (0x08)
-    LEN_OPTDIG_DEFAULT_OUT_AND_TIMEOUT (0x03)
+    ARG_OD_DEFAULT_AND_TIMEOUT (0x08)
+    LEN_OD_DEFAULT_AND_TIMEOUT (0x03)
   - Payload:
     -> the status of all digital outputs (1 byte)
     -> the timeout (2 bytes) - LSB first
@@ -275,8 +275,8 @@ A timeout equal to 0xFFFF means no timeout.
 - Expansion answer
   - Header:
     BP_ANS_SET (0x04)
-    ANS_ARG_OPTDIG_DEFAULT_OUT_AND_TIMEOUT (0x08)
-    ANS_LEN_OPTDIG_DEFAULT_OUT_AND_TIMEOUT (0x00)
+    ANS_ARG_OD_DEFAULT_AND_TIMEOUT (0x08)
+    ANS_LEN_OD_DEFAULT_AND_TIMEOUT (0x00)
   - Payload: None
   - CRC
 

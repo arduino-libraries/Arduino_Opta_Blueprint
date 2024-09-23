@@ -139,7 +139,7 @@ void Module::setTxNum(uint8_t n) { tx_num = n; }
 /* get the number of bytes to be transmitted in the tx_buffer */
 uint8_t Module::getTxNum() { return tx_num; }
 /* returns the pointer to the tx buffer */
-uint8_t *Module::txPrt() { return ans_buffer; }
+uint8_t *Module::txPrt() { return tx_buffer; }
 
 /* -------------------------------------------------------------------------- */
 /* Handle reset                                                               */
@@ -188,7 +188,7 @@ void Module::reset() {
  */
 Module::Module()
     : rx_num(0), reboot_required(false),
-      reset_required(false), ans_buffer(nullptr),
+      reset_required(false), 
       expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
       detect_in(DETECT_IN), detect_out(DETECT_OUT) {
   Module::expWire = &Wire;
@@ -196,7 +196,7 @@ Module::Module()
 
 Module::Module(TwoWire *tw, int _detect_in, int _detect_out)
     : rx_num(0),
-      reboot_required(false), reset_required(false), ans_buffer(nullptr),
+      reboot_required(false), reset_required(false), 
       expansion_type(OPTA_CONTROLLER_CUSTOM_MIN_TYPE), reboot_sent(0),
       detect_in(_detect_in), detect_out(_detect_out) {
   Module::expWire = tw;
@@ -283,8 +283,7 @@ void Module::update() {
 /* -------------------------------------------------------------------------- */
 bool Module::parse_confirm_address_rx() {
   /* ------------------------------------------------------------------------ */
-  if (checkSetMsgReceived(rx_buffer, ARG_CONFIRM_ADDRESS_RX, LEN_CONFIRM_ADDRESS_RX,
-                          CONFIRM_ADDRESS_RX_LEN)) {
+  if (checkSetMsgReceived(rx_buffer, ARG_CONFIRM_ADDRESS_RX, LEN_CONFIRM_ADDRESS_RX)) {
     if(rx_buffer[CONFIRM_ADDRESS_FIRST_POS] == CONFIRM_ADDRESS_FIRST_VALUE && 
       rx_buffer[CONFIRM_ADDRESS_SECOND_POS] == CONFIRM_ADDRESS_SECOND_VALUE) {
       confirm_address_reception = true;
@@ -299,8 +298,7 @@ bool Module::parse_confirm_address_rx() {
 /* -------------------------------------------------------------------------- */
 bool Module::parse_set_address() {
   /* ------------------------------------------------------------------------ */
-  if (checkSetMsgReceived(rx_buffer, ARG_ADDRESS, LEN_ADDRESS,
-                          MSG_SET_ADDRESS_LEN)) {
+  if (checkSetMsgReceived(rx_buffer, ARG_ADDRESS, LEN_ADDRESS)) {
     rx_i2c_address = rx_buffer[BP_PAYLOAD_START_POS];
     set_address_msg_received = true;
     return true;
@@ -311,8 +309,7 @@ bool Module::parse_set_address() {
 /* ------------------------------------------------------------------------ */
 bool Module::parse_get_address_and_type() {
   /* ---------------------------------------------------------------------- */
-  if (checkGetMsgReceived(rx_buffer, ARG_ADDRESS_AND_TYPE, LEN_ADDRESS_AND_TYPE,
-                          MSG_GET_ADDRESS_AND_TYPE_LEN)) {
+  if (checkGetMsgReceived(rx_buffer, ARG_ADDRESS_AND_TYPE, LEN_ADDRESS_AND_TYPE)) {
     return true;
   }
   return false;
@@ -321,8 +318,7 @@ bool Module::parse_get_address_and_type() {
 /* ------------------------------------------------------------------------ */
 bool Module::parse_get_product() {
   /* ---------------------------------------------------------------------- */
-  if (checkGetMsgReceived(rx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
-                          GET_PRODUCT_TYPE_LEN)) {
+  if (checkGetMsgReceived(rx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE)) {
     return true;
   }
   return false;
@@ -330,8 +326,7 @@ bool Module::parse_get_product() {
 /* ------------------------------------------------------------------------ */
 bool Module::parse_reset_controller() {
   /* ---------------------------------------------------------------------- */
-  if (checkSetMsgReceived(rx_buffer, ARG_CONTROLLER_RESET, LEN_CONTROLLER_RESET,
-                          CONTROLLER_RESET_LEN)) {
+  if (checkSetMsgReceived(rx_buffer, ARG_CONTROLLER_RESET, LEN_CONTROLLER_RESET)) {
     if (rx_buffer[BP_PAYLOAD_START_POS] == CONTROLLER_RESET_CODE) {
       return true;
     }
@@ -348,8 +343,7 @@ int Module::prepare_ans_get_product() {
   for (unsigned int i = 0; i < pr.size() && i < 32; i++) {
     tx_buffer[ANS_GET_PRODUCT_SIZE_POS + 1 + i] = pr[i];
   }
-  int rv = prepareGetAns(tx_buffer, ANS_ARG_GET_PRODUCT_TYPE,
-                       ANS_LEN_GET_PRODUCT_TYPE, LEN_ANS_GET_PRODUCT_TYPE);
+  int rv = prepareGetAns(tx_buffer, ANS_ARG_GET_PRODUCT_TYPE,ANS_LEN_GET_PRODUCT_TYPE);
   return rv;
 }
 /* ------------------------------------------------------------------------ */
@@ -358,16 +352,14 @@ int Module::prepare_ans_get_version() {
   tx_buffer[GET_VERSION_MAJOR_POS] = getMajorFw();
   tx_buffer[GET_VERSION_MINOR_POS] = getMinorFw();
   tx_buffer[GET_VERSION_RELEASE_POS] = getReleaseFw();
-  return prepareGetAns(tx_buffer, ANS_ARG_GET_VERSION, ANS_LEN_GET_VERSION,
-                       ANS_GET_VERSION_LEN);
+  return prepareGetAns(tx_buffer, ANS_ARG_GET_VERSION, ANS_LEN_GET_VERSION);
 }
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_get_version() {
   /* ----------------------------------------------------------------------
    */
-  if (checkGetMsgReceived(rx_buffer, ARG_GET_VERSION, LEN_GET_VERSION,
-                          GET_VERSION_LEN)) {
+  if (checkGetMsgReceived(rx_buffer, ARG_GET_VERSION, LEN_GET_VERSION)) {
     return true;
   }
   return false;
@@ -378,15 +370,14 @@ int Module::prepare_ans_reboot() {
   /* ----------------------------------------------------------------------
    */
   tx_buffer[ANS_REBOOT_CODE_POS] = ANS_REBOOT_CODE;
-  return prepareSetAns(tx_buffer, ANS_ARG_REBOOT, ANS_LEN_REBOOT,
-                       ANS_REBOOT_LEN);
+  return prepareSetAns(tx_buffer, ANS_ARG_REBOOT, ANS_LEN_REBOOT);
 }
 
 /* ------------------------------------------------------------------------ */
 bool Module::parse_reboot() {
   /* ----------------------------------------------------------------------
    */
-  if (checkSetMsgReceived(rx_buffer, ARG_REBOOT, LEN_REBOOT, REBOOT_LEN)) {
+  if (checkSetMsgReceived(rx_buffer, ARG_REBOOT, LEN_REBOOT)) {
     if (rx_buffer[REBOOT_1_POS] == REBOOT_1_VALUE &&
         rx_buffer[REBOOT_2_POS] == REBOOT_2_VALUE) {
       return true;
@@ -401,8 +392,7 @@ int Module::prepare_ans_get_address_and_type() {
    */
   tx_buffer[BP_PAYLOAD_START_POS] = wire_i2c_address;
   tx_buffer[BP_PAYLOAD_START_POS + 1] = expansion_type;
-  return prepareGetAns(tx_buffer, ANS_ARG_ADDRESS_AND_TYPE,
-                       ANS_LEN_ADDRESS_AND_TYPE, ANS_MSG_ADDRESS_AND_TYPE_LEN);
+  return prepareGetAns(tx_buffer, ANS_ARG_ADDRESS_AND_TYPE,ANS_LEN_ADDRESS_AND_TYPE);
 }
 
 __WEAK void new_i2c_address_obtained(void *ptr) { (void)ptr; }
@@ -427,7 +417,6 @@ int Module::parse_rx() {
   /* get address and type message */
   else if (parse_get_address_and_type()) {
     int rv = prepare_ans_get_address_and_type();
-    ans_buffer = tx_buffer;
     new_i2c_address_obtained(this);
     return rv;
   }
@@ -444,14 +433,12 @@ int Module::parse_rx() {
   /* get fw version */
   else if (parse_get_version()) {
     int rv = prepare_ans_get_version();
-    ans_buffer = tx_buffer;
     return rv;
   }
   /* REBOOT --> update FW */
   else if (parse_reboot()) {
     int rv = prepare_ans_reboot();
     reboot_required = true;
-    ans_buffer = tx_buffer;
     return rv;
   }
   /* FLASH WRITE */
@@ -461,11 +448,9 @@ int Module::parse_rx() {
   /* FLASH READ */
   else if (parse_get_flash()) {
     int rv = prepare_ans_get_flash();
-    ans_buffer = tx_buffer;
     return rv;
   } else if (parse_get_product()) {
     int rv = prepare_ans_get_product();
-    ans_buffer = tx_buffer;
     return rv;
   }
 
@@ -586,7 +571,7 @@ void Module::updatePinStatus() {
 bool Module::parse_set_flash() {
   /* ---------------------------------------------------------------------- */
   if (checkSetMsgReceived(rx_buffer, ARG_SAVE_IN_DATA_FLASH,
-                          LEN_SAVE_IN_DATA_FLASH, SAVE_DATA_LEN)) {
+                          LEN_SAVE_IN_DATA_FLASH)) {
 
     uint16_t add = rx_buffer[SAVE_ADDRESS_1_POS];
     add += (rx_buffer[SAVE_ADDRESS_2_POS] << 8);
@@ -603,7 +588,7 @@ bool Module::parse_set_flash() {
 bool Module::parse_get_flash() {
   /* ---------------------------------------------------------------------- */
   if (checkGetMsgReceived(rx_buffer, ARG_GET_DATA_FROM_FLASH,
-                          LEN_GET_DATA_FROM_FLASH, READ_DATA_LEN)) {
+                          LEN_GET_DATA_FROM_FLASH)) {
     flash_add = rx_buffer[READ_ADDRESS_1_POS];
     flash_add += (rx_buffer[READ_ADDRESS_2_POS] << 8);
     flash_dim = rx_buffer[READ_DATA_DIM_POS];
@@ -626,7 +611,7 @@ int Module::prepare_ans_get_flash() {
   readFromFlash(flash_add, tx_buffer + ANS_GET_DATA_DATA_INIT_POS, flash_dim);
 
   return prepareGetAns(tx_buffer, ANS_ARG_GET_DATA_FROM_FLASH,
-                       ANS_LEN_GET_DATA_FROM_FLASH, ANS_GET_DATA_LEN);
+                       ANS_LEN_GET_DATA_FROM_FLASH);
 }
 /* ------------------------------------------------------------------------ */
 void Module::end() {}

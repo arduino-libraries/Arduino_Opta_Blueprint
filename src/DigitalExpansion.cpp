@@ -98,16 +98,15 @@ void DigitalExpansion::startUp(Controller *ptr) {
       uint8_t tx_bytes = exp.msgDefault(ptr, i);
       if (tx_bytes) {
         ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(), tx_bytes,
-                  CTRL_ANS_MSG_OD_SET_DEFAULT_LEN);
+                  getExpectedAnsLen(ANS_LEN_OD_DEFAULT_AND_TIMEOUT));
       }
       /* send intial value of outputs */
       ptr->setTx(last_expansion_output[i], BP_PAYLOAD_START_POS);
-      tx_bytes = prepareSetMsg(ptr->getTxBuffer(), ARG_OPTDIG_DIGITAL_OUT,
-                       LEN_OPTDIG_DIGITAL_OUT,
-                       MSG_SET_OPTDIG_DIGITAL_OUT_LEN);
+      tx_bytes = prepareSetMsg(ptr->getTxBuffer(), ARG_OD_SET_DIGITAL_OUTPUTS,
+                       LEN_OD_SET_DIGITAL_OUTPUTS);
       if(tx_bytes) {
         ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(), tx_bytes,
-                CTRL_ANS_MSG_OD_DIGITAL_OUT);
+                 getExpectedAnsLen(ANS_LEN_OD_SET_DIGITAL_OUTPUTS));
       }
     }
   }
@@ -124,7 +123,7 @@ void DigitalExpansion::setDefault(Controller &ptr, uint8_t device,
     if (tx_bytes) {
       ptr.send(ptr.getExpansionI2Caddress(device), device,
                ptr.getExpansionType(device), tx_bytes,
-               CTRL_ANS_MSG_OD_SET_DEFAULT_LEN);
+               getExpectedAnsLen(ANS_LEN_OD_SET_DIGITAL_OUTPUTS));
     }
   }
 }
@@ -137,9 +136,8 @@ uint8_t DigitalExpansion::msgDefault(Controller *ptr, uint8_t device) {
     ptr->setTx((uint8_t)(timeouts[device] & 0xFF), BP_PAYLOAD_START_POS + 1);
     ptr->setTx((uint8_t)((timeouts[device] & 0xFF00) >> 8),
                BP_PAYLOAD_START_POS + 2);
-    return prepareSetMsg(ptr->getTxBuffer(), ARG_OPTDIG_DEFAULT_OUT_AND_TIMEOUT,
-                         LEN_OPTDIG_DEFAULT_OUT_AND_TIMEOUT,
-                         MSG_SET_OPTDIG_DEFAULT_OUT_AND_TIMEOUT_LEN);
+    return prepareSetMsg(ptr->getTxBuffer(), ARG_OD_DEFAULT_AND_TIMEOUT,
+                         LEN_OD_DEFAULT_AND_TIMEOUT);
   }
   return 0;
 }
@@ -188,9 +186,8 @@ uint8_t DigitalExpansion::msg_set_di() {
     }
 
     ctrl->setTx(iregs[ADD_DIGITAL_OUTPUT], BP_PAYLOAD_START_POS);
-    return prepareSetMsg(ctrl->getTxBuffer(), ARG_OPTDIG_DIGITAL_OUT,
-                         LEN_OPTDIG_DIGITAL_OUT,
-                         MSG_SET_OPTDIG_DIGITAL_OUT_LEN);
+    return prepareSetMsg(ctrl->getTxBuffer(), ARG_OD_SET_DIGITAL_OUTPUTS,
+                         LEN_OD_SET_DIGITAL_OUTPUTS);
   }
   return 0;
 }
@@ -199,9 +196,8 @@ uint8_t DigitalExpansion::msg_set_di() {
 
 bool DigitalExpansion::parse_ans_set_di() {
   if (ctrl != nullptr) {
-    return checkAnsSetReceived(ctrl->getRxBuffer(), ANS_ARG_OPTDIG_DIGITAL_OUT,
-                               ANS_LEN_OPTDIG_DIGITAL_OUT,
-                               ANS_MSG_OPTDIG_DIGITAL_OUT_LEN);
+    return checkAnsSetReceived(ctrl->getRxBuffer(), ANS_ARG_OD_SET_DIGITAL_OUTPUTS,
+                               ANS_LEN_OD_SET_DIGITAL_OUTPUTS);
   }
   return false;
 }
@@ -211,8 +207,7 @@ bool DigitalExpansion::parse_ans_set_di() {
 /* get digital input */
 uint8_t DigitalExpansion::msg_get_di() {
   if (ctrl != nullptr) {
-    return prepareGetMsg(ctrl->getTxBuffer(), ARG_OPDIG_DIGITAL,
-                         LEN_OPDIG_DIGITAL, MSG_GET_OPTDIG_LEN);
+    return prepareGetMsg(ctrl->getTxBuffer(), ARG_OD_GET_DIGITAL_INPUTS,LEN_OD_GET_DIGITAL_INPUTS);
   }
   return 0;
 }
@@ -220,8 +215,8 @@ uint8_t DigitalExpansion::msg_get_di() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 bool DigitalExpansion::parse_ans_get_di() {
   if (ctrl != nullptr) {
-    if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OPDIG_DIGITAL,
-                            ANS_LEN_OPDIG_DIGITAL, ANS_MSG_OPDIG_DIGITAL_LEN)) {
+    if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OD_GET_DIGITAL_INPUTS,
+                            ANS_LEN_OD_GET_DIGITAL_INPUTS)) {
       iregs[ADD_DIGITAL_INPUT] = ctrl->getRx(BP_PAYLOAD_START_POS);
       iregs[ADD_DIGITAL_INPUT] += (ctrl->getRx(BP_PAYLOAD_START_POS + 1) << 8);
       return true;
@@ -237,8 +232,8 @@ uint8_t DigitalExpansion::msg_get_ai() {
   if (ctrl != nullptr) {
     if (addressExist(CTRL_ADD_EXPANSION_PIN)) {
       ctrl->setTx(iregs[CTRL_ADD_EXPANSION_PIN], BP_PAYLOAD_START_POS);
-      return prepareGetMsg(ctrl->getTxBuffer(), ARG_OPTDIG_ANALOG,
-                           LEN_OPTDIG_ANALOG, MSG_GET_OPTDIG_ANALOG_LEN);
+      return prepareGetMsg(ctrl->getTxBuffer(), ARG_OD_GET_ANALOG_INPUT,
+                           LEN_OD_GET_ANALOG_INPUT);
     } else {
       return 0;
     }
@@ -250,8 +245,8 @@ uint8_t DigitalExpansion::msg_get_ai() {
 
 bool DigitalExpansion::parse_ans_get_ai() {
   if (ctrl != nullptr) {
-    if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OPTDIG_ANALOG,
-                            ANS_LEN_OPTDIG_ANALOG, ANS_MSG_OPTDIG_ANALOG_LEN)) {
+    if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OD_GET_ANALOG_INPUT,
+                            ANS_LEN_OD_GET_ANALOG_INPUT)) {
       int offset = iregs[CTRL_ADD_EXPANSION_PIN];
 
       iregs[ANALOG_IN_FIRST_REG + offset] = ctrl->getRx(BP_PAYLOAD_START_POS);
@@ -268,9 +263,8 @@ bool DigitalExpansion::parse_ans_get_ai() {
 /* msg get all analog input */
 uint8_t DigitalExpansion::msg_get_all_ai() {
   if (ctrl != nullptr) {
-    return prepareGetMsg(ctrl->getTxBuffer(), ARG_OPTDIG_ALL_ANALOG_IN,
-                         LEN_OPTDIG_ALL_ANALOG_IN,
-                         MSG_GET_OPTDIG_ALL_ANALOG_IN_LEN);
+    return prepareGetMsg(ctrl->getTxBuffer(), ARG_OD_GET_ALL_ANALOG_INPUTS,
+                         LEN_OD_GET_ALL_ANALOG_INPUTS);
   }
   return 0;
 }
@@ -278,9 +272,8 @@ uint8_t DigitalExpansion::msg_get_all_ai() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 bool DigitalExpansion::parse_ans_get_all_ai() {
   if (ctrl != nullptr) {
-    if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OPTDIG_ALL_ANALOG_IN,
-                            ANS_LEN_OPTDIG_ALL_ANALOG_IN,
-                            ANS_MSG_OPTDIG_ALL_ANALOG_IN_LEN)) {
+    if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OD_GET_ALL_ANALOG_INPUTS,
+                            ANS_LEN_OD_GET_ALL_ANALOG_INPUTS)) {
       for (int i = 0, j = 0; i < ANALOG_IN_NUM; i++, j += 2) {
         iregs[ANALOG_IN_FIRST_REG + i] = ctrl->getRx(BP_PAYLOAD_START_POS + j);
         iregs[ANALOG_IN_FIRST_REG + i] +=
@@ -298,9 +291,8 @@ uint8_t DigitalExpansion::msg_set_default_values() {
     ctrl->setTx(iregs[CTRL_ADD_EXPANSION_PIN], BP_PAYLOAD_START_POS);
     ctrl->setTx(iregs[CTRL_ADD_EXPANSION_PIN], BP_PAYLOAD_START_POS);
     ctrl->setTx(iregs[CTRL_ADD_EXPANSION_PIN], BP_PAYLOAD_START_POS);
-    return prepareGetMsg(ctrl->getTxBuffer(), ARG_OPTDIG_ALL_ANALOG_IN,
-                         LEN_OPTDIG_ALL_ANALOG_IN,
-                         MSG_GET_OPTDIG_ALL_ANALOG_IN_LEN);
+    return prepareGetMsg(ctrl->getTxBuffer(), ARG_OD_GET_ALL_ANALOG_INPUTS,
+                         LEN_OD_GET_ALL_ANALOG_INPUTS);
   }
   return 0;
 }
@@ -314,25 +306,25 @@ unsigned int DigitalExpansion::execute(uint32_t what) {
     case SET_DIGITAL_OUTPUT:
       I2C_TRANSACTION(DigitalExpansion::msg_set_di,
                       DigitalExpansion::parse_ans_set_di,
-                      CTRL_ANS_MSG_OD_DIGITAL_OUT);
+                      getExpectedAnsLen(ANS_LEN_OD_SET_DIGITAL_OUTPUTS));
       break;
     /* ------------------------------------------------------------------- */
     case GET_DIGITAL_INPUT:
       I2C_TRANSACTION(DigitalExpansion::msg_get_di,
                       DigitalExpansion::parse_ans_get_di,
-                      CTRL_ANS_MSG_OD_GET_DIGITAL_LEN);
+                      getExpectedAnsLen(ANS_LEN_OD_GET_DIGITAL_INPUTS));
       break;
     /* ------------------------------------------------------------------- */
     case GET_SINGLE_ANALOG_INPUT:
       I2C_TRANSACTION(DigitalExpansion::msg_get_ai,
                       DigitalExpansion::parse_ans_get_ai,
-                      CTRL_ANS_MSG_OD_GET_ANALOG_LEN);
+                      getExpectedAnsLen(ANS_LEN_OD_GET_ANALOG_INPUT));
       break;
     /* ------------------------------------------------------------------- */
     case GET_ALL_ANALOG_INPUT:
       I2C_TRANSACTION(DigitalExpansion::msg_get_all_ai,
                       DigitalExpansion::parse_ans_get_all_ai,
-                      CTRL_ANS_MSG_OD_ALL_ANALOG_IN_LEN);
+                      getExpectedAnsLen(ANS_LEN_OD_GET_ALL_ANALOG_INPUTS));
       break;
     default:
       i2c_rv = Expansion::execute(what);

@@ -17,24 +17,22 @@
 #include <cstdint>
 #include <stdint.h>
 
-bool checkSetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen);
+bool checkSetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len);
 
-bool checkGetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen);
+bool checkGetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len);
 
-bool checkAnsGetReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen);
+bool checkAnsGetReceived(uint8_t *buffer, uint8_t arg, uint8_t len);
 
-bool checkAnsSetReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen);
+bool checkAnsSetReceived(uint8_t *buffer, uint8_t arg, uint8_t len);
 
-uint8_t prepareSetMsg(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen);
-uint8_t prepareGetMsg(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen);
-uint8_t prepareSetAns(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen);
-uint8_t prepareGetAns(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen);
+uint8_t prepareSetMsg(uint8_t *buffer, uint8_t arg, uint8_t len);
+uint8_t prepareGetMsg(uint8_t *buffer, uint8_t arg, uint8_t len);
+uint8_t prepareSetAns(uint8_t *buffer, uint8_t arg, uint8_t len);
+uint8_t prepareGetAns(uint8_t *buffer, uint8_t arg, uint8_t len);
 
 /* given the expected len without CRC returns the expected len answer */
 uint8_t getExpectedAnsLen(uint8_t len);
+
+uint8_t addCrc(uint8_t *buffer, uint8_t len);
 
 #endif
