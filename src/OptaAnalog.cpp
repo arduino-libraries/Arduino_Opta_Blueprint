@@ -153,8 +153,6 @@ void OptaAnalog::updatePwmWithDefault(uint8_t ch) {
     return;
   }
 
-  volatile uint32_t pwm_period_defaults[OA_PWM_CHANNELS_NUM];
-  volatile uint32_t pwm_pulse_defaults[OA_PWM_CHANNELS_NUM];
   /* only if PWM is used */
   if (pwm[ch].set_period_us != 0) {
     if (pwm_pulse_defaults[ch] < pwm_period_defaults[ch]) {
@@ -2239,6 +2237,7 @@ bool OptaAnalog::parse_set_led() {
 
 int OptaAnalog::parse_rx() {
   timer_call_num = 0;
+  _resetOutputs(false);
   /* call base version because here are handled assign
      addresses messages NOTE: this must be done for
      every other expansion type derived from Module */
@@ -2493,9 +2492,6 @@ void OptaAnalog::timer_callback(timer_callback_args_t *arg) {
       if (ptr->_timeIsNotForever()) {
         ptr->_resetOutputs(true);
       }
-    }
-    else {
-      ptr->_resetOutputs(false);
     }
   }
 }
