@@ -110,7 +110,7 @@ void OptaDigital::set_up_timer() {
   int8_t num = FspTimer::get_available_timer(type);
   if (num >= 0) {
     timer.begin(TIMER_MODE_PERIODIC, type, num, 1000, 50, timer_callback, this);
-    timer.setup_overflow_irq();
+    timer.setup_overflow_irq(14);
     timer.open();
     timer.start();
   }
