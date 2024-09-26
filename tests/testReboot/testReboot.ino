@@ -12,7 +12,7 @@
 /* -------------------------------------------------------------------------- */
 
 #include "OptaBlue.h"
-#include "updater/BossaOpta.h"
+#include "utility/BossaOpta.h"
 #include "BossaArduino.h"
 #include <string>
 
@@ -54,12 +54,10 @@ void rebootTask() {
          for(int i = 0; i < controller.getExpansionNum(); i++) {
                
 
-               Serial.print("   REBOOTING expansion at index " + String(i));
-               if(controller.rebootExpansion(i)) {
+               Serial.println("   REBOOTING expansion at index " + String(i));
+               if(BOSSA.begin(BossaSerial, &controller,i)) {
+                  delay(5000);
                   
-                  BOSSA.begin(BossaSerial, &controller);
-                  delay(100);
-
                   std::string version = BOSSA.version();
                   if(strcmp(version.c_str(), ver.c_str()) == 0) {
                      Serial.println(" OK!");
@@ -71,7 +69,7 @@ void rebootTask() {
                   
                   Serial.print("   Return in APPLICATION mode: ");
                   BOSSA.reset();
-                  delay(1000);
+                  delay(12000);
                   uint8_t M = 255;
                   uint8_t m = 255;
                   uint8_t r = 255;
@@ -91,7 +89,7 @@ void rebootTask() {
                else {
                   test_failed_num++;
                   Serial.println(" FAILED! (+++)");
-                  BOSSA.begin(BossaSerial, &controller);
+                  BOSSA.begin(BossaSerial, &controller,i);
                   delay(100);
                   BOSSA.reset();
                }

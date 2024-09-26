@@ -80,7 +80,7 @@ void setup() {
 /* -------------------------------------------------------------------------- */
 void optaAnalogTask() {
 /* -------------------------------------------------------------------------- */
-  static bool st = true;
+  static bool st[OPTA_CONTROLLER_MAX_EXPANSION_NUM] = {true,true,true,true,true};
   static long int start = millis();
 
   static const char *msg_on = "ON";
@@ -91,15 +91,15 @@ void optaAnalogTask() {
     start = millis();
 
     for(int i = 0; i < OptaController.getExpansionNum(); i++) {
-      
+      Serial.println("** Expansion " + String(i) + " status = " + String(st[i]));
       AnalogExpansion exp = OptaController.getExpansion(i);
       if(exp) {
-        
+        Serial.println("ANALOG Expansion " + String(i));
         /* exp is true only if exp is an actual 
          * AnalogExpansion and false otherwise */ 
 
         for(int j = 0; j < 8; j++) {
-           if(st) {
+           if(st[i]) {
               msg_ptr = (char*)msg_on;
               exp.switchLedOn((uint8_t)j,false);
            }
@@ -113,9 +113,16 @@ void optaAnalogTask() {
            Serial.print(j);
            Serial.print(" ");
            Serial.println(msg_ptr);
+
+           
+        }
+        if(st[i]) {
+           st[i] = false;
+        }
+        else {
+           st[i] = true;
         }
 
-        st = !st;
       }
       
     }
