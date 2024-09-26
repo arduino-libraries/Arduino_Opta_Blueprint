@@ -34,15 +34,24 @@ AnalogExpansion in_expansion;
 
 void setExpansionAsOutput_1(AnalogExpansion &a) {
    /* channels from 0 to 3 voltage DAC */
+   
    a.beginChannelAsVoltageDac(0);
    a.beginChannelAsVoltageDac(1);
    a.beginChannelAsVoltageDac(2);
    a.beginChannelAsVoltageDac(3);
+   a.setDefaultPinVoltage(0, 1.0);
+   a.setDefaultPinVoltage(1, 3.0);
+   a.setDefaultPinVoltage(2, 7.0);
+   a.setDefaultPinVoltage(3, 4.7);
    /*channels from 4 to 7 are current DAC */
    a.beginChannelAsCurrentDac(4);
    a.beginChannelAsCurrentDac(5);
    a.beginChannelAsCurrentDac(6);
    a.beginChannelAsCurrentDac(7);
+   a.setDefaultPinCurrent(4, 4.0);
+   a.setDefaultPinCurrent(5, 5.0);
+   a.setDefaultPinCurrent(6, 1.0);
+   a.setDefaultPinCurrent(7, 6.0);
 } 
 
 
@@ -65,11 +74,19 @@ void setExpansionAsOutput_2(AnalogExpansion &a) {
    a.beginChannelAsVoltageDac(5);
    a.beginChannelAsVoltageDac(6);
    a.beginChannelAsVoltageDac(7);
+   a.setDefaultPinVoltage(4, 1.0);
+   a.setDefaultPinVoltage(5, 3.0);
+   a.setDefaultPinVoltage(6, 7.0);
+   a.setDefaultPinVoltage(7, 4.7);
    /*channels from 0 to 0 are current DAC */
    a.beginChannelAsCurrentDac(0);
    a.beginChannelAsCurrentDac(1);
    a.beginChannelAsCurrentDac(2);
    a.beginChannelAsCurrentDac(3);
+   a.setDefaultPinCurrent(0, 4.0);
+   a.setDefaultPinCurrent(1, 5.0);
+   a.setDefaultPinCurrent(2, 1.0);
+   a.setDefaultPinCurrent(3, 6.0);
 } 
 
 void setExpansionAsInput_2(AnalogExpansion &a) { //rejection active

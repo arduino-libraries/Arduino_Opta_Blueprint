@@ -81,6 +81,9 @@ void setup() {
                             k, // the output channel you are using
 			    true, // use 3 wire RTD
 			    1.2); // current used on RTD in mA
+      /* set the sampling time for RTD to 1000 ms (btw this is the default) */
+      AnalogExpansion::beginRtdUpdateTime(OptaController, i,
+                                 1000);
     }
   }
 }
