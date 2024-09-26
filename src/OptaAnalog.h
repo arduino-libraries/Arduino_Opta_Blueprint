@@ -50,6 +50,9 @@ private:
   CfgDac dac[OA_AN_CHANNELS_NUM];   // dac configuration x channel
   CfgRtd rtd[OA_AN_CHANNELS_NUM];   // rtd configuration x channel
 
+  volatile uint16_t dac_defaults[OA_AN_CHANNELS_NUM];
+  volatile uint32_t pwm_period_defaults[OA_PWM_CHANNELS_NUM];
+  volatile uint32_t pwm_pulse_defaults[OA_PWM_CHANNELS_NUM];
   volatile bool dac_value_updated[OA_AN_CHANNELS_NUM];
   volatile uint16_t dac_values[OA_AN_CHANNELS_NUM];
 
@@ -169,6 +172,13 @@ private:
 
   void reset_dac_value(uint8_t ch);
 
+  FspTimer timer;
+  void set_up_timer();
+  volatile unsigned int timer_call_num = 0;
+  unsigned int timer_timout_ms = OPTA_ANALOG_WATCHTDOG_TIME_ms;
+  static void timer_callback(timer_callback_args_t *arg);
+  bool use_default_output_values = false;
+  void write_dac_defaults(uint8_t ch);
 public:
   OptaAnalog();
   void begin() override;
@@ -337,6 +347,7 @@ public:
   /* update PWM, if is not active the Pwm is automatically
    * started */
   void updatePwm(uint8_t ch);
+  void updatePwmWithDefault(uint8_t ch);
   /* suspend the PWM */
   void suspendPwm(uint8_t ch);
 
@@ -360,6 +371,13 @@ public:
   void set_led_off(uint8_t l) { led_status &= ~(1 << l); }
   void debug_with_leds();
 #endif
+
+  void _incrementTimerCallNum() { timer_call_num++; }
+  void _resetTimerCallNum() { timer_call_num = 0; }
+  bool _timeIsNotForever() { return (timer_timout_ms < 0xFFFF); }
+  bool _timerElapsed() { return (timer_call_num >= timer_timout_ms); }
+  unsigned int _timerCallNum() { return timer_call_num; }
+  void _resetOutputs(bool flag);
 };
 #endif
 #endif

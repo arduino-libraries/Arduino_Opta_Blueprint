@@ -24,6 +24,7 @@ OaChannelCfg AnalogExpansion::cfgs[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 AnalogExpansion::AnalogExpansion() {
   iregs[ADD_OA_LED_VALUE] = 0;
   iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
+  iregs[ADD_SET_DEFAULT_VALUE_FLAG] = 0;
 
   for(int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
     iregs[BASE_OA_DAC_ADDRESS + i] = 0;
@@ -89,15 +90,19 @@ void AnalogExpansion::startUp(Controller *ptr) {
       else {
         for (int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
           exp.beginChannelAsHighImpedance(ch);
+          exp.setDefaultDac(ch,0);
         }
         for (int ch = OA_PWM_CH_FIRST; ch <= OA_PWM_CH_LAST; ch++) {
           exp.setPwm(ch,0,0);
+          exp.setDefaultPwm(ch,0,0);
         }
         for (int ch = OA_LED_1; ch < OA_LED_NUM; ch++) {
           exp.switchLedOff(ch,false);
         }
         exp.updateLeds();
         exp.beginRtdUpdateTime(1000);
+        exp.setTimeoutForDefaultValues(0xFFFF);
+  
       }
     }
   }
@@ -424,27 +429,45 @@ void AnalogExpansion::beginChannelAsRtd(uint8_t ch, bool use_3_wires,
 
 void AnalogExpansion::beginRtdUpdateTime(uint16_t time) {
   iregs[ADD_OA_RTD_TIME] = time;
-  execute(BEGIN_RTD_UPDATE_TIME);
+  execute(SEND_TIMING);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-uint8_t AnalogExpansion::msg_set_rtd_time() {
-  if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
-    index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+void AnalogExpansion::setTimeoutForDefaultValues(uint16_t timeout_ms) {
+  iregs[ADD_OA_TIMEOUT_ADDRESS] = timeout_ms;
+  iregs[ADD_SET_DEFAULT_VALUE_FLAG] = 1;
+  execute(SEND_TIMING);
+  
+}
+
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+uint8_t AnalogExpansion::msg_send_time() {
+  if( index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
     return 0;
+  }
+  uint32_t time_index = ADD_OA_RTD_TIME;
+  uint8_t msg_argument = ARG_OA_SET_RTD_UPDATE_TIME;
+  uint8_t offset = OFFSET_RTD_UPDATE_TIME;
+  if(iregs[ADD_SET_DEFAULT_VALUE_FLAG]) {
+    iregs[ADD_SET_DEFAULT_VALUE_FLAG] = 0;
+    msg_argument = ARG_OA_SET_TIMEOUT_TIME;
+    time_index = ADD_OA_TIMEOUT_ADDRESS;
+    offset = OFFSET_TIMEOUT_VALUE;
   }
 
   if (ctrl != nullptr) {
-    if (addressExist(ADD_OA_RTD_TIME)) {
-      ctrl->setTx((uint8_t)(iregs[ADD_OA_RTD_TIME] & 0xFF),
+    if (addressExist(time_index)) {
+      ctrl->setTx((uint8_t)(iregs[time_index] & 0xFF),
                   OA_SET_RTD_UPDATE_TIME_POS);
-      ctrl->setTx((uint8_t)((iregs[ADD_OA_RTD_TIME] & 0xFF00) >> 8),
+      ctrl->setTx((uint8_t)((iregs[time_index] & 0xFF00) >> 8),
                   OA_SET_RTD_UPDATE_TIME_POS + 1);
       
-      uint8_t rv =  prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_RTD_UPDATE_TIME,
+      uint8_t rv =  prepareSetMsg(ctrl->getTxBuffer(), msg_argument,
                         LEN_OA_SET_RTD_UPDATE_TIME, OA_SET_RTD_UPDATE_TIME_LEN);
-      cfgs[index].backup(ctrl->getTxBuffer(), OFFSET_RTD_UPDATE_TIME, rv);
+      cfgs[index].backup(ctrl->getTxBuffer(), offset, rv);
 
       return rv;
 
@@ -505,6 +528,7 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
       return;
     }
   }
+
   iregs[ADD_OA_PIN] = ch - OA_FIRST_PWM_CH;
   uint32_t per_add = BASE_OA_PWM_ADDRESS + iregs[ADD_OA_PIN];
   uint32_t pul_add =
@@ -512,7 +536,7 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
 
   /* if the address is not defined --> the value has never been sent
    * to the expansion => send it*/
-  if (!addressExist(per_add) || !addressExist(pul_add)) {
+  if (!addressExist(per_add) || !addressExist(pul_add) || iregs[ADD_SET_DEFAULT_VALUE_FLAG] == 1) {
     iregs[per_add] = period;
     iregs[pul_add] = pulse;
     /*uint32_t err =*/execute(SET_PWM);
@@ -526,9 +550,15 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
     /*uint32_t err =*/execute(SET_PWM);
     /*Serial.println("EXECUTE SET_PWM = " + String(err));*/
   }
-  /* if the address is defined and the value is equal => do nothing
-   * the value is already up to date*/
 }
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void AnalogExpansion::setDefaultPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
+  iregs[ADD_SET_DEFAULT_VALUE_FLAG] = 1;
+  setPwm(ch, period, pulse);
+}
+
+
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -621,10 +651,18 @@ uint8_t AnalogExpansion::msg_set_pwm() {
       ctrl->setTx((uint8_t)((iregs[pul_add] & 0xFF000000) >> 24),
                   OA_SET_PWM_PULSE_POS + 3);
 
-      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_PWM,
+      uint8_t msg_argument = ARG_OA_SET_PWM;
+      uint32_t offset_backup = OFFSET_PWM_CONFIG; 
+
+      if(iregs[ADD_SET_DEFAULT_VALUE_FLAG] == 1) {
+        iregs[ADD_SET_DEFAULT_VALUE_FLAG] = 0;
+        msg_argument = ARD_OA_SET_DEFAULT_PWM; 
+        offset_backup = OFFSET_PWM_DEFAULT_VALUE;
+      }
+      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), msg_argument,
                                  LEN_OA_SET_PWM, OA_SET_PWM_LEN);
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN] + OFFSET_PWM_CONFIG, rv);
+        cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN] + offset_backup, rv);
       }
       return rv;
     }
@@ -746,6 +784,47 @@ void AnalogExpansion::setDac(uint8_t ch, uint16_t value,
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+void AnalogExpansion::setDefaultDac(uint8_t ch, uint16_t value) {
+  iregs[ADD_SET_DEFAULT_VALUE_FLAG] = 1;
+  setDac(ch, value, false);
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+bool AnalogExpansion::setDefaultPinVoltage(uint8_t ch, float voltage ) {
+  if(ch < OA_AN_CHANNELS_NUM) {
+    if(cfgs[index].isVoltageDacCh(ch)) {
+      if (voltage > 11.0) {
+        voltage = 11.0;
+      }
+      float v = 8191.0 * voltage / 11.0;
+      setDefaultDac(ch, (uint16_t)v);
+      return true;
+    }
+  }
+  return false;
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+bool AnalogExpansion::setDefaultPinCurrent(uint8_t ch, float current) {
+  if(ch < OA_AN_CHANNELS_NUM) {
+    if(cfgs[index].isCurrentDacCh(ch)) {
+      if (current > 25.0) {
+        current = 25.0;
+      }
+      float v = 8191.0 * current / 25.0;
+      setDefaultDac(ch, (uint16_t)v);
+      return true;
+    }
+  }
+  return false;
+
+}
+
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 uint8_t AnalogExpansion::msg_set_dac() {
   if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
     index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
@@ -765,11 +844,19 @@ uint8_t AnalogExpansion::msg_set_dac() {
           OA_SET_DAC_VALUE_POS + 1);
 
       ctrl->setTx(iregs[ADD_UPDATE_ANALOG_OUTPUT], OA_SET_DAC_UPDATE_VALUE);
-      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_DAC,
-                                 LEN_OA_SET_DAC, OA_SET_DAC_LEN);
 
+      uint8_t msg_argument = ARG_OA_SET_DAC;
+      uint8_t backup_offset = OFFSET_DAC_VALUE;
+      if(iregs[ADD_SET_DEFAULT_VALUE_FLAG]) {
+        iregs[ADD_SET_DEFAULT_VALUE_FLAG] = 0;
+        msg_argument = ARG_OA_SET_DAC_DEFAULT;
+        backup_offset = OFFSET_DAC_DEFAULT_VALUE;
+      }
+
+      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), msg_argument,
+                                 LEN_OA_SET_DAC, OA_SET_DAC_LEN);
       AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
-                         iregs[ADD_OA_PIN] + OFFSET_DAC_VALUE, 
+                         iregs[ADD_OA_PIN] + backup_offset, 
                          rv);
 
       return rv;
@@ -795,20 +882,24 @@ void AnalogExpansion::updateAnalogOutputs() { execute(SET_ALL_ANALOG_OUTPUTS); }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 void AnalogExpansion::pinVoltage(uint8_t ch, float voltage,
                                  bool update /*= true*/) {
-  if (voltage > 11.0) {
-    voltage = 11.0;
+  if(cfgs[index].isVoltageDacCh(ch)) {
+    if (voltage > 11.0) {
+      voltage = 11.0;
+    }
+    float v = 8191.0 * voltage / 11.0;
+    setDac(ch, (uint16_t)v, update);
   }
-  float v = 8191.0 * voltage / 11.0;
-  setDac(ch, (uint16_t)v, update);
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 void AnalogExpansion::pinCurrent(uint8_t ch, float current,
                                  bool update /* = true*/) {
-  if (current > 25.0) {
-    current = 25.0;
+  if(cfgs[index].isCurrentDacCh(ch)) {
+    if (current > 25.0) {
+      current = 25.0;
+    }
+    float v = 8191.0 * current / 25.0;
+    setDac(ch, (uint16_t)v, update);
   }
-  float v = 8191.0 * current / 25.0;
-  setDac(ch, (uint16_t)v, update);
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 float AnalogExpansion::getRtd(uint8_t ch) {
@@ -1078,8 +1169,8 @@ unsigned int AnalogExpansion::execute(uint32_t what) {
       I2C_TRANSACTION(msg_set_dac,
                       parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
-    case BEGIN_RTD_UPDATE_TIME:
-      I2C_TRANSACTION(msg_set_rtd_time,
+    case SEND_TIMING:
+      I2C_TRANSACTION(msg_send_time,
                       parse_oa_ack, CTRL_ANS_OA_LEN);
       break;
     case GET_RTD:
@@ -1176,8 +1267,19 @@ void AnalogExpansion::beginChannelAsAdc(Controller &ctrl, uint8_t device,
                                         bool pull_down, bool rejection,
                                         bool diagnostic, uint8_t ma) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    exp.beginChannelAsAdc(ch, type, pull_down, rejection, diagnostic, ma);
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.beginChannelAsAdc(ch, type, pull_down, rejection, diagnostic, ma);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->beginChannelAsAdc(ch, type, pull_down, rejection, diagnostic, ma);
+        delete exp;
+      }
+    }
   }
 }
 
@@ -1186,24 +1288,57 @@ void AnalogExpansion::addAdcOnChannel(Controller &ctrl, uint8_t device,
                                       bool pull_down, bool rejection,
                                       bool diagnostic, uint8_t ma) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    exp.addAdcOnChannel(ch, type, pull_down, rejection, diagnostic, ma);
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.addAdcOnChannel(ch, type, pull_down, rejection, diagnostic, ma);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->addAdcOnChannel(ch, type, pull_down, rejection, diagnostic, ma);
+        delete exp;
+      }
+    }
   }
 }
 void AnalogExpansion::addVoltageAdcOnChannel(Controller &ctrl, uint8_t device,
                                              uint8_t ch) {
-  //
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    exp.addVoltageAdcOnChannel(ch);
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.addVoltageAdcOnChannel(ch);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->addVoltageAdcOnChannel(ch);
+        delete exp;
+      }
+    }
   }
 }
 
 void AnalogExpansion::addCurrentAdcOnChannel(Controller &ctrl, uint8_t device,
                                              uint8_t ch) {
+  (void)ctrl;
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    exp.addCurrentAdcOnChannel(ch);
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.addCurrentAdcOnChannel(ch);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->addCurrentAdcOnChannel(ch);
+        delete exp;
+      }
+    }
   }
 }
 void AnalogExpansion::beginChannelAsVoltageAdc(Controller &ctrl, uint8_t device,
@@ -1225,10 +1360,21 @@ void AnalogExpansion::beginChannelAsDigitalInput(
     bool simple_deb, OaDiSinkCurrent_t sink_cur, OaDebounceTime_t deb_time,
     bool scale, float th, float Vcc) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    /* expansion is already attached */
-    exp.beginChannelAsDigitalInput(ch, filter, invert, simple_deb, sink_cur,
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.beginChannelAsDigitalInput(ch, filter, invert, simple_deb, sink_cur,
                                    deb_time, scale, th, Vcc);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->beginChannelAsDigitalInput(ch, filter, invert, simple_deb, sink_cur,
+                                     deb_time, scale, th, Vcc);
+        delete exp;
+      }
+    }
   }
 }
 void AnalogExpansion::beginChannelAsDigitalInput(Controller &ctrl,
@@ -1239,45 +1385,152 @@ void AnalogExpansion::beginChannelAsDigitalInput(Controller &ctrl,
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 void AnalogExpansion::beginChannelAsRtd(Controller &ctrl, uint8_t device,
                                         uint8_t ch, bool use_3_wires,
                                         float current) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    /* expansion is already attached */
-    exp.beginChannelAsRtd(ch, use_3_wires, current);
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.beginChannelAsRtd(ch, use_3_wires, current);
+    }
+    else {
+    AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->beginChannelAsRtd(ch, use_3_wires, current);
+        delete exp;
+      }
+    }
   }
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void AnalogExpansion::beginRtdUpdateTime(Controller &ctrl, uint8_t device,
                                          uint16_t time) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    /* expansion is already attached */
-    exp.beginRtdUpdateTime(time);
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.beginRtdUpdateTime(time);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->beginRtdUpdateTime(time);
+        delete exp;
+      }
+    }
   }
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void AnalogExpansion::beginChannelAsDac(Controller &ctrl, uint8_t device,
                                         uint8_t ch, OaDacType_t type,
                                         bool limit_current, bool enable_slew,
                                         OaDacSlewRate_t sr) {
+ 
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
-    AnalogExpansion exp = ctrl.getExpansion(device);
-    /* expansion is already attached */
-    exp.beginChannelAsDac(ch, type, limit_current, enable_slew, sr);
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.beginChannelAsDac(ch, type, limit_current, enable_slew, sr);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->beginChannelAsDac(ch, type, limit_current, enable_slew, sr);
+        delete exp;
+      }
+    }
   }
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 void AnalogExpansion::beginChannelAsVoltageDac(Controller &ctrl, uint8_t device,
                                                uint8_t ch) {
   AnalogExpansion::beginChannelAsDac(ctrl, device, ch, OA_VOLTAGE_DAC, true,
                                      false, OA_SLEW_RATE_0);
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 void AnalogExpansion::beginChannelAsCurrentDac(Controller &ctrl, uint8_t device,
                                                uint8_t ch) {
   AnalogExpansion::beginChannelAsDac(ctrl, device, ch, OA_CURRENT_DAC, false,
                                      false, OA_SLEW_RATE_0);
 }
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void AnalogExpansion::setTimeoutForDefaultValues(Controller &ctrl, uint8_t device, uint16_t timeout_ms) {
+  
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.setTimeoutForDefaultValues(timeout_ms);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        /* create a temporary object just to set configuration */
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->setTimeoutForDefaultValues(timeout_ms);
+        delete exp;
+      }
+    }
+  }
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void AnalogExpansion::setDefaultDac(Controller &ctrl, uint8_t device, uint8_t ch, uint16_t value) {
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM && ch < OA_AN_CHANNELS_NUM) {
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.setDefaultDac(ch, value);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->setDefaultDac(ch, value);
+        delete exp;
+      }
+    }
+  }
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+void AnalogExpansion::setDefaultPwm(Controller &ctrl, uint8_t device, uint8_t ch, uint32_t period, uint32_t pulse) {
+  
+  if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM ) {
+    AnalogExpansion ae = ctrl.getExpansion(device);
+    if(ae) {
+      ae.setDefaultPwm(ch, period, pulse);
+    }
+    else {
+      AnalogExpansion *exp = (AnalogExpansion *)AnalogExpansion::makeExpansion();
+      if(exp != nullptr) {
+        exp->setIndex(device);
+        exp->setCtrl(&ctrl);
+        exp->setDefaultPwm(ch, period, pulse);
+        delete exp;
+      }
+    }
+  }
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void AnalogExpansion::setProductData(uint8_t *data, uint8_t len) {
   Expansion::set_flash_data(data, len, PRODUCTION_DATA_FLASH_ADDRESS);

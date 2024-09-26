@@ -302,6 +302,46 @@ public:
   void switchLedOff(uint8_t pin, bool update = true);
   void updateLeds();
 
+  /* functions to handle timeout default values */
+
+  /* set the timeout in ms for the expansion to use default values 
+     0xFFFF disable the timeout 
+     any other value would cause the expansion to reset its output 
+     (DAC and PWM to the default values set by the functions below) if
+     the expansion does not receive any I2C command from the controller
+     for more than timeout ms 
+     if timeout is set but setDefaul.. functions are not used the 
+     outputs are set to off after timeout */
+  void setTimeoutForDefaultValues(uint16_t timeout_ms);
+  
+  /* by using setDefaultDac you set the default DAC value for the channel ch 
+     this works both for Voltage and Current DAC (but pay attention that
+     the same value has different meaning depending if the channel is DAC
+     voltage or current -> a maximum value of 8191 corresponds to 10 V or 25 mA) */
+  void setDefaultDac(uint8_t ch, uint16_t value);
+  /* by using this function you set the DAC default value in Volts (0-11V)
+     but ONLY if the channel is configured as DAC voltage otherwise fails
+     (return true if the configuration is correct)
+     To use this function the channels must have been configured as Voltage DAC
+     in advance*/
+  bool setDefaultPinVoltage(uint8_t ch, float voltage );
+  /* by using this function you set the DAC default value in Current (0-25V)
+     but ONLY if the channel is configured as DAC current otherwise fails
+     (return true if the configuration is correct)
+     To use this function the channels must have been configured as Current DAC
+     in advance*/
+  bool setDefaultPinCurrent(uint8_t ch, float current);
+  
+  void setDefaultPwm(uint8_t ch, uint32_t period, uint32_t pulse);
+
+  static void setTimeoutForDefaultValues(Controller &ctrl, uint8_t device, uint16_t timeout_ms);
+  /* by using setDefaultDac you set the default DAC value for the channel ch 
+     this works both for Voltage and Current DAC (but pay attention that
+     the same value has different meaning depending if the channel is DAC
+     voltage or current -> a maximum value of 8191 corresponds to 10 V or 25 mA) */
+  static void setDefaultDac(Controller &ctrl, uint8_t device, uint8_t ch, uint16_t value);
+  static void setDefaultPwm(Controller &ctrl, uint8_t device, uint8_t ch, uint32_t period, uint32_t pulse);
+
   /* if ch is configured as DAC the value (max value 8191) is set as
    * DAC converter bits (period is disregarded in this case)
    * if ch is a PWM channel then value is pulse and period is period as
@@ -344,15 +384,13 @@ public:
 
 protected:
   bool verify_address(unsigned int add) override;
-  
-
   static OaChannelCfg cfgs[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
 
   uint8_t msg_begin_adc();
   uint8_t msg_begin_di();
   uint8_t msg_begin_dac();
   uint8_t msg_begin_rtd();
-  uint8_t msg_set_rtd_time();
+  uint8_t msg_send_time();
   uint8_t msg_begin_high_imp();
   bool parse_oa_ack();
   bool adc_registers_defined();

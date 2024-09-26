@@ -104,6 +104,7 @@
 
 /* REQUEST from controller: set DAC value for channel - argument 0x0D */
 #define ARG_OA_SET_DAC 0x0D
+#define ARG_OA_SET_DAC_DEFAULT 0x3D
 #define LEN_OA_SET_DAC 0x04
 #define OA_SET_DAC_CHANNEL_POS OA_CHANNEL_POS
 #define OA_SET_DAC_VALUE_POS 0x04
@@ -168,6 +169,7 @@
 
 /* REQUEST from controller: message set update time for all rtd */
 #define ARG_OA_SET_RTD_UPDATE_TIME 0x10
+#define ARG_OA_SET_TIMEOUT_TIME    0x31
 #define LEN_OA_SET_RTD_UPDATE_TIME 0x02
 #define OA_SET_RTD_UPDATE_TIME_POS 0x03
 #define OA_SET_RTD_UPDATE_TIME_LEN (BP_HEADER_DIM + LEN_OA_SET_RTD_UPDATE_TIME)
@@ -226,6 +228,7 @@
 
 /* REQUEST from controller: setup channel PWM - argument 0x13 */
 #define ARG_OA_SET_PWM 0x13
+#define ARD_OA_SET_DEFAULT_PWM 0x33
 #define LEN_OA_SET_PWM 0x09
 #define OA_SET_PWM_CHANNEL_POS 0x03
 #define OA_SET_PWM_PERIOD_POS 0x04

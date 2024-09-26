@@ -25,21 +25,30 @@
    - then there is 1 position for RTD timing configuration
    - then there are 8 position for additional ADC configuration
    - then there are 8 position for last value channel output value (DAC)
-   - then there are 8 position for the last LED channel output value  */
+   - then there is 1 position for the last LED value (all led status)
+   - then there are 8 position for default DAC output after timeout
+   - then there are 4 position for default PWM value after timeout
+   - then there 1 position for the TIMEOUT  */
 
 #define OA_CFG_MSG_NUM  (OA_AN_CHANNELS_NUM +  \
                          OA_PWM_CHANNELS_NUM + \
                          1 +                   \
                          OA_AN_CHANNELS_NUM +  \
                          OA_AN_CHANNELS_NUM +  \
-                         1 )
+                         1 +                   \
+                         OA_AN_CHANNELS_NUM +  \
+                         OA_PWM_CHANNELS_NUM + \
+                         1)
 
-#define OFFSET_CHANNEL_CONFIG  (0)
-#define OFFSET_PWM_CONFIG      (OFFSET_CHANNEL_CONFIG + OA_AN_CHANNELS_NUM)
-#define OFFSET_RTD_UPDATE_TIME (OFFSET_PWM_CONFIG + OA_PWM_CHANNELS_NUM)
-#define OFFSET_ADD_ADC_CONFIG  (OFFSET_RTD_UPDATE_TIME + 1)
-#define OFFSET_DAC_VALUE       (OFFSET_ADD_ADC_CONFIG + OA_AN_CHANNELS_NUM)
-#define OFFSET_LED_VALUE       (OFFSET_DAC_VALUE + OA_AN_CHANNELS_NUM)
+#define OFFSET_CHANNEL_CONFIG    (0)
+#define OFFSET_PWM_CONFIG        (OFFSET_CHANNEL_CONFIG + OA_AN_CHANNELS_NUM)
+#define OFFSET_RTD_UPDATE_TIME   (OFFSET_PWM_CONFIG + OA_PWM_CHANNELS_NUM)
+#define OFFSET_ADD_ADC_CONFIG    (OFFSET_RTD_UPDATE_TIME + 1)
+#define OFFSET_DAC_VALUE         (OFFSET_ADD_ADC_CONFIG + OA_AN_CHANNELS_NUM)
+#define OFFSET_LED_VALUE         (OFFSET_DAC_VALUE + OA_AN_CHANNELS_NUM)
+#define OFFSET_DAC_DEFAULT_VALUE (OFFSET_LED_VALUE + 1)
+#define OFFSET_PWM_DEFAULT_VALUE (OFFSET_DAC_DEFAULT_VALUE + OA_AN_CHANNELS_NUM)
+#define OFFSET_TIMEOUT_VALUE     (OFFSET_PWM_DEFAULT_VALUE + OA_PWM_CHANNELS_NUM)
                                 
 /* this class is used to store the last 'begin' message sent by the controller
  * to an Opta Analog so that it will be possible to quickly "restore" a device

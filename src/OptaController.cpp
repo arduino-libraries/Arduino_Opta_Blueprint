@@ -255,9 +255,6 @@ Expansion *Controller::getExpansionPtr(int device) {
       return expansions[device];
     } else {
       for (unsigned int i = 0; i < exp_type_list.size(); i++) {
-        #ifdef DEBUG_
-        Serial.println("\nd = " + String(device) + " exp_type[d] = " + String(exp_type[device]) + " | i = " + String(i) + " exp_type_list[i] = " + String(exp_type_list[i].getType()));
-        #endif
         if (exp_type[device] == exp_type_list[i].getType()) {
           expansions[device] = exp_type_list[i].allocateExpansion();
           break;
