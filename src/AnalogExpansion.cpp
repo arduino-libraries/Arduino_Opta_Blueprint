@@ -101,6 +101,8 @@ void AnalogExpansion::startUp(Controller *ptr) {
         }
         exp.updateLeds();
         exp.beginRtdUpdateTime(1000);
+        exp.setTimeoutForDefaultValues(0xFFFF);
+  
       }
     }
   }
@@ -789,6 +791,40 @@ void AnalogExpansion::setDefaultDac(uint8_t ch, uint16_t value) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+bool AnalogExpansion::setDefaultPinVoltage(uint8_t ch, float voltage ) {
+  if(ch < OA_AN_CHANNELS_NUM) {
+    if(cfgs[index].isVoltageDacCh(ch)) {
+      if (voltage > 11.0) {
+        voltage = 11.0;
+      }
+      float v = 8191.0 * voltage / 11.0;
+      setDefaultDac(ch, (uint16_t)v);
+      return true;
+    }
+  }
+  return false;
+}
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+bool AnalogExpansion::setDefaultPinCurrent(uint8_t ch, float current) {
+  if(ch < OA_AN_CHANNELS_NUM) {
+    if(cfgs[index].isCurrentDacCh(ch)) {
+      if (current > 25.0) {
+        current = 25.0;
+      }
+      float v = 8191.0 * current / 25.0;
+      setDefaultDac(ch, (uint16_t)v);
+      return true;
+    }
+  }
+  return false;
+
+}
+
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 uint8_t AnalogExpansion::msg_set_dac() {
   if( iregs[ADD_OA_PIN] >= OA_AN_CHANNELS_NUM && 
     index >= OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
@@ -846,20 +882,24 @@ void AnalogExpansion::updateAnalogOutputs() { execute(SET_ALL_ANALOG_OUTPUTS); }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 void AnalogExpansion::pinVoltage(uint8_t ch, float voltage,
                                  bool update /*= true*/) {
-  if (voltage > 11.0) {
-    voltage = 11.0;
+  if(cfgs[index].isVoltageDacCh(ch)) {
+    if (voltage > 11.0) {
+      voltage = 11.0;
+    }
+    float v = 8191.0 * voltage / 11.0;
+    setDac(ch, (uint16_t)v, update);
   }
-  float v = 8191.0 * voltage / 11.0;
-  setDac(ch, (uint16_t)v, update);
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 void AnalogExpansion::pinCurrent(uint8_t ch, float current,
                                  bool update /* = true*/) {
-  if (current > 25.0) {
-    current = 25.0;
+  if(cfgs[index].isCurrentDacCh(ch)) {
+    if (current > 25.0) {
+      current = 25.0;
+    }
+    float v = 8191.0 * current / 25.0;
+    setDac(ch, (uint16_t)v, update);
   }
-  float v = 8191.0 * current / 25.0;
-  setDac(ch, (uint16_t)v, update);
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 float AnalogExpansion::getRtd(uint8_t ch) {
