@@ -238,9 +238,8 @@ void OptaDigital::begin() {
 /* -------------------------------------------------------------------------- */
 bool OptaDigital::parse_set_digital() {
   /* ------------------------------------------------------------------------ */
-  if (checkSetMsgReceived(rx_buffer, ARG_OPTDIG_DIGITAL_OUT,
-                          LEN_OPTDIG_DIGITAL_OUT,
-                          MSG_SET_OPTDIG_DIGITAL_OUT_LEN)) {
+  if (checkSetMsgReceived(rx_buffer, ARG_OD_SET_DIGITAL_OUTPUTS,
+                          LEN_OD_SET_DIGITAL_OUTPUTS)) {
     return true;
   }
   return false;
@@ -249,8 +248,7 @@ bool OptaDigital::parse_set_digital() {
 /* -------------------------------------------------------------------------- */
 bool OptaDigital::parse_get_digital() {
   /* ------------------------------------------------------------------------ */
-  if (checkGetMsgReceived(rx_buffer, ARG_OPDIG_DIGITAL, LEN_OPDIG_DIGITAL,
-                          MSG_GET_OPTDIG_LEN)) {
+  if (checkGetMsgReceived(rx_buffer, ARG_OD_GET_DIGITAL_INPUTS, LEN_OD_GET_DIGITAL_INPUTS)) {
     return true;
   }
   return false;
@@ -259,8 +257,7 @@ bool OptaDigital::parse_get_digital() {
 /* -------------------------------------------------------------------------- */
 bool OptaDigital::parse_get_analog() {
   /* ------------------------------------------------------------------------ */
-  if (checkGetMsgReceived(rx_buffer, ARG_OPTDIG_ANALOG, LEN_OPTDIG_ANALOG,
-                          MSG_GET_OPTDIG_ANALOG_LEN)) {
+  if (checkGetMsgReceived(rx_buffer, ARG_OD_GET_ANALOG_INPUT, LEN_OD_GET_ANALOG_INPUT)) {
     return true;
   }
   return false;
@@ -269,9 +266,8 @@ bool OptaDigital::parse_get_analog() {
 /* ------------------------------------------------------------------------ */
 bool OptaDigital::parse_get_all_analog() {
   /* ------------------------------------------------------------------------ */
-  if (checkGetMsgReceived(rx_buffer, ARG_OPTDIG_ALL_ANALOG_IN,
-                          LEN_OPTDIG_ALL_ANALOG_IN,
-                          MSG_GET_OPTDIG_ALL_ANALOG_IN_LEN)) {
+  if (checkGetMsgReceived(rx_buffer, ARG_OD_GET_ALL_ANALOG_INPUTS,
+                          LEN_OD_GET_ALL_ANALOG_INPUTS)) {
     return true;
   }
   return false;
@@ -280,9 +276,8 @@ bool OptaDigital::parse_get_all_analog() {
 /* ------------------------------------------------------------------------ */
 bool OptaDigital::parse_default_and_timeout() {
   /* ---------------------------------------------------------------------- */
-  if (checkSetMsgReceived(rx_buffer, ARG_OPTDIG_DEFAULT_OUT_AND_TIMEOUT,
-                          LEN_OPTDIG_DEFAULT_OUT_AND_TIMEOUT,
-                          MSG_SET_OPTDIG_DEFAULT_OUT_AND_TIMEOUT_LEN)) {
+  if (checkSetMsgReceived(rx_buffer, ARG_OD_DEFAULT_AND_TIMEOUT,
+                          LEN_OD_DEFAULT_AND_TIMEOUT)) {
     return true;
   }
   return false;
@@ -291,19 +286,10 @@ bool OptaDigital::parse_default_and_timeout() {
 /* ------------------------------------------------------------------------ */
 int OptaDigital::prepare_ans_get_digital() {
   /* ---------------------------------------------------------------------- */
-  ans_buffer = tx_buffer;
-
-  for (int i = 0; i < ANS_MSG_OPDIG_DIGITAL_LEN; i++) {
+  for (int i = 0; i < OPTA_DIGITAL_GET_DIN_BUFFER_DIM - 1; i++) {
     tx_buffer[i] = ans_get_din_buffer[i];
   }
-
-#ifdef BP_USE_CRC
-  tx_buffer[ANS_MSG_OPDIG_DIGITAL_LEN] =
-      OptaCrc8::calc(tx_buffer, ANS_MSG_OPDIG_DIGITAL_LEN, 0);
-  return ANS_MSG_OPDIG_DIGITAL_LEN_CRC;
-#else
-  return ANS_MSG_OPDIG_DIGITAL_LEN;
-#endif
+  return addCrc(tx_buffer,OPTA_DIGITAL_GET_DIN_BUFFER_DIM - 1);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -313,50 +299,36 @@ int OptaDigital::prepare_ans_get_analog(int index) {
   if (index > OPTA_DIGITAL_IN_NUM) {
     return rv;
   }
-  ans_buffer = tx_buffer;
   tx_buffer[BP_PAYLOAD_START_POS] =
       ans_get_all_ain_buffer[BP_HEADER_DIM + 2 * index];
   tx_buffer[BP_PAYLOAD_START_POS + 1] =
       ans_get_all_ain_buffer[BP_HEADER_DIM + 2 * index + 1];
 
-  return prepareGetAns(tx_buffer, ANS_ARG_OPTDIG_ANALOG, ANS_LEN_OPTDIG_ANALOG,
-                       ANS_MSG_OPTDIG_ANALOG_LEN);
+  return prepareGetAns(tx_buffer, ANS_ARG_OD_GET_ANALOG_INPUT, ANS_LEN_OD_GET_ANALOG_INPUT);
 }
 
 /* ------------------------------------------------------------------------ */
 int OptaDigital::prepare_ans_default_and_timeout() {
   /* ---------------------------------------------------------------------- */
-  ans_buffer = tx_buffer;
-  return prepareSetAns(tx_buffer, ANS_ARG_OPTDIG_DEFAULT_OUT_AND_TIMEOUT,
-                       ANS_LEN_OPTDIG_DEFAULT_OUT_AND_TIMEOUT,
-                       ANS_MSG_OPTDIG_DEFAULT_OUT_AND_TIMEOUT_LEN);
+  return prepareSetAns(tx_buffer, ANS_ARG_OD_DEFAULT_AND_TIMEOUT,
+                       ANS_LEN_OD_DEFAULT_AND_TIMEOUT);
 }
 
 /* ------------------------------------------------------------------------ */
 int OptaDigital::prepare_ans_get_all_analog() {
   /* ---------------------------------------------------------------------- */
-  ans_buffer = tx_buffer;
-
-  for (int i = 0; i < ANS_MSG_OPTDIG_ALL_ANALOG_IN_LEN; i++) {
+  for (int i = 0; i < OPTA_DIGITAL_GET_ALL_AIN_BUFFER_DIM - 1; i++) {
     tx_buffer[i] = ans_get_all_ain_buffer[i];
   }
 
-#ifdef BP_USE_CRC
-  tx_buffer[ANS_MSG_OPTDIG_ALL_ANALOG_IN_LEN] =
-      OptaCrc8::calc(tx_buffer, ANS_MSG_OPTDIG_ALL_ANALOG_IN_LEN, 0);
-  return ANS_MSG_OPTDIG_ALL_ANALOG_IN_LEN_CRC;
-#else
-  return ANS_MSG_OPTDIG_ALL_ANALOG_IN_LEN;
-#endif
+  return addCrc(tx_buffer,OPTA_DIGITAL_GET_ALL_AIN_BUFFER_DIM - 1);
 }
 
 /* ------------------------------------------------------------------------ */
 int OptaDigital::prepare_ans_set_digital() {
   /* ---------------------------------------------------------------------- */
-  ans_buffer = tx_buffer;
-  return prepareSetAns(tx_buffer, ANS_ARG_OPTDIG_DIGITAL_OUT,
-                       ANS_LEN_OPTDIG_DIGITAL_OUT,
-                       ANS_MSG_OPTDIG_DIGITAL_OUT_LEN);
+  return prepareSetAns(tx_buffer, ANS_ARG_OD_SET_DIGITAL_OUTPUTS,
+                       ANS_LEN_OD_SET_DIGITAL_OUTPUTS);
 }
 
 /* --------------------------------------------------------------------------
@@ -465,12 +437,12 @@ void OptaDigital::update() {
   
   /* always "refresh" the header of the answers */
   ans_get_din_buffer[BP_CMD_POS] = BP_ANS_GET;
-  ans_get_din_buffer[BP_ARG_POS] = ANS_ARG_OPDIG_DIGITAL;
-  ans_get_din_buffer[BP_LEN_POS] = ANS_LEN_OPDIG_DIGITAL;
+  ans_get_din_buffer[BP_ARG_POS] = ANS_ARG_OD_GET_DIGITAL_INPUTS;
+  ans_get_din_buffer[BP_LEN_POS] = ANS_LEN_OD_GET_DIGITAL_INPUTS;
 
   ans_get_all_ain_buffer[BP_CMD_POS] = BP_ANS_GET;
-  ans_get_all_ain_buffer[BP_ARG_POS] = ANS_ARG_OPTDIG_ALL_ANALOG_IN;
-  ans_get_all_ain_buffer[BP_LEN_POS] = ANS_LEN_OPTDIG_ALL_ANALOG_IN;
+  ans_get_all_ain_buffer[BP_ARG_POS] = ANS_ARG_OD_GET_ALL_ANALOG_INPUTS;
+  ans_get_all_ain_buffer[BP_LEN_POS] = ANS_LEN_OD_GET_ALL_ANALOG_INPUTS;
 
   /* Added to have the same behaviour of Opta Analog
      [Opta analog has a slow main that depends on the operation it is performing

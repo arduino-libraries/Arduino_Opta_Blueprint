@@ -129,15 +129,16 @@ unsigned int Expansion::execute(uint32_t what) {
     case WRITE_FLASH:
       I2C_TRANSACTION(msg_set_flash, parse_dummy, 0);
       break;
-    case READ_FLASH:
+    case READ_FLASH: 
       I2C_TRANSACTION(msg_get_flash,
                       parse_ans_get_flash,
-                      CTRL_ANS_MSG_GET_FLASH_LEN);
+                      getExpectedAnsLen(ANS_LEN_GET_DATA_FROM_FLASH));
+      
       break;
     case GET_VERSION:
       I2C_TRANSACTION(msg_get_fw_version,
                       parse_ans_get_version,
-                      CTRL_ANS_GET_VERSION_LEN);
+                      getExpectedAnsLen(ANS_LEN_GET_VERSION));
 
       break;
 
@@ -164,7 +165,7 @@ uint8_t Expansion::msg_set_flash() {
       ctrl->setTx((uint8_t)iregs[ADD_FLASH_0 + i], SAVE_DATA_INIT_POS + i);
     }
     return prepareSetMsg(ctrl->getTxBuffer(), ARG_SAVE_IN_DATA_FLASH,
-                         LEN_SAVE_IN_DATA_FLASH, SAVE_DATA_LEN);
+                         LEN_SAVE_IN_DATA_FLASH);
 
   } else {
     return 0;
@@ -180,7 +181,7 @@ uint8_t Expansion::msg_get_flash() {
                 READ_ADDRESS_2_POS);
     ctrl->setTx((uint8_t)iregs[ADD_FLASH_DIM], READ_DATA_DIM_POS);
     return prepareGetMsg(ctrl->getTxBuffer(), ARG_GET_DATA_FROM_FLASH,
-                         LEN_GET_DATA_FROM_FLASH, READ_DATA_LEN);
+                         LEN_GET_DATA_FROM_FLASH);
 
   } else {
     return 0;
@@ -191,7 +192,7 @@ uint8_t Expansion::msg_get_flash() {
 
 bool Expansion::parse_ans_get_flash() {
   if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_GET_DATA_FROM_FLASH,
-                          ANS_LEN_GET_DATA_FROM_FLASH, ANS_GET_DATA_LEN)) {
+                          ANS_LEN_GET_DATA_FROM_FLASH)) {
     iregs[ADD_FLASH_DIM] = ctrl->getRx(ANS_GET_DATA_DIMENSION_POS);
     iregs[ADD_FLASH_ADDRESS] = ctrl->getRx(ANS_GET_DATA_ADDRESS_1_POS);
     iregs[ADD_FLASH_ADDRESS] +=
@@ -210,15 +211,14 @@ bool Expansion::parse_ans_get_flash() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t Expansion::msg_get_fw_version() {
-  return prepareGetMsg(ctrl->getTxBuffer(), ARG_GET_VERSION, LEN_GET_VERSION,
-                       GET_VERSION_LEN);
+  return prepareGetMsg(ctrl->getTxBuffer(), ARG_GET_VERSION, LEN_GET_VERSION);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 bool Expansion::parse_ans_get_version() {
   if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_GET_VERSION,
-                          ANS_LEN_GET_VERSION, ANS_GET_VERSION_LEN)) {
+                          ANS_LEN_GET_VERSION)) {
     iregs[ADD_VERSION_MAJOR] = ctrl->getRx(GET_VERSION_MAJOR_POS);
     iregs[ADD_VERSION_MINOR] = ctrl->getRx(GET_VERSION_MINOR_POS);
     iregs[ADD_VERSION_RELEASE] = ctrl->getRx(GET_VERSION_RELEASE_POS);

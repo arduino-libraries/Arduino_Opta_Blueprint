@@ -28,7 +28,7 @@ static void prepareSet(uint8_t *buffer, uint8_t arg, uint8_t len);
 static void prepareGet(uint8_t *buffer, uint8_t arg, uint8_t len);
 static void prepareAnsSet(uint8_t *buffer, uint8_t arg, uint8_t len);
 static void prepareAnsGet(uint8_t *buffer, uint8_t arg, uint8_t len);
-static uint8_t addCrc(uint8_t *buffer, uint8_t mlen);
+
 
 #ifdef DEBUG_MESSAGE_ON_SERIAL
 void debug_message(const char *log, uint8_t *m, uint8_t mlen) {
@@ -79,9 +79,9 @@ bool checkAnsSet(uint8_t *buffer, uint8_t arg, uint8_t len) {
 
 uint8_t getExpectedAnsLen(uint8_t len) {
 #ifdef BP_USE_CRC
-  return len + 1;
+  return len + BP_HEADER_DIM + 1;
 #else
-  return len;
+  return len + BP_HEADER_DIM;
 #endif
 }
 
@@ -99,54 +99,36 @@ bool checkCrc(uint8_t *buffer, uint8_t mlen) {
   return rv;
 }
 
-bool checkSetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen) {
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-RX SET msg", buffer, mlen);
-#endif
+bool checkSetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len) {
   if (checkSet(buffer, arg, len)) {
-    if (checkCrc(buffer, mlen)) {
+    if (checkCrc(buffer, len + BP_HEADER_DIM)) {
       return true;
     }
   }
   return false;
 }
 
-bool checkGetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen) {
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-RX GET msg", buffer, mlen);
-#endif
+bool checkGetMsgReceived(uint8_t *buffer, uint8_t arg, uint8_t len) {
   if (checkGet(buffer, arg, len)) {
-    if (checkCrc(buffer, mlen)) {
+    if (checkCrc(buffer, len + BP_HEADER_DIM)) {
       return true;
     }
   }
   return false;
 }
 
-bool checkAnsGetReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen) {
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-RX ANS get msg", buffer, mlen);
-#endif
+bool checkAnsGetReceived(uint8_t *buffer, uint8_t arg, uint8_t len) {
   if (checkAnsGet(buffer, arg, len)) {
-    if (checkCrc(buffer, mlen)) {
+    if (checkCrc(buffer, len + BP_HEADER_DIM)) {
       return true;
     }
   }
   return false;
 }
 
-bool checkAnsSetReceived(uint8_t *buffer, uint8_t arg, uint8_t len,
-                         uint8_t mlen) {
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-RX ANS "
-                "set msg",
-                buffer, mlen);
-#endif
+bool checkAnsSetReceived(uint8_t *buffer, uint8_t arg, uint8_t len) {
   if (checkAnsSet(buffer, arg, len)) {
-    if (checkCrc(buffer, mlen)) {
+    if (checkCrc(buffer, len + BP_HEADER_DIM)) {
       return true;
     }
   }
@@ -185,48 +167,24 @@ uint8_t addCrc(uint8_t *buffer, uint8_t mlen) {
   return mlen;
 }
 
-uint8_t prepareSetMsg(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen) {
+uint8_t prepareSetMsg(uint8_t *buffer, uint8_t arg, uint8_t len) {
   prepareSet(buffer, arg, len);
-  uint8_t rv = addCrc(buffer, mlen);
-
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-TX SET "
-                "msg",
-                buffer, mlen);
-#endif
+  uint8_t rv = addCrc(buffer, len + BP_HEADER_DIM);
   return rv;
 }
 
-uint8_t prepareGetMsg(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen) {
+uint8_t prepareGetMsg(uint8_t *buffer, uint8_t arg, uint8_t len) {
   prepareGet(buffer, arg, len);
-  uint8_t rv = addCrc(buffer, mlen);
-
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-TX GET "
-                "msg",
-                buffer, mlen);
-#endif
+  uint8_t rv = addCrc(buffer, len + BP_HEADER_DIM);
   return rv;
 }
-uint8_t prepareSetAns(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen) {
+uint8_t prepareSetAns(uint8_t *buffer, uint8_t arg, uint8_t len) {
   prepareAnsSet(buffer, arg, len);
-  uint8_t rv = addCrc(buffer, mlen);
-
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-TX ANS "
-                "set msg",
-                buffer, mlen);
-#endif
+  uint8_t rv = addCrc(buffer, len + BP_HEADER_DIM);
   return rv;
 }
-uint8_t prepareGetAns(uint8_t *buffer, uint8_t arg, uint8_t len, uint8_t mlen) {
+uint8_t prepareGetAns(uint8_t *buffer, uint8_t arg, uint8_t len) {
   prepareAnsGet(buffer, arg, len);
-  uint8_t rv = addCrc(buffer, mlen);
-
-#ifdef DEBUG_MESSAGE_ON_SERIAL
-  debug_message("-TX ANS "
-                "get msg",
-                buffer, mlen);
-#endif
+  uint8_t rv = addCrc(buffer, len + BP_HEADER_DIM);
   return rv;
 }

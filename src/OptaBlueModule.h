@@ -113,7 +113,7 @@ protected:
   #ifdef USE_CONFIRM_RX_MESSAGE
   volatile bool confirm_address_reception = false;
   #endif
-  uint8_t *ans_buffer;
+  
   int expansion_type;
   unsigned long int reboot_sent;
   int detect_in;

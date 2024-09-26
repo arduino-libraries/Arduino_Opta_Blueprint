@@ -375,16 +375,11 @@ PinStatus Controller::digitalReadOpta(uint8_t device, uint8_t pin,
 
 bool Controller::rebootExpansion(uint8_t device) {
   if (device < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+    _send(exp_add[device], msg_opta_reboot(), getExpectedAnsLen(ANS_LEN_REBOOT));
 
-#ifdef BP_USE_CRC
-    uint8_t req = ANS_REBOOT_LEN_CRC;
-#else
-    uint8_t req = ANS_REBOOT_LEN;
-#endif
-
-    _send(exp_add[device], msg_opta_reboot(), req);
-
-    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, req, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
+    if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, 
+                               getExpectedAnsLen(ANS_LEN_REBOOT), 
+                               OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
       if (parse_opta_reboot()) {
         delay(OPTA_CONTROLLER_DELAY_AFTER_REBOOT);
         return true;
@@ -553,9 +548,9 @@ void Controller::assign_custom_type_and_call_start_up() {
       /* assign to expansion in position i a custom expansion type (if custom 
          expansion has been registered */
       if (exp_type[i] >= OPTA_CONTROLLER_CUSTOM_MIN_TYPE || exp_type[i] == EXPANSION_NOT_VALID) {
-        _send(exp_add[i], msg_get_product_type(), CTRL_ANS_MSG_GET_PRODUCT_LEN);
+        _send(exp_add[i], msg_get_product_type(), getExpectedAnsLen(ANS_LEN_GET_PRODUCT_TYPE));
         if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER,
-                                   CTRL_ANS_MSG_GET_PRODUCT_LEN, OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
+                                   getExpectedAnsLen(ANS_LEN_GET_PRODUCT_TYPE), OPTA_CONTROLLER_WAIT_REQUEST_TIMEOUT)) {
           /* return expansion not valid if product is not found*/
           exp_type[i] = parse_get_product();
           #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
@@ -657,7 +652,7 @@ void Controller::checkForExpansions() {
       /* 2. SENDING request: get address and type to the device to ensure 
             proper address has been accepted  */
 
-      _send(tmp_address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
+      _send(tmp_address, msg_get_address_and_type(), getExpectedAnsLen(ANS_LEN_ADDRESS_AND_TYPE));
 
       #if defined DEBUG_SERIAL && defined DEBUG_ASSIGN_ADDRESS_CONTROLLER
       Serial.print("        - Receiving answer from device: ");
@@ -665,7 +660,7 @@ void Controller::checkForExpansions() {
 
       /*  3. RECEIVING ANSWER */
 
-      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, getExpectedAnsLen(ANS_LEN_ADDRESS_AND_TYPE), OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
         /* when the address is correcly received as answer to the previous the
           parse_address_and_type function increase in a circular way
           tmp_num_of_exp so that tmp_exp_add array is filled in a circular way */
@@ -772,7 +767,7 @@ void Controller::checkForExpansions() {
 
     delay(OPTA_CONTROLLER_DELAY_AFTER_SET_ADDRESS);
 
-    _send(address, msg_get_address_and_type(), EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE);
+    _send(address, msg_get_address_and_type(), getExpectedAnsLen(ANS_LEN_ADDRESS_AND_TYPE));
 
       /* * FIX Controller not re-assigning address when reset *
       when the address is correcly received as answer to the previous the
@@ -781,7 +776,7 @@ void Controller::checkForExpansions() {
       after 3 failed attemps the address is skipped and then the
       tmp_num_of_exp is decreased in the else branch */
 
-      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, EXPECTED_ANS_LEN_MSG_ADDRESS_AND_TYPE, OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
+      if (wait_for_device_answer(OPTA_BLUE_UNDEFINED_DEVICE_NUMBER, getExpectedAnsLen(ANS_LEN_ADDRESS_AND_TYPE), OPTA_CONTROLLER_TIMEOUT_FOR_SETUP_MESSAGE)) {
         if (parse_address_and_type(address)) {
           remain_in_while_loop = (tmp_num_of_exp != initial_value);
         }
@@ -863,7 +858,7 @@ void Controller::setFailedCommCb(CommErr_f f) { failed_i2c_comm = f; }
 uint8_t Controller::msg_opta_reboot() {
   tx_buffer[REBOOT_1_POS] = REBOOT_1_VALUE;
   tx_buffer[REBOOT_2_POS] = REBOOT_2_VALUE;
-  return prepareSetMsg(tx_buffer, ARG_REBOOT, LEN_REBOOT, REBOOT_LEN);
+  return prepareSetMsg(tx_buffer, ARG_REBOOT, LEN_REBOOT);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -871,8 +866,7 @@ uint8_t Controller::msg_opta_reboot() {
 /* prepare the message in the tx buffer to get opta digital analog in */
 uint8_t Controller::msg_opta_reset() {
   tx_buffer[BP_PAYLOAD_START_POS] = CONTROLLER_RESET_CODE;
-  return prepareSetMsg(tx_buffer, ARG_CONTROLLER_RESET, LEN_CONTROLLER_RESET,
-                       CONTROLLER_RESET_LEN);
+  return prepareSetMsg(tx_buffer, ARG_CONTROLLER_RESET, LEN_CONTROLLER_RESET);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -880,8 +874,7 @@ uint8_t Controller::msg_opta_reset() {
 /* prepare the message in the tx buffer to set an address to an expansion */
 uint8_t Controller::msg_set_address(uint8_t add) {
   tx_buffer[BP_PAYLOAD_START_POS] = add; /* the value to be set */
-  return prepareSetMsg(tx_buffer, ARG_ADDRESS, LEN_ADDRESS,
-                       MSG_SET_ADDRESS_LEN);
+  return prepareSetMsg(tx_buffer, ARG_ADDRESS, LEN_ADDRESS);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -891,8 +884,7 @@ uint8_t Controller::msg_confirm_rx_address() {
   tx_buffer[CONFIRM_ADDRESS_SECOND_POS] = CONFIRM_ADDRESS_SECOND_VALUE; 
 
   
-  return prepareSetMsg(tx_buffer, ARG_CONFIRM_ADDRESS_RX, LEN_CONFIRM_ADDRESS_RX,
-                       CONFIRM_ADDRESS_RX_LEN);
+  return prepareSetMsg(tx_buffer, ARG_CONFIRM_ADDRESS_RX, LEN_CONFIRM_ADDRESS_RX);
 
 }
 #endif
@@ -901,8 +893,7 @@ uint8_t Controller::msg_confirm_rx_address() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t Controller::msg_get_product_type() {
-  return prepareGetMsg(tx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE,
-                       GET_PRODUCT_TYPE_LEN);
+  return prepareGetMsg(tx_buffer, ARG_GET_PRODUCT_TYPE, LEN_GET_PRODUCT_TYPE);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -910,8 +901,7 @@ uint8_t Controller::msg_get_product_type() {
 /* prepare the message in the tx buffer to get address and type from
  * expansion*/
 uint8_t Controller::msg_get_address_and_type() {
-  return prepareGetMsg(tx_buffer, ARG_ADDRESS_AND_TYPE, LEN_ADDRESS_AND_TYPE,
-                       MSG_GET_ADDRESS_AND_TYPE_LEN);
+  return prepareGetMsg(tx_buffer, ARG_ADDRESS_AND_TYPE, LEN_ADDRESS_AND_TYPE);
 }
 
 /* #######################################################################
@@ -931,8 +921,7 @@ int Controller::parse_get_product() {
 
   if (checkAnsGetReceived(rx_buffer, 
                           ANS_ARG_GET_PRODUCT_TYPE, 
-                          ANS_LEN_GET_PRODUCT_TYPE,
-                          LEN_ANS_GET_PRODUCT_TYPE)) {
+                          ANS_LEN_GET_PRODUCT_TYPE)) {
     
     std::string pr((const char *)(rx_buffer + ANS_GET_PRODUCT_SIZE_POS + 1),
                    rx_buffer[ANS_GET_PRODUCT_SIZE_POS]);
@@ -943,8 +932,7 @@ int Controller::parse_get_product() {
 }
 
 bool Controller::parse_opta_reboot() {
-  if (checkAnsSetReceived(rx_buffer, ANS_ARG_REBOOT, ANS_LEN_REBOOT,
-                          ANS_REBOOT_LEN)) {
+  if (checkAnsSetReceived(rx_buffer, ANS_ARG_REBOOT, ANS_LEN_REBOOT)) {
 
     if (rx_buffer[ANS_REBOOT_CODE_POS] == ANS_REBOOT_CODE) {
       return true;
@@ -977,8 +965,7 @@ bool Controller::parse_opta_reboot() {
 /* parse the answer to the message get address and type from the slave */
 bool Controller::parse_address_and_type(int slave_address) {
   if (checkAnsGetReceived(rx_buffer, ANS_ARG_ADDRESS_AND_TYPE,
-                          ANS_LEN_ADDRESS_AND_TYPE,
-                          ANS_MSG_ADDRESS_AND_TYPE_LEN)) {
+                          ANS_LEN_ADDRESS_AND_TYPE)) {
 #if defined DEBUG_SERIAL && defined DEBUG_MSG_PARSE_ADDRESS_AND_TYPE
     Serial.println("        - Received answer to get address request");
 #endif

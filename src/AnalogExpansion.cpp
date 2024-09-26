@@ -80,7 +80,7 @@ void AnalogExpansion::startUp(Controller *ptr) {
           uint8_t tx_bytes = AnalogExpansion::cfgs[i].restore(ptr->getTxBuffer(), k);
           if (tx_bytes) {
             ptr->send(exp.getI2CAddress(), exp.getIndex(), exp.getType(),
-                      tx_bytes, CTRL_ANS_OA_LEN);
+                      tx_bytes, getExpectedAnsLen(ANS_LEN_OA_ACK));
             /* channel configuration takes some times on the expansion side*/
             delay(50);
           }
@@ -133,7 +133,7 @@ uint8_t AnalogExpansion::msg_begin_adc() {
       }
       iregs[ADD_FLAG_ADD_ADC_ON_CHANNEL] = 0;
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_ADC,
-                                 LEN_OA_CH_ADC, OA_CH_ADC_LEN);
+                                 LEN_OA_CH_ADC);
       AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
       AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(),
                            iregs[ADD_OA_PIN] + offset_add_adc_messages, rv);
@@ -164,7 +164,7 @@ uint8_t AnalogExpansion::msg_begin_di() {
       ctrl->setTx(iregs[ADD_OA_DI_DEB_TIME], OA_CH_DI_DEBOUNCE_TIME_POS);
 
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_DI,
-                                 LEN_OA_CH_DI, OA_CH_DI_LEN);
+                                 LEN_OA_CH_DI);
       
       AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
       AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
@@ -358,7 +358,7 @@ uint8_t AnalogExpansion::msg_begin_dac() {
       ctrl->setTx(iregs[ADD_OA_DAC_SLEW_RATE], OA_CH_DAC_SLEW_RATE_POS);
 
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_DAC,
-                                 LEN_OA_CH_DAC, OA_CH_DAC_LEN);
+                                 LEN_OA_CH_DAC);
       
       AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
       AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
@@ -384,7 +384,7 @@ uint8_t AnalogExpansion::msg_begin_high_imp() {
     ctrl->setTx(iregs[ADD_OA_PIN], OA_HIGH_IMPEDENCE_CH_POS);
     uint8_t rv =
         prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_HIGH_IMPEDENCE,
-                      LEN_OA_CH_HIGH_IMPEDENCE, OA_CH_HIGH_IMPEDENCE_LEN);
+                      LEN_OA_CH_HIGH_IMPEDENCE);
     if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
       AnalogExpansion::cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
       AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
@@ -466,7 +466,7 @@ uint8_t AnalogExpansion::msg_send_time() {
                   OA_SET_RTD_UPDATE_TIME_POS + 1);
       
       uint8_t rv =  prepareSetMsg(ctrl->getTxBuffer(), msg_argument,
-                        LEN_OA_SET_RTD_UPDATE_TIME, OA_SET_RTD_UPDATE_TIME_LEN);
+                        LEN_OA_SET_RTD_UPDATE_TIME);
       cfgs[index].backup(ctrl->getTxBuffer(), offset, rv);
 
       return rv;
@@ -497,7 +497,7 @@ uint8_t AnalogExpansion::msg_begin_rtd() {
       }
 
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_CH_RTD,
-                                 LEN_OA_CH_RTD, OA_CH_RTD_LEN);
+                                 LEN_OA_CH_RTD);
       
       cfgs[index].resetAdditionalAdcCh(iregs[ADD_OA_PIN]);
       cfgs[index].backup(ctrl->getTxBuffer(), 
@@ -539,16 +539,14 @@ void AnalogExpansion::setPwm(uint8_t ch, uint32_t period, uint32_t pulse) {
   if (!addressExist(per_add) || !addressExist(pul_add) || iregs[ADD_SET_DEFAULT_VALUE_FLAG] == 1) {
     iregs[per_add] = period;
     iregs[pul_add] = pulse;
-    /*uint32_t err =*/execute(SET_PWM);
-    /*Serial.println("EXECUTE SET_PWM = " + String(err));*/
+    execute(SET_PWM);
   }
   /* if the address is defined and the value different to the one held
    * by the correspondent register => send it */
   else if (period != iregs[per_add] || pulse != iregs[pul_add]) {
     iregs[per_add] = period;
     iregs[pul_add] = pulse;
-    /*uint32_t err =*/execute(SET_PWM);
-    /*Serial.println("EXECUTE SET_PWM = " + String(err));*/
+    execute(SET_PWM);
   }
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -659,8 +657,7 @@ uint8_t AnalogExpansion::msg_set_pwm() {
         msg_argument = ARD_OA_SET_DEFAULT_PWM; 
         offset_backup = OFFSET_PWM_DEFAULT_VALUE;
       }
-      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), msg_argument,
-                                 LEN_OA_SET_PWM, OA_SET_PWM_LEN);
+      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), msg_argument,LEN_OA_SET_PWM);
       if (index < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
         cfgs[index].backup(ctrl->getTxBuffer(), iregs[ADD_OA_PIN] + offset_backup, rv);
       }
@@ -690,8 +687,7 @@ uint8_t AnalogExpansion::msg_get_adc() {
     if (addressExist(ADD_OA_PIN)) {
       ctrl->setTx(iregs[ADD_OA_PIN], OA_CH_ADC_CHANNEL_POS);
 
-      return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_ADC,
-                                 LEN_OA_GET_ADC, OA_GET_ADC_LEN);
+      return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_ADC,LEN_OA_GET_ADC);
     }
   }
   return 0;
@@ -702,7 +698,7 @@ uint8_t AnalogExpansion::msg_get_adc() {
 bool AnalogExpansion::parse_ans_get_adc() {
   if (ctrl != nullptr) {
     if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OA_GET_ADC,
-                            ANS_LEN_OA_GET_ADC, ANS_OA_GET_ADC_LEN)) {
+                            ANS_LEN_OA_GET_ADC)) {
       uint32_t ch = ctrl->getRx(ANS_OA_ADC_CHANNEL_POS);
       if (ch < OA_AN_CHANNELS_NUM) {
         iregs[BASE_OA_ADC_ADDRESS + ch] = ctrl->getRx(ANS_OA_ADC_VALUE_POS);
@@ -853,8 +849,7 @@ uint8_t AnalogExpansion::msg_set_dac() {
         backup_offset = OFFSET_DAC_DEFAULT_VALUE;
       }
 
-      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), msg_argument,
-                                 LEN_OA_SET_DAC, OA_SET_DAC_LEN);
+      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), msg_argument,LEN_OA_SET_DAC);
       AnalogExpansion::cfgs[index].backup(ctrl->getTxBuffer(), 
                          iregs[ADD_OA_PIN] + backup_offset, 
                          rv);
@@ -869,8 +864,7 @@ uint8_t AnalogExpansion::msg_set_dac() {
 
 uint8_t AnalogExpansion::msg_set_all_dac() {
   if (ctrl != nullptr) {
-    return prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_ALL_DAC,
-                         LEN_OA_SET_ALL_DAC, OA_SET_ALL_DAC_LEN);
+    return prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_ALL_DAC,LEN_OA_SET_ALL_DAC);
   }
   return 0;
 }
@@ -922,8 +916,7 @@ uint8_t AnalogExpansion::msg_get_rtd() {
     if (addressExist(ADD_OA_PIN)) {
       ctrl->setTx(iregs[ADD_OA_PIN], OA_GET_RTD_CHANNEL_POS);
 
-      return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_RTD, LEN_OA_GET_RTD,
-                           OA_GET_RTD_LEN);
+      return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_RTD, LEN_OA_GET_RTD);
     }
   }
   return 0;
@@ -934,7 +927,7 @@ uint8_t AnalogExpansion::msg_get_rtd() {
 bool AnalogExpansion::parse_ans_get_rtd() {
   if (ctrl != nullptr) {
     if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OA_GET_RTD,
-                            ANS_LEN_OA_GET_RTD, ANS_OA_GET_RTD_LEN)) {
+                            ANS_LEN_OA_GET_RTD)) {
       Float_u v;
       for (int i = 0; i < 4; i++) {
         v.bytes[i] = ctrl->getRx(ANS_OA_GET_RTD_VALUE_POS + i);
@@ -983,7 +976,7 @@ uint8_t AnalogExpansion::msg_get_ch_function() {
    
       ctrl->setTx(iregs[ADD_OA_PIN], GET_CHANNEL_FUNCTION_CH_POS);
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_GET_CHANNEL_FUNCTION,
-                                 LEN_GET_CHANNEL_FUNCTION, GET_CHANNEL_FUNCTION_LEN);
+                                 LEN_GET_CHANNEL_FUNCTION);
 
       return rv;
   }
@@ -1004,9 +997,11 @@ CfgFun_t AnalogExpansion::get_channel_function(uint8_t ch) {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 bool AnalogExpansion::parse_get_ch_function() {
+  
+
   if (ctrl != nullptr) {
     if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_GET_CHANNEL_FUNCTION,
-                            LEN_ANS_GET_CHANNEL_FUNCTION, CTRL_ANS_GET_CHANNEL_FUNCTION)) {
+                            LEN_ANS_GET_CHANNEL_FUNCTION)) {
 
       iregs[ADD_OA_PIN_OUTPUT] = ctrl->getRx(ANS_GET_CHANNEL_FUNCTION_CH_POS);
       iregs[ADD_CH_FUNCTION] = ctrl->getRx(ANS_GET_CHANNEL_FUNCTION_FUN_POS);
@@ -1029,7 +1024,7 @@ uint8_t AnalogExpansion::msg_set_led() {
     if (addressExist(ADD_OA_LED_VALUE)) {
       ctrl->setTx(iregs[ADD_OA_LED_VALUE], OA_SET_LED_VALUE_POS);
       uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_OA_SET_LED,
-                                 LEN_OA_SET_LED, OA_SET_LED_LEN);
+                                 LEN_OA_SET_LED);
 
       cfgs[index].backup(ctrl->getTxBuffer(), 
                          OFFSET_LED_VALUE, 
@@ -1087,14 +1082,14 @@ void AnalogExpansion::updateAnalogInputs() {
 
 uint8_t AnalogExpansion::msg_get_all_ai() {
   return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_ALL_ADC,
-                       LEN_OA_GET_ALL_ADC, OA_GET_ADC_ALL_LEN);
+                       LEN_OA_GET_ALL_ADC);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 bool AnalogExpansion::parse_ans_get_all_ai() {
   if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OA_GET_ALL_ADC,
-                          ANS_LEN_OA_GET_ALL_ADC, ANS_OA_GET_ADC_ALL_LEN)) {
+                          ANS_LEN_OA_GET_ALL_ADC)) {
     const int s = ANS_OA_ADC_GET_ALL_VALUE_POS;
     for (int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
       iregs[BASE_OA_ADC_ADDRESS + ch] = ctrl->getRx(s + 2 * ch);
@@ -1109,15 +1104,14 @@ bool AnalogExpansion::parse_ans_get_all_ai() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 uint8_t AnalogExpansion::msg_get_di() {
-  return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_DI, LEN_OA_GET_DI,
-                       OA_GET_DI_LEN);
+  return prepareGetMsg(ctrl->getTxBuffer(), ARG_OA_GET_DI, LEN_OA_GET_DI);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 bool AnalogExpansion::parse_ans_get_di() {
   if (checkAnsGetReceived(ctrl->getRxBuffer(), ANS_ARG_OA_GET_DI,
-                          ANS_LEN_OA_GET_DI, ANS_OA_GET_DI_LEN)) {
+                          ANS_LEN_OA_GET_DI)) {
     iregs[ADD_OA_DI_VALUE] = ctrl->getRx(ANS_OA_GET_DI_VALUE_POS);
     return true;
   }
@@ -1148,8 +1142,7 @@ bool AnalogExpansion::parse_oa_ack() {
     Serial.println();
 #endif
 
-    return checkAnsSetReceived(ctrl->getRxBuffer(), ANS_ARG_OA_ACK,
-                               ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
+    return checkAnsSetReceived(ctrl->getRxBuffer(), ANS_ARG_OA_ACK,ANS_LEN_OA_ACK);
   }
   return false;
 }
@@ -1186,67 +1179,68 @@ unsigned int AnalogExpansion::execute(uint32_t what) {
 
     case BEGIN_CHANNEL_AS_ADC:
       I2C_TRANSACTION(msg_begin_adc,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case BEGIN_CHANNEL_AS_DI:
       I2C_TRANSACTION(msg_begin_di,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case BEGIN_CHANNEL_AS_RTD:
       I2C_TRANSACTION(msg_begin_rtd,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case BEGIN_CHANNEL_AS_DAC:
       I2C_TRANSACTION(msg_begin_dac,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case SET_PWM:
       I2C_TRANSACTION(msg_set_pwm,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case GET_SINGLE_ANALOG_INPUT:
       I2C_TRANSACTION(msg_get_adc,
                       parse_ans_get_adc,
-                      CTRL_ANS_OA_GET_ADC_LEN);
+                      getExpectedAnsLen(ANS_LEN_OA_GET_ADC));
       break;
     case SET_SINGLE_ANALOG_OUTPUT:
       I2C_TRANSACTION(msg_set_dac,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case SEND_TIMING:
       I2C_TRANSACTION(msg_send_time,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case GET_RTD:
       I2C_TRANSACTION(msg_get_rtd,
                       parse_ans_get_rtd,
-                      CTRL_ANS_OA_GET_RTD_LEN);
+                      getExpectedAnsLen(ANS_LEN_OA_GET_RTD));
       break;
     case SET_LED:
       I2C_TRANSACTION(msg_set_led,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case GET_DIGITAL_INPUT:
       I2C_TRANSACTION(msg_get_di,
                       parse_ans_get_di,
-                      CTRL_ANS_OA_GET_DI_LEN);
+                      getExpectedAnsLen(ANS_LEN_OA_GET_DI));
       break;
     case GET_ALL_ANALOG_INPUT:
       I2C_TRANSACTION(msg_get_all_ai,
                       parse_ans_get_all_ai,
-                      CTRL_ANS_OA_GET_ALL_ADC_LEN);
+                      getExpectedAnsLen(ANS_LEN_OA_GET_ALL_ADC));
       break;
     case SET_ALL_ANALOG_OUTPUTS:
       I2C_TRANSACTION(msg_set_all_dac,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case BEGIN_CHANNEL_AS_HIGH_IMP:
       I2C_TRANSACTION(msg_begin_high_imp,
-                      parse_oa_ack, CTRL_ANS_OA_LEN);
+                      parse_oa_ack, getExpectedAnsLen(ANS_LEN_OA_ACK));
       break;
     case GET_CHANNEL_FUNCTION:
       I2C_TRANSACTION(msg_get_ch_function,
-                      parse_get_ch_function, CTRL_ANS_GET_CHANNEL_FUNCTION);
+                      parse_get_ch_function, 
+                      getExpectedAnsLen(LEN_ANS_GET_CHANNEL_FUNCTION));
       break;  
     
     default:
