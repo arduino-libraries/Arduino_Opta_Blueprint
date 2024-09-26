@@ -178,7 +178,7 @@ private:
   unsigned int timer_timout_ms = OPTA_ANALOG_WATCHTDOG_TIME_ms;
   static void timer_callback(timer_callback_args_t *arg);
   bool use_default_output_values = false;
-  void set_dac_value(uint8_t ch, uint16_t value);
+  void write_dac_defaults(uint8_t ch);
 public:
   OptaAnalog();
   void begin() override;

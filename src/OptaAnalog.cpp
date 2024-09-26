@@ -344,9 +344,12 @@ void OptaAnalog::update() {
   if(use_default_output_values) {
     for(int i = 0; i < OA_AN_CHANNELS_NUM; i++) {
       if(is_dac_used(i)) {
-        set_dac_value(i,dac_defaults[i]);
+        write_dac_defaults(i); 
       }
     }
+    /* when use_default_output_values becomes false (because a message has been
+       received) this ensure the DAC outputs are re-updated to the last values */
+    update_dac_using_LDAC = true;
     toggle_ldac();
   }
   else {
@@ -1366,30 +1369,43 @@ void OptaAnalog::toggle_ldac() {
 
 void OptaAnalog::reset_dac_value(uint8_t ch) {
   if (ch < OA_AN_CHANNELS_NUM) {
-    set_dac_value(ch, 0);
+    write_reg(OA_REG_DAC_CODE, 0, ch);
+    uint16_t set_value = 0;
+    read_reg(OA_REG_DAC_CODE, set_value, ch);
+    while(set_value != 0) {
+      write_reg(OA_REG_DAC_CODE, 0, ch);
+      read_reg(OA_REG_DAC_CODE, set_value, ch);
+    }
     toggle_ldac();
   }
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-void OptaAnalog::set_dac_value(uint8_t ch, uint16_t value) {
-  write_reg(OA_REG_DAC_CODE, value, ch);
-  uint16_t set_value = 0;
-  read_reg(OA_REG_DAC_CODE, set_value, ch);
-  while(set_value != value) {
-    write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
+void OptaAnalog::write_dac_defaults(uint8_t ch) {
+  if (ch < OA_AN_CHANNELS_NUM) {
+    write_reg(OA_REG_DAC_CODE, dac_defaults[ch], ch);
+    uint16_t set_value = 0;
     read_reg(OA_REG_DAC_CODE, set_value, ch);
+    while(set_value != dac_defaults[ch]) {
+      write_reg(OA_REG_DAC_CODE, dac_defaults[ch], ch);
+      read_reg(OA_REG_DAC_CODE, set_value, ch);
+    }
   }
 }
-
 
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 void OptaAnalog::updateDacValue(uint8_t ch, bool toggle /*= true*/) {
   if (ch < OA_AN_CHANNELS_NUM) {
-      set_dac_value(ch, dac_values[ch]);
+      write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
+      uint16_t set_value = 0;
+      read_reg(OA_REG_DAC_CODE, set_value, ch);
+      while(set_value != dac_values[ch]) {
+        write_reg(OA_REG_DAC_CODE, dac_values[ch], ch);
+        read_reg(OA_REG_DAC_CODE, set_value, ch);
+      }
       if(!dac_value_updated[ch]) {
         dac_value_updated[ch] = true;
       }
@@ -1411,6 +1427,12 @@ void OptaAnalog::resetDacValue(uint8_t ch) {
 
 bool OptaAnalog::is_dac_used(uint8_t ch) {
   if (ch < OA_AN_CHANNELS_NUM) {
+    if(rtd[ch].is_rtd == true) {
+      /* RTD 3 wires uses CURRENT OUTPUT but is not a DAC function 
+         this has to deal with default values */
+      return false;
+    }
+
     return (fun[ch] == CH_FUNC_VOLTAGE_OUTPUT ||
             fun[ch] == CH_FUNC_CURRENT_OUTPUT);
   }
@@ -1914,7 +1936,7 @@ bool OptaAnalog::parse_setup_high_imp_channel() {
     if(ch >= OA_AN_CHANNELS_NUM) {
       return true;
     }
-
+    rtd[ch].is_rtd = false;
     write_function_configuration[ch] = true;
     configureFunction(ch, CH_FUNC_HIGH_IMPEDENCE);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK, ANS_ACK_OA_LEN);
