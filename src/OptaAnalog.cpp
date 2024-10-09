@@ -2239,7 +2239,7 @@ bool OptaAnalog::parse_set_led() {
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 bool OptaAnalog::parse_get_channel_func() {
-   if (checkSetMsgReceived(rx_buffer, ARG_GET_CHANNEL_FUNCTION, LEN_GET_CHANNEL_FUNCTION)) {
+   if (checkGetMsgReceived(rx_buffer, ARG_GET_CHANNEL_FUNCTION, LEN_GET_CHANNEL_FUNCTION)) {
     uint8_t ch = rx_buffer[GET_CHANNEL_FUNCTION_CH_POS];
     if(ch < OA_AN_CHANNELS_NUM) {
       tx_buffer[ANS_GET_CHANNEL_FUNCTION_CH_POS] = ch;
@@ -2358,7 +2358,9 @@ int OptaAnalog::parse_rx() {
     rv = getExpectedAnsLen(LEN_ANS_GET_CHANNEL_FUNCTION);
   } 
   else {
+#if defined DEBUG_SERIAL && defined DEBUG_ANALOG_PARSE_MESSAGE    
     Serial.println(" !!! MESSAGE UNKNOWN !!!");
+#endif    
   }
   return rv;
 }

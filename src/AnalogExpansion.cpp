@@ -975,7 +975,7 @@ uint8_t AnalogExpansion::msg_get_ch_function() {
   if (ctrl != nullptr) {
    
       ctrl->setTx(iregs[ADD_OA_PIN], GET_CHANNEL_FUNCTION_CH_POS);
-      uint8_t rv = prepareSetMsg(ctrl->getTxBuffer(), ARG_GET_CHANNEL_FUNCTION,
+      uint8_t rv = prepareGetMsg(ctrl->getTxBuffer(), ARG_GET_CHANNEL_FUNCTION,
                                  LEN_GET_CHANNEL_FUNCTION);
 
       return rv;
