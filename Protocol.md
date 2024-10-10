@@ -306,7 +306,7 @@ Configure an Opta Analog channel as ADC
   - Header:
     BP_CMD_SET (0x01)
     ARG_OA_CH_ADC (0x09)
-    LEN_OA_CH_ADC (0x06)
+    LEN_OA_CH_ADC (0x07)
   - Payload:
     -> channel (1 byte) from 0 to 7
     -> ADC type (1 byte) (0 voltage adc, 1 current adc)
@@ -314,6 +314,7 @@ Configure an Opta Analog channel as ADC
     -> use rejection (1 Enable, 2 Disable)
     -> use diagnostic (1 Enable, 2 Disable)
     -> number of point of the moving average (max 255)
+    -> add ADC to another function (1 Enable, 2 Disable)
   - CRC
 - Expansion answer (ACK answer): 
   - Header:
@@ -383,7 +384,7 @@ Configure an Opta Analog channel as DAC
   - Payload:
     -> channel (1 byte) from 0 to 7
     -> DAC type (1 byte) (0 voltage dac, 1 current dac)
-    -> limit current (0-31)
+    -> limit current (1 Enable, 2 Disable)
     -> use slew rate (1 Enable, 2 Disable)
     -> slew rate (0 - 16)
   - CRC
