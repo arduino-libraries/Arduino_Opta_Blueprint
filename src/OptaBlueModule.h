@@ -78,9 +78,9 @@ public:
   /* get the number of bytes received into the rx_buffer */
   uint8_t getRxNum();
   /* set the number of bytes to be transmitted in the tx_buffer */
-  void setTxNum(uint8_t n);
+  void setTxNum(int8_t n);
   /* get the number of bytes to be transmitted in the tx_buffer */
-  uint8_t getTxNum();
+  int8_t getTxNum();
   /* returns the pointer to the tx buffer */
   uint8_t *txPrt();
 
@@ -135,7 +135,7 @@ protected:
   /* this variable need to be set in every constructor of the derived class */
   uint8_t rx_buffer[OPTA_I2C_BUFFER_DIM];
   uint8_t tx_buffer[OPTA_I2C_BUFFER_DIM];
-  uint8_t tx_num;
+  int8_t tx_num;
   uint16_t flash_add;
   uint8_t flash_dim;
 

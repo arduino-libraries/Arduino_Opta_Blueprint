@@ -71,6 +71,14 @@ must be the value of the address. In this case the LENGTH field must be set to 1
 specifying that the PAYLOAD length is 1 byte long.
 Different messages have different payloads, with different lengths.
 
+## Unandled messages
+
+If an expansion receives a messages which is not supposed to handle
+(and this message is expecting an answer from the expansion) the first
+2 bytes of the answer will be 0xFA, 0xFE: this sequence signals that the expansion
+received the request but this request is not supported by this expansion.
+
+
 ## Messages
 
 The following describes each message and the related answer
@@ -298,7 +306,7 @@ Configure an Opta Analog channel as ADC
   - Header:
     BP_CMD_SET (0x01)
     ARG_OA_CH_ADC (0x09)
-    LEN_OA_CH_ADC (0x06)
+    LEN_OA_CH_ADC (0x07)
   - Payload:
     -> channel (1 byte) from 0 to 7
     -> ADC type (1 byte) (0 voltage adc, 1 current adc)
@@ -306,8 +314,15 @@ Configure an Opta Analog channel as ADC
     -> use rejection (1 Enable, 2 Disable)
     -> use diagnostic (1 Enable, 2 Disable)
     -> number of point of the moving average (max 255)
+    -> add ADC to another function (1 Enable, 2 Disable)
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
   ### GET OPTA ANALOG ADC VALUE (adc bit 0-65535)
 
@@ -324,7 +339,6 @@ Configure an Opta Analog channel as ADC
     -> channel (1 byte) from 0 to 7
   - CRC
 - Expansion answer:
-
   - Header:
     BP_ANS_GET (0x03)
     ANS_ARG_OA_GET_ADC (0x0A)
@@ -370,11 +384,17 @@ Configure an Opta Analog channel as DAC
   - Payload:
     -> channel (1 byte) from 0 to 7
     -> DAC type (1 byte) (0 voltage dac, 1 current dac)
-    -> limit current (0-31)
+    -> limit current (1 Enable, 2 Disable)
     -> use slew rate (1 Enable, 2 Disable)
     -> slew rate (0 - 16)
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
 ### SET OPTA ANALOG DAC CHANNEL VALUE (0 - 8191)
 
@@ -386,12 +406,19 @@ Set Opta Analog DAC channel value
   - Header:
     BP_CMD_SET (0x01)
     ARG_OA_SET_DAC (0x0D)
-    LEN_OA_SET_DAC (0x03)
+    LEN_OA_SET_DAC (0x04)
   - Payload:
     -> channel (1 byte) from 0 to 7
     -> DAC value (2 bytes) (0 - 8191) - LSB first
+    -> UPDATE DAC immediately (1 - immediately, 0 - no immediate update)
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
 ### CONFIGURE OPTA ANALOG CHANNEL AS RTD
 
@@ -409,7 +436,13 @@ Configure an Opta Analog channel as RTD
     -> use 3 wire (1 byte) (1 Enable, 2 Disable)
     -> current mA as float on 4 bytes
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
 ### GET OPTA ANALOG RTD CHANNEL VALUE (Ohm)
 
@@ -450,7 +483,13 @@ Take into account that 3 wire RTD takes around 800 ms per channel.
   - Payload:
     -> update time (ms) - 2 bytes - LSB first
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
 ### CONFIGURE OPTA ANALOG CHANNEL AS DIGITAL INPUT
 
@@ -475,7 +514,13 @@ Configure an Opta Analog channel as Digital Input
     -> current sink (0 - 31)
     -> debounce time (0 - 31)
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
 ### GET OPTA ANALOG DIGITAL INPUT STATUS
 
@@ -515,7 +560,13 @@ Set Opta digital PWM channel values
     -> pwm period in usec (4 bytes) - LSB first
     -> pwm pulse (high) in usec (4 bytes) - LSB first
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
 ### SET OPTA ANALOG LED
 
@@ -531,7 +582,13 @@ Set Opta digital PWM channel values
   - Payload:
     -> LEDs status (1 byte) as bitmask
   - CRC
-- Expansion answer: No answer expected
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
 
 ### GET FW VERSION
 
@@ -625,4 +682,110 @@ Read up to 32 byte from the data flash of the device
     -> size (1 - 32) 1 byte
     -> 32 bytes of information (32 bytes are always read but information is only
     in the first 'size' of them)
+  - CRC
+
+
+### SET TIMEOUT TIME TO FORCE DEFAULT VALUES
+
+Apply to: Opta Analog
+
+Set Opta Analog Timeout time, if the expansion does not receive messages from
+the controller for more than this time the outputs (DAC and PWM) are set
+to the values set by the messages ARG_OA_SET_DAC_DEFAULT or ARD_OA_SET_DEFAULT_PWM
+(see below for details).
+
+- Controller request
+  - Header:
+    BP_CMD_SET (0x01)
+    ARG_OA_SET_TIMEOUT_TIME (0x31)
+    LEN_OA_SET_RTD_UPDATE_TIME (0x02) // "shared define"
+  - Payload:
+    -> timeout in ms (2 bytes) - LSB first
+  - CRC
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
+
+
+### SET OPTA ANALOG DAC CHANNEL VALUE (0 - 8191) AFTER COMMUNICATION TIMEOUT 
+
+Apply to: Opta Analog
+
+Set Opta Analog DAC default channel value, this value will be applied on the
+channel when a timeout in the communication wiht the controller occurs
+
+- Controller request
+  - Header:
+    BP_CMD_SET (0x01)
+    ARG_OA_SET_DAC_DEFAULT (0x3D)
+    LEN_OA_SET_DAC (0x03)
+  - Payload:
+    -> channel (1 byte) from 0 to 7
+    -> DAC value (2 bytes) (0 - 8191) - LSB first
+  - CRC
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
+
+### SET OPTA ANALOG PWM
+
+Apply to: Opta Analog
+
+Set Opta digital PWM channel values
+
+- Controller request
+  - Header:
+    BP_CMD_SET (0x01)
+    ARD_OA_SET_DEFAULT_PWM (0x33)
+    LEN_OA_SET_PWM (0x09)
+  - Payload:
+    -> channel (1 byte) from 0 to 3
+    -> pwm period in usec (4 bytes) - LSB first
+    -> pwm pulse (high) in usec (4 bytes) - LSB first
+  - CRC
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
+
+### GET CHANNEL CONFIGURATION
+
+Apply to: Opta Analog
+
+Get the actual function of the channel (to be used to verify when the expansion
+has actually set up the requested function on that channel, in special cases
+when outputs are issue just once in a while and so it is recommended to check
+if the expansion has already set up the channel in advance)
+
+- Controller request
+  - Header:
+    BP_CMD_GET (0x02)
+    ARG_GET_CHANNEL_FUNCTION (0x40)
+    LEN_GET_CHANNEL_FUNCTION (0x01)
+  - Payload:
+    -> channel (1 byte) from 0 to 7
+  - CRC
+- Expansion answer: 
+  - Header:
+    BP_ANS_GET (0x03)
+    ANS_GET_CHANNEL_FUNCTION (0x40)
+    LEN_ANS_GET_CHANNEL_FUNCTION (0x02)
+  - Payload:
+    -> channel (1 byte) from 0 to 7
+    -> present channel function (1 byte) HIGH_IMPEDENCE (0), VOLTAGE_OUTPUT (1),
+                                         CURRENT_OUTPUT (2), VOLTAGE_INPUT (3),
+                                         CURRENT_INPUT (4), CURRENT_INPUT_LOOP_POWER (5), RESISTANCE_MEASUREMENT (6), DIGITAL_INPUT (7),
+                                         DIGITAL_INPUT_LOOP_POWER (8), UNDEFINED (9),
+                                         RESISTANCE_MEASUREMENT_3_WIRES (10)
   - CRC

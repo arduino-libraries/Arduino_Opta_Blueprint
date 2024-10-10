@@ -37,6 +37,9 @@ TwoWire *Module::expWire = nullptr;
 /* 20240515_moved_I2C_reset moved reset I2C to main */
 volatile bool reset_I2C_bus = false;
 
+#define NACK_ANSWER_LEN (2)
+static uint8_t nack_answer[NACK_ANSWER_LEN] = {0xFA, 0xFE};
+
 /* -------------------------------------------------------------------------- */
 /* Module RX event: callback called when Module receive from Controller on I2C*/
 /* -------------------------------------------------------------------------- */
@@ -81,9 +84,13 @@ void request_event() {
     Serial.print(" ");
   }
 #endif
-
-  if (OptaExpansion != nullptr && Module::expWire != nullptr) {
+  if (OptaExpansion != nullptr && 
+      Module::expWire != nullptr && 
+      OptaExpansion->getTxNum() > 0) {
     Module::expWire->write(OptaExpansion->txPrt(), OptaExpansion->getTxNum());
+  }
+  else {
+    Module::expWire->write(nack_answer,NACK_ANSWER_LEN);
   }
 
   uint8_t *ck = OptaExpansion->txPrt();
@@ -135,9 +142,9 @@ void Module::setRxNum(uint8_t n) { rx_num = n; }
 /* get the number of bytes received into the rx_buffer */
 uint8_t Module::getRxNum() { return rx_num; }
 /* set the number of bytes to be transmitted in the tx_buffer */
-void Module::setTxNum(uint8_t n) { tx_num = n; }
+void Module::setTxNum(int8_t n) { tx_num = n; }
 /* get the number of bytes to be transmitted in the tx_buffer */
-uint8_t Module::getTxNum() { return tx_num; }
+int8_t Module::getTxNum() { return tx_num; }
 /* returns the pointer to the tx buffer */
 uint8_t *Module::txPrt() { return tx_buffer; }
 
