@@ -83,7 +83,7 @@ received the request but this request is not supported by this expansion.
 
 The following describes each message and the related answer
 
-### RESET EXPANSION I2C ADDRESS
+### RESET EXPANSION I2C ADDRESS (+)
 
 Apply to: All expansion types
 
@@ -102,7 +102,7 @@ initialized if the DETECT IN, DETECT OUT pins are in the correct state)
 - Expansion answer
   No answer expected
 
-### SET I2C ADDRESS
+### SET I2C ADDRESS (+)
 
 Apply to: All expansion types
 
@@ -120,7 +120,7 @@ one specified in the payload.
 - Expansion answer
   No answer expected
 
-### GET I2C ADDRESS AND TYPE
+### GET I2C ADDRESS AND TYPE (+)
 
 Apply to: All expansion types
 
@@ -148,9 +148,9 @@ Opta Digital Invalid -> 0x01
 Opta Digital Mechanical -> 0x02
 Opta Digital State Solid -> 0x03
 Opta Analog -> 0x04
-UNO R4 MINIMA -> 0x05
+Custom expansion get a dynamic expansion type See AboutCustomExpansionType.md
 
-### GET DIGITAL VALUES
+### GET DIGITAL VALUES (+)
 
 Apply to: Opta Digital
 
@@ -176,7 +176,7 @@ inputs.
 Note: the status of digital inputs is a bit mask word (2 bytes): each bit of
 the word represent the status of digital input (1 means HIGH, 0 means LOW).
 
-### GET ANALOG VALUES
+### GET ANALOG VALUES (+)
 
 Apply to: Opta Digital
 
@@ -202,7 +202,7 @@ pin received as argument (the analog value is the raw analog value in bits).
 
 Note: the analog value is a WORD (2 bytes) - first is sent the LSB then the MSB.
 
-### GET ANALOG ALL VALUES
+### GET ANALOG ALL VALUES (+)
 
 Apply to: Opta Digital
 
@@ -228,7 +228,7 @@ its PINs.
 Note: the payload is array of 16 words (LSB first) each value represent the
 analog value of the corresponding PIN.
 
-### SET DIGITAL OUTPUTS
+### SET DIGITAL OUTPUTS (+)
 
 Apply to: Opta Digital
 
@@ -258,7 +258,7 @@ Note (2): the Expansion answer is requested in order to ensure that the message
 is properly received (CRC is OK), if the message answer is not received the
 Controller will trigger the related callback function (if set).
 
-### SET DEFAULT OUTPUT VALUES AND TIMEOUT
+### SET DEFAULT OUTPUT VALUES AND TIMEOUT (+)
 
 Apply to: Opta Digital
 
@@ -296,7 +296,7 @@ Note (3): the Expansion answer is requested in order to ensure that the message
 is properly received (CRC is OK), if the message answer is not received the
 Controller will trigger the related callback function (if set).
 
-### CONFIGURE OPTA ANALOG CHANNEL AS ADC
+### CONFIGURE OPTA ANALOG CHANNEL AS ADC (+)
 
 Apply to: Opta Analog
 
@@ -324,7 +324,7 @@ Configure an Opta Analog channel as ADC
   - Payload: no payload
   - CRC
 
-  ### GET OPTA ANALOG ADC VALUE (adc bit 0-65535)
+  ### GET OPTA ANALOG ADC VALUE (adc bit 0-65535) (+)
 
   Apply to: Opta Analog
 
@@ -348,7 +348,7 @@ Configure an Opta Analog channel as ADC
     -> the analog value of the channe (2 byte) - LSB first
   - CRC
 
-  ### GET OPTA ANALOG ALL ADC VALUE (adc bit 0-65535) AT ONCE
+  ### GET OPTA ANALOG ALL ADC VALUE (adc bit 0-65535) AT ONCE (+)
 
   Apply to: Opta Analog
 
@@ -370,7 +370,7 @@ Configure an Opta Analog channel as ADC
     -> 16 bytes (2 for each channel) - LSB first
   - CRC
 
-### CONFIGURE OPTA ANALOG CHANNEL AS DAC
+### CONFIGURE OPTA ANALOG CHANNEL AS DAC (+)
 
 Apply to: Opta Analog
 
@@ -396,7 +396,7 @@ Configure an Opta Analog channel as DAC
   - Payload: no payload
   - CRC
 
-### SET OPTA ANALOG DAC CHANNEL VALUE (0 - 8191)
+### SET OPTA ANALOG DAC CHANNEL VALUE (0 - 8191) (+)
 
 Apply to: Opta Analog
 
@@ -420,7 +420,30 @@ Set Opta Analog DAC channel value
   - Payload: no payload
   - CRC
 
-### CONFIGURE OPTA ANALOG CHANNEL AS RTD
+### APPLY DAC VALUE TO PHYSICAL OUTPUTs (+)
+
+Apply to: Opta Analog
+
+If set dac message above is used with UPDATE DAC immediately equal to 0 the
+DAC value is not output until this message is received (this can be used to 
+update DAC synchronously)
+
+- Controller request
+  - Header:
+    BP_CMD_SET (0x01)
+    ARG_OA_SET_ALL_DAC (0x22)
+    LEN_OA_SET_ALL_DAC (0x00)
+  - Payload: no payload
+  - CRC
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC  
+
+### CONFIGURE OPTA ANALOG CHANNEL AS RTD (+)
 
 Apply to: Opta Analog
 
@@ -430,7 +453,7 @@ Configure an Opta Analog channel as RTD
   - Header:
     BP_CMD_SET (0x01)
     ARG_OA_CH_RTD (0x0E)
-    LEN_OA_CH_RTD (0x07)
+    LEN_OA_CH_RTD (0x06)
   - Payload:
     -> channel (1 byte) from 0 to 7
     -> use 3 wire (1 byte) (1 Enable, 2 Disable)
@@ -444,7 +467,7 @@ Configure an Opta Analog channel as RTD
   - Payload: no payload
   - CRC
 
-### GET OPTA ANALOG RTD CHANNEL VALUE (Ohm)
+### GET OPTA ANALOG RTD CHANNEL VALUE (Ohm) (+)
 
 Apply to: Opta Analog
 
@@ -468,7 +491,7 @@ Get Opta Analog RTD channel value
     -> value 4 bytes as float
   - CRC
 
-### CONFIGURE OPTA ANALOG RTD UPDATE TIME
+### CONFIGURE OPTA ANALOG RTD UPDATE TIME (+)
 
 Apply to: Opta Analog
 
@@ -479,7 +502,7 @@ Take into account that 3 wire RTD takes around 800 ms per channel.
   - Header:
     BP_CMD_SET (0x01)
     ARG_OA_SET_RTD_UPDATE_TIME (0x10)
-    LEN_OA_SET_RTD_UPDATE_TIME (0x03)
+    LEN_OA_SET_RTD_UPDATE_TIME (0x02)
   - Payload:
     -> update time (ms) - 2 bytes - LSB first
   - CRC
@@ -491,7 +514,7 @@ Take into account that 3 wire RTD takes around 800 ms per channel.
   - Payload: no payload
   - CRC
 
-### CONFIGURE OPTA ANALOG CHANNEL AS DIGITAL INPUT
+### CONFIGURE OPTA ANALOG CHANNEL AS DIGITAL INPUT (+)
 
 Apply to: Opta Analog
 
@@ -522,7 +545,7 @@ Configure an Opta Analog channel as Digital Input
   - Payload: no payload
   - CRC
 
-### GET OPTA ANALOG DIGITAL INPUT STATUS
+### GET OPTA ANALOG DIGITAL INPUT STATUS (+)
 
 Apply to: Opta Analog
 
@@ -544,7 +567,30 @@ Get Opta Analog DIGITAL INPUT status
     -> all DI status (1 byte) as bit mask
   - CRC
 
-### SET OPTA ANALOG PWM
+### CONFIGURE OPTA ANALOG CHANNEL AS HIGH IMPEDANCE (+)
+
+Apply to: Opta Analog
+
+Configure an Opta Analog channel as High Impedance
+
+- Controller request
+  - Header:
+    BP_CMD_SET (0x01)
+    ARG_OA_CH_DI (0x24)
+    LEN_OA_CH_DI (0x01)
+  - Payload:
+    -> channel (1 byte) from 0 to 7
+  - CRC
+- Expansion answer (ACK answer): 
+  - Header:
+    BP_ANS_SET (0x04)
+    ANS_ARG_OA_ACK (0x20)
+    ANS_LEN_OA_ACK (0)
+  - Payload: no payload
+  - CRC
+
+
+### SET OPTA ANALOG PWM (+)
 
 Apply to: Opta Analog
 
@@ -568,7 +614,7 @@ Set Opta digital PWM channel values
   - Payload: no payload
   - CRC
 
-### SET OPTA ANALOG LED
+### SET OPTA ANALOG LED (+)
 
 Apply to: Opta Analog
 
@@ -590,7 +636,7 @@ Set Opta digital PWM channel values
   - Payload: no payload
   - CRC
 
-### GET FW VERSION
+### GET FW VERSION (+)
 
 Apply to: All expansion types
 
@@ -614,7 +660,7 @@ Get FW version in the form MAJOR.MINOR.RELEASE
     -> release (1 byte)
   - CRC
 
-### REBOOT expansion
+### REBOOT expansion (+)
 
 Apply to: All expansion types
 
@@ -638,7 +684,7 @@ Put expansion in Boot Loader Mode
     -> reboot confirmation code (1 byte) - value ANS_REBOOT_CODE (0x74)
   - CRC
 
-### SAVE information in FLASH memory
+### SAVE information in FLASH memory (+)
 
 Apply to: All expansion types
 
@@ -657,7 +703,7 @@ Save up to 32 bytes in the Data Flash of the device
   - CRC
 - Expansion answer: None
 
-### READ information from flash
+### READ information from flash (+)
 
 Apply to: All expansion types
 
@@ -685,7 +731,7 @@ Read up to 32 byte from the data flash of the device
   - CRC
 
 
-### SET TIMEOUT TIME TO FORCE DEFAULT VALUES
+### SET TIMEOUT TIME TO FORCE DEFAULT VALUES (+)
 
 Apply to: Opta Analog
 
@@ -711,7 +757,7 @@ to the values set by the messages ARG_OA_SET_DAC_DEFAULT or ARD_OA_SET_DEFAULT_P
   - CRC
 
 
-### SET OPTA ANALOG DAC CHANNEL VALUE (0 - 8191) AFTER COMMUNICATION TIMEOUT 
+### SET OPTA ANALOG DAC CHANNEL VALUE (0 - 8191) AFTER COMMUNICATION TIMEOUT (+)
 
 Apply to: Opta Analog
 
@@ -722,10 +768,11 @@ channel when a timeout in the communication wiht the controller occurs
   - Header:
     BP_CMD_SET (0x01)
     ARG_OA_SET_DAC_DEFAULT (0x3D)
-    LEN_OA_SET_DAC (0x03)
+    LEN_OA_SET_DAC (0x04)
   - Payload:
     -> channel (1 byte) from 0 to 7
     -> DAC value (2 bytes) (0 - 8191) - LSB first
+    -> UPDATE DAC immediately (1 byte) - not used
   - CRC
 - Expansion answer (ACK answer): 
   - Header:
@@ -735,7 +782,7 @@ channel when a timeout in the communication wiht the controller occurs
   - Payload: no payload
   - CRC
 
-### SET OPTA ANALOG PWM
+### SET OPTA ANALOG PWM (+)
 
 Apply to: Opta Analog
 
@@ -759,7 +806,7 @@ Set Opta digital PWM channel values
   - Payload: no payload
   - CRC
 
-### GET CHANNEL CONFIGURATION
+### GET CHANNEL CONFIGURATION (+)
 
 Apply to: Opta Analog
 
