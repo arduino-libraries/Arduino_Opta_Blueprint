@@ -133,7 +133,7 @@ void OptaAnalog::updatePwm(uint8_t ch) {
     pwm[ch].pwm.suspend();
   } 
   else {
-    if (pwm[ch].set_pulse_us < pwm[ch].set_period_us) {
+    if (pwm[ch].set_pulse_us <= pwm[ch].set_period_us) {
       if (pwm[ch].set_period_us != pwm[ch].period_us || pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
         pwm[ch].pwm.resume();
         pwm[ch].pwm.period_us(pwm[ch].set_period_us);
@@ -547,9 +547,12 @@ bool OptaAnalog::read_direct_reg(uint8_t device, uint8_t addr,
 
 // this function "reset" channels in case they are used for DAC or
 // resistance measurement
-void OptaAnalog::configureFunction(uint8_t ch, CfgFun_t f) {
+void OptaAnalog::configureFunction(uint8_t ch, CfgFun_t f, bool write) {
   if (ch < OA_AN_CHANNELS_NUM) {
-    update_fun[ch] = f;
+    ChConfig cfg;
+    cfg.write = write;
+    cfg.f = f;
+    update_fun[ch].push(cfg);
   }
 }
 
@@ -1771,7 +1774,6 @@ bool OptaAnalog::parse_setup_di_channel() {
       return true;
     }
 
-    write_function_configuration[ch] = true;
     if (ch < OA_AN_CHANNELS_NUM) {
       rtd[ch].is_rtd = false;
     }
@@ -1823,8 +1825,6 @@ bool OptaAnalog::parse_setup_dac_channel() {
     if(ch >= OA_AN_CHANNELS_NUM) {
       return true;
     }
-
-    write_function_configuration[ch] = true;
 
     if (ch < OA_AN_CHANNELS_NUM) {
       rtd[ch].is_rtd = false;
@@ -1912,7 +1912,6 @@ bool OptaAnalog::parse_setup_rtd_channel() {
       return true;
     }
 
-    write_function_configuration[ch] = true;
     Float_u v;
     for (int i = 0; i < 4; i++) {
       v.bytes[i] = rx_buffer[OA_CH_RTD_CURRENT_POS + i];
@@ -1939,7 +1938,6 @@ bool OptaAnalog::parse_setup_high_imp_channel() {
       return true;
     }
     rtd[ch].is_rtd = false;
-    write_function_configuration[ch] = true;
     configureFunction(ch, CH_FUNC_HIGH_IMPEDENCE);
     prepareSetAns(tx_buffer, ANS_ARG_OA_ACK, ANS_LEN_OA_ACK);
     return true;
@@ -1956,16 +1954,15 @@ bool OptaAnalog::parse_setup_adc_channel() {
     if (ch >= OA_AN_CHANNELS_NUM) {
        return true;
     }
-
-    write_function_configuration[ch] = true;
+    bool write = true;
     if (rx_buffer[OA_CH_ADC_ADDING_ADC_POS] == OA_ENABLE) {
-      write_function_configuration[ch] = false;
+      write = false;
     }
 
     rtd[ch].is_rtd = false;
 
     if (fun[ch] == CH_FUNC_VOLTAGE_OUTPUT &&
-        write_function_configuration[ch] == false &&
+        write == false &&
         rx_buffer[OA_CH_ADC_TYPE_POS] == OA_CURRENT_ADC) {
       /* this is a special case:
        * we have DAC voltage output on that channel but we are adding an ADC
@@ -1974,12 +1971,12 @@ bool OptaAnalog::parse_setup_adc_channel() {
       /* note that the function here is not really used since it will
       not sent to the Analog Device chip (write_function_configuration[ch]
       is false indeed) */
-      configureFunction(ch, CH_FUNC_CURRENT_INPUT_LOOP_POWER);
+      configureFunction(ch, CH_FUNC_CURRENT_INPUT_LOOP_POWER, write);
       configureAdcMux(ch, CFG_ADC_INPUT_NODE_100OHM_R);
       configureAdcRange(ch, CFG_ADC_RANGE_2_5V_BI);
       configureAdcPullDown(ch, false);
     } else if (rx_buffer[OA_CH_ADC_TYPE_POS] == OA_VOLTAGE_ADC) {
-      configureFunction(ch, CH_FUNC_VOLTAGE_INPUT);
+      configureFunction(ch, CH_FUNC_VOLTAGE_INPUT,write);
       configureAdcMux(ch, CFG_ADC_INPUT_NODE_IOP_AGND_SENSE);
       configureAdcRange(ch, CFG_ADC_RANGE_10V);
       if (rx_buffer[OA_CH_ADC_PULL_DOWN_POS] == OA_ENABLE) {
@@ -1988,7 +1985,7 @@ bool OptaAnalog::parse_setup_adc_channel() {
         configureAdcPullDown(rx_buffer[OA_CH_ADC_CHANNEL_POS], false);
       }
     } else if (rx_buffer[OA_CH_ADC_TYPE_POS] == OA_CURRENT_ADC) {
-      configureFunction(ch, CH_FUNC_CURRENT_INPUT_EXT_POWER);
+      configureFunction(ch, CH_FUNC_CURRENT_INPUT_EXT_POWER, write);
       configureAdcMux(ch, CFG_ADC_INPUT_NODE_100OHM_R);
       configureAdcRange(ch, CFG_ADC_RANGE_2_5V_RTD);
       configureAdcPullDown(ch, false);
@@ -2385,7 +2382,7 @@ bool OptaAnalog::are_all_dac_updated() {
 bool OptaAnalog::configuration_to_be_updated() {
   bool rv = false;
   for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
-    if(update_fun[ch] != fun[ch]) {
+    if(update_fun[ch].size() > 0) {
       rv = true;
       break;
     }
@@ -2397,16 +2394,19 @@ bool OptaAnalog::configuration_to_be_updated() {
 void OptaAnalog::setup_channels() {
   if (configuration_to_be_updated()) {
     stopAdc();
+    ChConfig cfg;
     for (uint8_t ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
-      if (update_fun[ch] != fun[ch]) {
+      if (update_fun[ch].size() > 0) {
         /* new function has been requested */
+        cfg = update_fun[ch].front();
+        update_fun[ch].pop();
         
         /* disable adc conversion (it will be enable in any case after) */
         if (adc[ch].en_conversion) {
           configureAdcEnable(ch, false);
         }
 
-        if(write_function_configuration[ch]) {
+        if(cfg.write) {
           /* channel must be changed only when an actual request of new function
              is active and not when an ADC is added to a channel */
 
@@ -2436,23 +2436,22 @@ void OptaAnalog::setup_channels() {
 
           /* write the new function only if the new f*/
         
-          if (update_fun[ch] != CH_FUNC_HIGH_IMPEDENCE) {
-            sendFunction(ch, update_fun[ch]);
+          if (cfg.f != CH_FUNC_HIGH_IMPEDENCE) {
+            sendFunction(ch, cfg.f);
           }
-          write_function_configuration[ch] = false;
 
           /* output_fun cannot be equal to fun */
-          output_fun[ch] = update_fun[ch];
+          output_fun[ch] = cfg.f;
 
         } //if(write_function_configuration[ch]) {
-           /* update the function so that it will be not updated again */
-        fun[ch] = update_fun[ch];
+           /* update the function */
+        fun[ch] = cfg.f;
       }
 
       /* update the channel configurazione (to be done always also in case
          of add an ADC channel */
 
-      switch (update_fun[ch]) {
+      switch (cfg.f) {
       case CH_FUNC_HIGH_IMPEDENCE:
         break;
       case CH_FUNC_VOLTAGE_OUTPUT:
@@ -2662,7 +2661,6 @@ void print_adc_configuration(uint16_t v) {
 void print_adc_control(uint16_t v, int d) {
   int ch = (d == OA_AN_DEVICE_0) ? 1 : 2;
   Serial.print(" ");
-  int ch = (d == OA_AN_DEVICE_0) ? 1 : 2;
   Serial.print("# ADC CONTROL: ");
   if (v & 1) {
     Serial.print(String(ch) + " YES ");
@@ -3007,8 +3005,6 @@ void printFunction(CfgFun_t f) {
 void OptaAnalog::debugPrintChannelFunction(uint8_t ch) {
   Serial.print("Ch " + String(ch) + " Fun ");
   printFunction(fun[ch]);
-  Serial.print("   |    Update Fun ");
-  printFunction(update_fun[ch]);
   Serial.println();
 
 }

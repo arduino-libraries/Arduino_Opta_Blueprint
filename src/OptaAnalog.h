@@ -27,12 +27,24 @@
 #include "boot.h"
 #include "sys/_stdint.h"
 #include <cstdint>
+#include <queue>
 
 // #define DEBUG_ENABLE_SPI
 // #define DEBUG_SERIAL
 // #define DEBUG_ANALOG_PARSE_MESSAGE
 //
 #define SPI_COMM_BUFF_DIM 4
+
+
+class ChConfig {
+public:
+  CfgFun_t f;
+  bool write;
+  ChConfig() {
+    f = CH_FUNC_UNDEFINED;
+    write = false;
+  }
+}; 
 
 
 
@@ -42,7 +54,7 @@ private:
    * Data structures used to hold information about Analog Device AD74412R
    * --------------------------------------------------------------------- */
   CfgFun_t fun[OA_AN_CHANNELS_NUM]; // function configuration x channel
-  volatile CfgFun_t update_fun[OA_AN_CHANNELS_NUM]; // function update configuration x channel
+  std::queue<ChConfig> update_fun[OA_AN_CHANNELS_NUM]; // function update configuration x channel
   CfgFun_t output_fun[OA_AN_CHANNELS_NUM]; // function for output
   CfgPwm pwm[OA_PWM_CHANNELS_NUM];  // pwm configuration x channel
   CfgAdc adc[OA_AN_CHANNELS_NUM];   // adc configuration x channel
@@ -81,11 +93,6 @@ private:
   uint8_t adc_ch_mask_1_last = 0;
 
   bool update_dac_using_LDAC = false;
-
-  /* used to avoid change of function while "adding" adc to
-   * a certain channel */
-  bool write_function_configuration[OA_AN_CHANNELS_NUM] = {
-      true, true, true, true, true, true, true, true};
 
   void setup_channels();
   bool configuration_to_be_updated();
@@ -216,7 +223,7 @@ public:
   /* ################################################################### */
   /* CONFIGURE CHANNEL FUNCTIONs                                         */
   /* ################################################################### */
-  void configureFunction(uint8_t ch, CfgFun_t f);
+  void configureFunction(uint8_t ch, CfgFun_t f, bool write = true);
   void sendFunction(uint8_t ch, CfgFun_t f);
   CfgFun_t getFunction(uint8_t ch);
 

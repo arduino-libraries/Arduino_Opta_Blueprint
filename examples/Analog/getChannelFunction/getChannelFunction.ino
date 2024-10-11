@@ -93,7 +93,7 @@ void loop() {
 
     if(ae) {
 
-      Serial.println("\n********* ANALOG EXPANSIO n. " + String(i));
+      Serial.println("\n********* ANALOG EXPANSION n. " + String(i));
 
       for(int ch = 0; ch < OA_AN_CHANNELS_NUM; ch++) {
         
@@ -104,7 +104,7 @@ void loop() {
            function choose before and then ask if the function is actually 
            been set up by the expansion 
 
-           the functions isCh... are called very called very quicly (as fast as
+           the functions isCh... are called very quicly (as fast as
            possible, because this is a test sketch 
            consider to relax a bit introducing a small delay ... */
 
@@ -134,7 +134,7 @@ void loop() {
             }
           }
           if(ae.isChAdc(ch,true) == false) {
-            Serial.println("!!!!!!!!!!!!!!!!! -----> Wrong ADC Type setting (expected VOLTAGE)");
+            Serial.println("Something wrong whit isChAdc");
           }
           Serial.println("  -> set in " + String(i) + " cycle ");
           }
@@ -150,7 +150,7 @@ void loop() {
             }
           }
           if(ae.isChAdc(ch,true) == false) {
-            Serial.println("!!!!!!!!!!!!!!!!! -----> Wrong ADC Type setting (expected CURRENT)");
+            Serial.println("Something wrong with isChAdc");
           }
           Serial.println("  -> set in " + String(i) + " cycle ");
           }
@@ -167,7 +167,7 @@ void loop() {
             }
           }
           if(ae.isChDac(ch,true) == false) {
-            Serial.println("!!!!!!!!!!!!!!!!! -----> Wrong DAC Type setting (expected VOLTAGE)");
+            Serial.println("Something wrong with isChDac");
           }
           Serial.println("  -> set in " + String(i) + " cycle ");
           }
@@ -185,7 +185,7 @@ void loop() {
             }
           }
           if(ae.isChDac(ch,true) == false) {
-            Serial.println("!!!!!!!!!!!!!!!!! ");
+            Serial.println("Something wrong with isChDac");
           }
           Serial.println("  -> set in " + String(i) + " cycle ");
           }
