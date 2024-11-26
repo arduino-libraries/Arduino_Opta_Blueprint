@@ -220,7 +220,8 @@ void updateTask() {
 void setup() {
 /* -------------------------------------------------------------------------- */    
   Serial.begin(115200);
-  delay(2000);
+  while(!Serial) {
+  }
 
   Serial.println("\n**** OPTA Expansions Updater sketch ****\n");
 
