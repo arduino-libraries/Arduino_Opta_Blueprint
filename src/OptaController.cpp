@@ -612,7 +612,7 @@ void Controller::checkForExpansions() {
     
     /* with this for loop a reset command is sent to every device (with temporary
        or final addresses )*/
-    for(int i = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 1; 
+    for(int i = OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS; 
         i < OPTA_CONTROLLER_FIRST_AVAILABLE_ADDRESS + 2*OPTA_CONTROLLER_MAX_EXPANSION_NUM; 
         i++) {
       _send(i, msg_opta_reset(), 0);
