@@ -1961,11 +1961,17 @@ bool OptaAnalog::parse_setup_adc_channel() {
 
     rtd[ch].is_rtd = false;
 
+    CfgFun_t tmp_f = CH_FUNC_HIGH_IMPEDENCE;
+
+    if(update_fun[ch].size() > 0) {
+      tmp_f = update_fun[ch].back().f;
+    }
+
     /* cannot wait for the fun[ch] to be updated if the add ADC is done immediately
      * after the begin DAC because it can take some times to update the channel
      * configuration. With this change we ensure that the last channel
      * configuration used is immediately checked */
-    if (update_fun[ch].back().f == CH_FUNC_VOLTAGE_OUTPUT &&
+    if ( (tmp_f == CH_FUNC_VOLTAGE_OUTPUT || fun[ch] == CH_FUNC_VOLTAGE_OUTPUT) &&
         write == false &&
         rx_buffer[OA_CH_ADC_TYPE_POS] == OA_CURRENT_ADC) {
       /* this is a special case:
