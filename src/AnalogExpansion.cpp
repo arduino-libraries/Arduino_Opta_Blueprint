@@ -271,19 +271,19 @@ void AnalogExpansion::beginChannelAsDigitalInput(uint8_t ch, bool filter,
   if (th < 0) {
     th = 0;
   }
-  float code = 15.0;
+  float code = 15.0f;
   /* the code to be written depends on the scale parameter (see AD74412R
    * datasheet for details)*/
   if (scale) {
     if (th > Vcc) {
       th = Vcc;
     }
-    code = (30.0 * th / Vcc) - 0.5;
+    code = (30.0f * th / Vcc) - 0.5f;
   } else {
-    if (th > 16.0) {
-      th = 16.0;
+    if (th > 16.0f) {
+      th = 16.0f;
     }
-    code = 2.0 * th - 1;
+    code = 2.0f * th - 1.0f;
   }
   iregs[ADD_OA_DI_THRESHOLD] = (uint8_t)code;
 
@@ -491,7 +491,7 @@ uint8_t AnalogExpansion::msg_begin_rtd() {
 
       Float_u v;
       v.value =
-          (fregs[ADD_OA_RTD_CURRENT] < 25.0) ? fregs[ADD_OA_RTD_CURRENT] : 25.0;
+          (fregs[ADD_OA_RTD_CURRENT] < 25.0f) ? fregs[ADD_OA_RTD_CURRENT] : 25.0f;
       for (int i = 0; i < 4; i++) {
         ctrl->setTx(v.bytes[i], OA_CH_RTD_CURRENT_POS + i);
       }
@@ -604,9 +604,9 @@ void AnalogExpansion::setDefaultPwm(uint8_t ch, uint32_t period, uint32_t pulse)
     float period = (float)getPwmPeriod(ch);
     if(period > 0) {
       period = period / 1000000; //get seconds 
-      return 1 / period;
+      return 1.0f / period;
     }
-    return 0.0;
+    return 0.0f;
 
   }
 
@@ -616,9 +616,9 @@ void AnalogExpansion::setDefaultPwm(uint8_t ch, uint32_t period, uint32_t pulse)
     float period = (float)getPwmPeriod(ch);
     float pulse = (float)getPwmPulse(ch);
     if(period > 0 && pulse <= period) {
-      return pulse * 100.0 / period;
+      return pulse * 100.0f / period;
     }
-    return 0.0;
+    return 0.0f;
 
   }
 
@@ -719,13 +719,13 @@ float AnalogExpansion::pinVoltage(uint8_t ch, bool update /*= true*/) {
     if(output_value > 8191) {
       output_value = 8191;
     }
-    return (float)output_value * 11.0 / 8191.0; 
+    return (float)output_value * 11.0f / 8191.0f; 
   }
   else if (cfgs[index].isVoltageAdcCh(ch)) {
     uint16_t v = getAdc(ch, update);
-    return 10.0 * (float)v / 65535.0;
+    return 10.0f * (float)v / 65535.0f;
   }
-  return -1.0;
+  return -1.0f;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -736,20 +736,20 @@ float AnalogExpansion::pinCurrent(uint8_t ch, bool update /*= true*/) {
     if(output_value > 8191) {
       output_value = 8191;
     }
-    float rv = (float)output_value * 25.0 / 8191.0;
+    float rv = (float)output_value * 25.0f/ 8191.0f;
     return rv;
   }
   else if (cfgs[index].isVoltageDacCh(ch) && cfgs[index].isCurrentAdcCh(ch)) {
     float code = (float)getAdc(ch, update);
-    float current = (code / 65535.0) * 5.0;
-    current = current - 2.5;
-    current = current / 100.0;
-    return current * 1000.0; // convert to mA
+    float current = (code / 65535.0f) * 5.0f;
+    current = current - 2.5f;
+    current = current / 100.0f;
+    return current * 1000.0f; // convert to mA
   } else if (cfgs[index].isCurrentAdcCh(ch)) {
     uint16_t v = getAdc(ch, update);
-    return 25.0 * (float)v / 65535.0;
+    return 25.0f* (float)v / 65535.0f;
   }
-  return -1.0;
+  return -1.0f;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -790,10 +790,10 @@ void AnalogExpansion::setDefaultDac(uint8_t ch, uint16_t value) {
 bool AnalogExpansion::setDefaultPinVoltage(uint8_t ch, float voltage ) {
   if(ch < OA_AN_CHANNELS_NUM) {
     if(cfgs[index].isVoltageDacCh(ch)) {
-      if (voltage > 11.0) {
-        voltage = 11.0;
+      if (voltage > 11.0f) {
+        voltage = 11.0f;
       }
-      float v = 8191.0 * voltage / 11.0;
+      float v = 8191.0f * voltage / 11.0f;
       setDefaultDac(ch, (uint16_t)v);
       return true;
     }
@@ -806,10 +806,10 @@ bool AnalogExpansion::setDefaultPinVoltage(uint8_t ch, float voltage ) {
 bool AnalogExpansion::setDefaultPinCurrent(uint8_t ch, float current) {
   if(ch < OA_AN_CHANNELS_NUM) {
     if(cfgs[index].isCurrentDacCh(ch)) {
-      if (current > 25.0) {
-        current = 25.0;
+      if (current > 25.0f) {
+        current = 25.0f;
       }
-      float v = 8191.0 * current / 25.0;
+      float v = 8191.0f * current / 25.0f;
       setDefaultDac(ch, (uint16_t)v);
       return true;
     }
@@ -877,10 +877,10 @@ void AnalogExpansion::updateAnalogOutputs() { execute(SET_ALL_ANALOG_OUTPUTS); }
 void AnalogExpansion::pinVoltage(uint8_t ch, float voltage,
                                  bool update /*= true*/) {
   if(cfgs[index].isVoltageDacCh(ch)) {
-    if (voltage > 11.0) {
-      voltage = 11.0;
+    if (voltage > 11.0f) {
+      voltage = 11.0f;
     }
-    float v = 8191.0 * voltage / 11.0;
+    float v = 8191.0f * voltage / 11.0f;
     setDac(ch, (uint16_t)v, update);
   }
 }
@@ -888,23 +888,23 @@ void AnalogExpansion::pinVoltage(uint8_t ch, float voltage,
 void AnalogExpansion::pinCurrent(uint8_t ch, float current,
                                  bool update /* = true*/) {
   if(cfgs[index].isCurrentDacCh(ch)) {
-    if (current > 25.0) {
-      current = 25.0;
+    if (current > 25.0f) {
+      current = 25.0f;
     }
-    float v = 8191.0 * current / 25.0;
+    float v = 8191.0f * current / 25.0f;
     setDac(ch, (uint16_t)v, update);
   }
 }
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 float AnalogExpansion::getRtd(uint8_t ch) {
   if (ch >= OA_AN_CHANNELS_NUM) {
-    return 0;
+    return 0.0f;
   }
   iregs[ADD_OA_PIN] = ch;
   /*uint32_t err = */ execute(GET_RTD);
   /*Serial.println("GET RTD err = " + String(err));*/
   if (fregs[BASE_OA_RTD_ADDRESS + ch] <= 0) {
-    return -1.0;
+    return -1.0f;
   }
   return fregs[BASE_OA_RTD_ADDRESS + ch];
 }

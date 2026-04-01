@@ -19,6 +19,7 @@
 #include "OptaExpansion.h"
 #include <cstdint>
 #include <stdint.h>
+#include <string>
 
 namespace Opta {
 

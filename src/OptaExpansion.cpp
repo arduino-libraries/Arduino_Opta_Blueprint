@@ -254,7 +254,9 @@ void Expansion::get_flash_data(uint8_t *buf, uint8_t &dbuf, uint16_t &add) {
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-bool Expansion::verify_address(unsigned int add) { return false; }
+bool Expansion::verify_address(unsigned int add) { 
+  (void)add;
+  return false; }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 bool Expansion::getFwVersion(uint8_t &major, uint8_t &minor, uint8_t &release) {

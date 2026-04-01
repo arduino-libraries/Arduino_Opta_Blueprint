@@ -37,11 +37,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef ARDUINO
-//#include <Arduino_DebugUtils.h>
-//#define printf DEBUG_DEBUG
-#endif
-
 using namespace std;
 
 // XMODEM definitions
@@ -57,6 +52,16 @@ using namespace std;
 #define TIMEOUT_QUICK 100
 #define TIMEOUT_NORMAL 1000
 #define TIMEOUT_LONG 5000
+
+#define STR_HELPER(y) #y
+#define FRMX(y) STR_HELPER(y)
+
+#ifndef ARDUINO_ARCH_ZEPHYR
+#define LONG_FRM lX
+#else
+#define LONG_FRM X
+#endif
+
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
@@ -179,9 +184,9 @@ bool Samba::writeByte(uint32_t addr, uint8_t value) {
   uint8_t cmd[14];
 
   if (_debug)
-    printf("%s(addr=%#x,value=%#x)\n", __FUNCTION__, addr, value);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ",value=%#x)\n", __FUNCTION__, addr, value);
 
-  snprintf((char *)cmd, sizeof(cmd), "O%08X,%02X#", addr, value);
+  snprintf((char *)cmd, sizeof(cmd), "O%08" FRMX(LONG_FRM) ",%02X#", addr, value);
   if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
     return false;
     
@@ -203,7 +208,7 @@ uint8_t Samba::readByte(uint32_t addr) {
   uint8_t cmd[13];
   uint8_t value;
 
-  snprintf((char *)cmd, sizeof(cmd), "o%08X,4#", addr);
+  snprintf((char *)cmd, sizeof(cmd), "o%08" FRMX(LONG_FRM) ",4#", addr);
   if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
     return 0;
   if (_port->read(cmd, sizeof(uint8_t)) != sizeof(uint8_t))
@@ -212,7 +217,7 @@ uint8_t Samba::readByte(uint32_t addr) {
   value = cmd[0];
 
   if (_debug)
-    printf("%s(addr=%#x)=%#x\n", __FUNCTION__, addr, value);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ")=%#x\n", __FUNCTION__, addr, value);
 
   return value;
 }
@@ -221,9 +226,9 @@ void Samba::writeWord(uint32_t addr, uint32_t value) {
   uint8_t cmd[20];
 
   if (_debug)
-    printf("%s(addr=%#x,value=%#x)\n", __FUNCTION__, addr, value);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ",value=%#" FRMX(LONG_FRM) ")\n", __FUNCTION__, addr, value);
 
-  snprintf((char *)cmd, sizeof(cmd), "W%08X,%08X#", addr, value);
+  snprintf((char *)cmd, sizeof(cmd), "W%08" FRMX(LONG_FRM) ",%08" FRMX(LONG_FRM) "#", addr, value);
   if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
     return;
 
@@ -243,7 +248,7 @@ uint32_t Samba::readWord(uint32_t addr) {
   uint8_t cmd[13];
   uint32_t value;
 
-  snprintf((char *)cmd, sizeof(cmd), "w%08X,4#", addr);
+  snprintf((char *)cmd, sizeof(cmd), "w%08" FRMX(LONG_FRM) ",4#", addr);
   if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
     return 0;
   if (_port->read(cmd, sizeof(uint32_t)) != sizeof(uint32_t))
@@ -252,7 +257,7 @@ uint32_t Samba::readWord(uint32_t addr) {
   value = (cmd[3] << 24 | cmd[2] << 16 | cmd[1] << 8 | cmd[0] << 0);
 
   if (_debug)
-    printf("%s(addr=%#x)=%#x\n", __FUNCTION__, addr, value);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ")=%#" FRMX(LONG_FRM) "\n", __FUNCTION__, addr, value);
 
   return value;
 }
@@ -422,10 +427,10 @@ void Samba::writeBinary(const uint8_t *buffer, int size) {
 
 void Samba::read(uint32_t addr, uint8_t *buffer, int size) {
   uint8_t cmd[20];
-  int chunk;
+  unsigned int chunk;
 
   if (_debug)
-    printf("%s(addr=%#x,size=%#x)\n", __FUNCTION__, addr, size);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ",size=%#x)\n", __FUNCTION__, addr, (unsigned int)size);
 
   // The SAM firmware has a bug reading powers of 2 over 32 bytes
   // via USB.  If that is the case here, then read the first byte
@@ -444,7 +449,7 @@ void Samba::read(uint32_t addr, uint8_t *buffer, int size) {
     else
       chunk = size;
 
-    snprintf((char *)cmd, sizeof(cmd), "R%08X,%08X#", addr, chunk);
+    snprintf((char *)cmd, sizeof(cmd), "R%08" FRMX(LONG_FRM) ",%08X#", addr, chunk);
     if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
       return;
 
@@ -463,9 +468,9 @@ bool Samba::write(uint32_t addr, const uint8_t *buffer, int size) {
   uint8_t cmd[20];
 
   if (_debug)
-    printf("%s(addr=%#x,size=%#x)\n", __FUNCTION__, addr, size);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ",size=%#x)\n", __FUNCTION__, addr, (unsigned int)size);
 
-  snprintf((char *)cmd, sizeof(cmd), "S%08X,%08X#", addr, size);
+  snprintf((char *)cmd, sizeof(cmd), "S%08" FRMX(LONG_FRM) ",%08X#", addr, (unsigned int)size);
   if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1) {
     return false;
   }
@@ -492,9 +497,9 @@ void Samba::go(uint32_t addr) {
   uint8_t cmd[11];
 
   if (_debug)
-    printf("%s(addr=%#x)\n", __FUNCTION__, addr);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ")\n", __FUNCTION__, addr);
 
-  snprintf((char *)cmd, sizeof(cmd), "G%08X#", addr);
+  snprintf((char *)cmd, sizeof(cmd), "G%08" FRMX(LONG_FRM) "#", addr);
   if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
     return;
 
@@ -584,9 +589,9 @@ void Samba::chipErase(uint32_t start_addr) {
   uint8_t cmd[64];
 
   if (_debug)
-    printf("%s(addr=%#x)\n", __FUNCTION__, start_addr);
+    printf("%s(addr=%#" FRMX(LONG_FRM) ")\n", __FUNCTION__, start_addr);
 
-  int l = snprintf((char *)cmd, sizeof(cmd), "X%08X#", start_addr);
+  int l = snprintf((char *)cmd, sizeof(cmd), "X%08" FRMX(LONG_FRM) "#", start_addr);
   if (_port->write(cmd, l) != l)
     return;
   _port->timeout(TIMEOUT_LONG);
@@ -606,11 +611,11 @@ bool Samba::writeBuffer(uint32_t src_addr, uint32_t dst_addr, uint32_t size) {
   }
 
   if (_debug)
-    printf("%s(scr_addr=%#x, dst_addr=%#x, size=%#x)\n", __FUNCTION__, src_addr,
+    printf("%s(scr_addr=%#" FRMX(LONG_FRM) ", dst_addr=%#" FRMX(LONG_FRM) ", size=%#" FRMX(LONG_FRM) ")\n", __FUNCTION__, src_addr,
            dst_addr, size);
 
   uint8_t cmd[64];
-  int l = snprintf((char *)cmd, sizeof(cmd), "Y%08X,0#", src_addr);
+  int l = snprintf((char *)cmd, sizeof(cmd), "Y%08" FRMX(LONG_FRM) ",0#", src_addr);
 
   if (_port->write(cmd, l) != l) {
     return false;
@@ -625,7 +630,7 @@ bool Samba::writeBuffer(uint32_t src_addr, uint32_t dst_addr, uint32_t size) {
     return false;
   }
 
-  l = snprintf((char *)cmd, sizeof(cmd), "Y%08X,%08X#", dst_addr, size);
+  l = snprintf((char *)cmd, sizeof(cmd), "Y%08" FRMX(LONG_FRM) ",%08" FRMX(LONG_FRM) "#", dst_addr, size);
   if (_port->write(cmd, l) != l) {
     return false;
   }
@@ -649,10 +654,10 @@ uint16_t Samba::checksumBuffer(uint32_t start_addr, uint32_t size) {
   }
 
   if (_debug)
-    printf("%s(start_addr=%#x, size=%#x) = ", __FUNCTION__, start_addr, size);
+    printf("%s(start_addr=%#" FRMX(LONG_FRM) ", size=%#" FRMX(LONG_FRM) ") = ", __FUNCTION__, start_addr, size);
 
   uint8_t cmd[64];
-  int l = snprintf((char *)cmd, sizeof(cmd), "Z%08X,%08X#", start_addr, size);
+  int l = snprintf((char *)cmd, sizeof(cmd), "Z%08" FRMX(LONG_FRM) ",%08" FRMX(LONG_FRM) "#", start_addr, size);
   if (_port->write(cmd, l) != l) {
     return 0;
   }
@@ -666,11 +671,11 @@ uint16_t Samba::checksumBuffer(uint32_t start_addr, uint32_t size) {
   }
 
   cmd[9] = 0;
-  //errno = 0;
+  
   uint32_t res = strtol((char *)&cmd[1], NULL, 16);
 
   if (_debug)
-    printf("%x\n", res);
+    printf("%" FRMX(LONG_FRM) "\n", res);
   return res;
 }
 
