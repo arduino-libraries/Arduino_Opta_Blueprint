@@ -14,7 +14,11 @@
 #ifndef CONTROLLERCFG_H
 #define CONTROLLERCFG_H
 /* the pin used by CONTROLLER to identify if MODULES are connected */
+#ifndef ARDUINO_ARCH_ZEPHYR
 #define OPTA_CONTROLLER_DETECT_PIN PG_8
+#else
+#define OPTA_CONTROLLER_DETECT_PIN 20
+#endif 
 /* the maximum number of opta expansion that can be attached */
 /* initial delay once the reset command has been sent, it waits for all Modules
  * to perform its own initialization */

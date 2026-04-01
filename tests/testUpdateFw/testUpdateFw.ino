@@ -15,7 +15,7 @@
 #include "utility/BossaOpta.h"
 #include "fwUpdateDigital.h"
 #include "fwUpdateAnalog.h"
-#include "BossaArduino.h"
+
 
 /* if this is defined the sketch will ask for a confirmation via serial to 
  * actually perform the fw update */

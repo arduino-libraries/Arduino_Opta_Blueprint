@@ -13,7 +13,6 @@
 
 #include "OptaBlue.h"
 #include "utility/BossaOpta.h"
-#include "BossaArduino.h"
 #include <string>
 
 using namespace mbed;

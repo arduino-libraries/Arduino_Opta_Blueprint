@@ -21,7 +21,8 @@
 
 #include "Arduino.h"
 #include "utility/BossaOpta.h"
-#include <Arduino_DebugUtils.h>
+
+char buffer[256];
 
 void BossaOptaObserver::onProgress(int num, int div) {
 
@@ -33,18 +34,18 @@ void BossaOptaObserver::onProgress(int num, int div) {
     return;
   }
 
-  Debug.newlineOff();
-  DEBUG_INFO("\r[");
+  Serial.print("\r[");
+
   while (ticks-- > 0) {
-    DEBUG_INFO("=");
+    Serial.print("=");
     bars--;
   }
   while (bars-- > 0) {
-    DEBUG_INFO(" ");
+      Serial.print(" ");
   }
-  Debug.newlineOn();
 
-  DEBUG_INFO("] %d%% (%d/%d pages)", num * 100 / div, num, div);
+  snprintf(buffer, 256, "] %d%% (%d/%d pages)", num * 100 / div, num, div);
+  Serial.println(buffer);
 
   _lastTicks = 0;
 }
@@ -69,17 +70,17 @@ bool BossaOpta::begin(HardwareSerial &serial, Controller *c, uint8_t device,
 
     if (device < initial_num_of_devices) {
       if (reboot) {
-        DEBUG_INFO("Rebooting device...");
+        Serial.print("Rebooting device...");
         if (ctrl->rebootExpansion(device)) {
-          DEBUG_INFO(" OK!");
-          DEBUG_INFO("Connecting to bootloader...");
+          Serial.println(" OK!");
+          Serial.print("Connecting to bootloader...");
           if (!_samba.connect(port, 115200)) {
-            DEBUG_INFO(" FAILED connection");
+            Serial.println(" FAILED connection");
 
             rv = false;
           }
         } else {
-          DEBUG_INFO(" FAILED reboot!");
+          Serial.println(" FAILED reboot!");
           rv = false;
         }
       } else {
@@ -88,11 +89,11 @@ bool BossaOpta::begin(HardwareSerial &serial, Controller *c, uint8_t device,
         }
       }
     } else {
-      DEBUG_INFO(" FAILED! (wrong device)");
+      Serial.println(" FAILED! (wrong device)");
       rv = false;
     }
   } else {
-    DEBUG_INFO(" FAILED! (blocked)");
+    Serial.println(" FAILED! (blocked)");
     rv = false;
   }
 
