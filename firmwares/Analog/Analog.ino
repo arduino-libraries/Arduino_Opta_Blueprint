@@ -11,7 +11,6 @@
 #include "OptaAnalog.h"
 
 
-
 #ifdef DEBUG_SERIAL
 OptaAnalog *oa; 
 #endif

@@ -134,10 +134,14 @@ void OptaAnalog::updatePwm(uint8_t ch) {
   } 
   else {
     if (pwm[ch].set_pulse_us <= pwm[ch].set_period_us) {
-      if (pwm[ch].set_period_us != pwm[ch].period_us || pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
+      if (pwm[ch].period_us == 0) {
         pwm[ch].pwm.resume();
+      }
+      if (pwm[ch].set_period_us != pwm[ch].period_us) {
         pwm[ch].pwm.period_us(pwm[ch].set_period_us);
-        pwm[ch].pwm.pulseWidth_us(pwm[ch].set_pulse_us);      
+      }
+      if (pwm[ch].set_pulse_us != pwm[ch].pulse_us) {
+        pwm[ch].pwm.pulseWidth_us(pwm[ch].set_pulse_us);
       }
     }
   }
