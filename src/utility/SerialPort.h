@@ -26,7 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///////////////////////////////////////////////////////////////////////////////
-#ifdef ARDUINO_OPTA
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
 
 #ifndef _SERIALPORT_H
 #define _SERIALPORT_H

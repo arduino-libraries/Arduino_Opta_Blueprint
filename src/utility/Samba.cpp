@@ -26,7 +26,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///////////////////////////////////////////////////////////////////////////////
-#ifdef ARDUINO_OPTA
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
 #include "Samba.h"
 
 #include <ctype.h>
@@ -149,7 +149,7 @@ bool Samba::connect(SerialPort::Ptr port, int bps) {
   // Try to connect at a high speed if USB
   _isUsb = _port->isUsb();
   if (_isUsb) {
-#ifdef ARDUINO_OPTA
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
     if (_port->open(115200) && init())
 #else
     if (_port->open(230400) && init())

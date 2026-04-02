@@ -13,11 +13,11 @@
 
 #ifndef BOSSAOPTA_INCLUDED
 #define BOSSAOPTA_INCLUDED
-
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
 #include "OptaController.h"
 #include <stdint.h>
 #include <string>
-#ifdef ARDUINO_OPTA
+
 
 #include "Arduino.h"
 #include "utility/Samba.h"

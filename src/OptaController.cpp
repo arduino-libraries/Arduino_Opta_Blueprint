@@ -11,13 +11,12 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
 #include "OptaBlue.h"
 #include "OptaBluePrintCfg.h"
 #include "OptaBlueProtocol.h"
 #include <cstdint>
 #include <stdint.h>
-#ifdef ARDUINO_OPTA
 #include "AnalogExpansion.h"
 #include "DigitalCommonCfg.h"
 #include "DigitalExpansion.h"

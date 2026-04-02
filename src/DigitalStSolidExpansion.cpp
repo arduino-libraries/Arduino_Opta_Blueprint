@@ -11,7 +11,7 @@
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
 
-#ifdef ARDUINO_OPTA
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
 #include "DigitalStSolidExpansion.h"
 namespace Opta {
 DigitalStSolidExpansion::DigitalStSolidExpansion() {}

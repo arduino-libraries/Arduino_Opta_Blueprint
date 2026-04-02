@@ -10,9 +10,8 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
 #include <stdint.h>
-#ifdef ARDUINO_OPTA
 #include "DigitalExpansion.h"
 #include "DigitalMechExpansion.h"
 #include "DigitalStSolidExpansion.h"
