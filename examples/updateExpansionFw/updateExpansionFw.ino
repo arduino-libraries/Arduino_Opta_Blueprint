@@ -15,15 +15,19 @@
 #include "utility/BossaOpta.h"
 #include "fwUpdateDigital.h"
 #include "fwUpdateAnalog.h"
-#include "BossaArduino.h"
+
 
 /* if this is defined the sketch will ask for a confirmation via serial to 
  * actually perform the fw update */
 #define ASK_FOR_FW_UPDATE 
 
+#ifndef ARDUINO_ARCH_ZEPHYR
 using namespace mbed;
 
 UART BossaSerial(D14, D13, NC, NC);
+#else
+#define BossaSerial Serial2
+#endif
 
 /* opta_analog_fw_update contains the fw update for analog expansion 
  * opta_digital_fw_update_contains the fw update for digital expansion
@@ -43,8 +47,6 @@ static unsigned char od_M = opta_digital_fw_update[od_fw_size + 1];
 static unsigned char od_m = opta_digital_fw_update[od_fw_size + 2];
 static unsigned char od_r = opta_digital_fw_update[od_fw_size + 3];
 static unsigned int  od_version = (od_M << 16) | (od_m << 8) | od_r;
-
-static char *fileptr = nullptr;
 
 
 /* print the expansion type */

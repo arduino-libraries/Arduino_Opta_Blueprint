@@ -20,14 +20,25 @@
 #ifdef ARDUINO_OPTA
 
 #include "Arduino.h"
-#include <Arduino_SerialUpdater.h>
+#include "utility/Samba.h"
+
+class FlasherObserver {
+public:
+  FlasherObserver() {}
+  virtual ~FlasherObserver() {}
+
+  virtual void onStatus(const char *message, ...) = 0;
+  virtual void onProgress(int num, int div) = 0;
+};
 
 class BossaOptaObserver : public FlasherObserver {
 public:
   BossaOptaObserver() : _lastTicks(-1) {}
   virtual ~BossaOptaObserver() {}
 
-  virtual void onStatus(const char *message, ...){};
+  virtual void onStatus(const char *message, ...){
+    (void)message;
+  };
   virtual void onProgress(int num, int div);
 
 private:
@@ -37,7 +48,9 @@ private:
 class BossaOpta {
 public:
   BossaOpta(FlasherObserver &observer)
-      : ctrl(nullptr), initial_num_of_devices(0), block_updates(false) {}
+      : ctrl(nullptr), initial_num_of_devices(0), block_updates(false) {
+        (void)observer;
+      }
   virtual ~BossaOpta() {}
 
   /* pass the controller and the device index that has to be updated
@@ -58,7 +71,7 @@ private:
   // uint16_t calcCrc(const uint8_t *const b, uint32_t sz);
   Controller *ctrl;
   Samba _samba;
-  std::unique_ptr<Flash> _flash;
+  
   uint8_t initial_num_of_devices;
   bool block_updates;
 };
