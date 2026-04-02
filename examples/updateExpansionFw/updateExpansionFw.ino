@@ -80,6 +80,34 @@ void printVersion(unsigned char M, unsigned char m, unsigned char r) {
    Serial.println();
 }
 
+typedef enum {
+   NOT_UPDATABLE,
+   UPDATABLE,
+   UPDATED_DECLINED
+} UpdateStatus_t;
+
+static UpdateStatus_t update_status[OPTA_CONTROLLER_MAX_EXPANSION_NUM];
+
+bool update_finished() {
+   uint8_t n = OptaController.getExpansionNum();
+   for(uint8_t i = 0; i < n; i++) {
+      if(update_status[i] == UPDATABLE) {
+         return false;
+      }
+   }
+   return true;
+}
+
+void init_update_status() {
+   for(uint8_t i = 0; i < OPTA_CONTROLLER_MAX_EXPANSION_NUM; i++) {
+      update_status[i] = UPDATABLE;
+   }
+}
+
+
+static uint8_t exp_num = 0;
+
+
 /* verify if the device is updatable */
 bool isUpdatable(int device) {
    bool rv = false;
@@ -117,10 +145,11 @@ bool isUpdatable(int device) {
    return rv;
 }
 
-#ifdef ASK_FOR_FW_UPDATE
-bool ask_for_confirmation(int i) {
 
-   Serial.println("Expansion " + String(i) + " will be now updated... Proceed? [Y/n]");
+bool ask_for_confirmation(String &msg) {
+
+   Serial.println(msg);
+   
    bool first = true;;
    char ans = 'Y';
    while(!Serial.available()) {
@@ -135,28 +164,56 @@ bool ask_for_confirmation(int i) {
       }
    }
    if(ans == 'Y' || ans == 'y') {
-      Serial.println("Starting FW Update");
       return true;
    }
    else {
-     Serial.println("FW will NOT be updated!");
      return false;
    }
 }
-#endif
+
+
+bool check_expansions() {
+   uint8_t n = OptaController.getExpansionNum();
+   if(n == 0) {
+      return false;
+   } else if (n != exp_num) {
+      return false;
+   }
+   
+   for(uint8_t i = 0; i < n; i++) {
+      ExpansionType_t type = OptaController.getExpansionType(i);
+      if(type == EXPANSION_NOT_VALID || 
+         type == EXPANSION_DIGITAL_INVALID) {
+         return false;
+      }
+   }
+   return true;
+}
 
 void updateTask() {
+   static uint8_t current_expansion = 0;
+   
    static unsigned long start = millis();
    if(millis() - start > 500) {
       start = millis();
-      if(OptaController.getExpansionNum() > 0) {
-         for(int i = 0; i < OptaController.getExpansionNum(); i++) {
-            if(isUpdatable(i)) {
+      if(update_finished()) {
+         Serial.println("FW UPDATE COMPLETE!");
+
+         for(uint8_t i = 0; i < OptaController.getExpansionNum(); i++) {
+            if(update_status[i] == UPDATED_DECLINED) {
+               Serial.print(" Updated was skipped for expansion: ");
+               Serial.println(i);
+            }
+         }
+
+         Serial.println("If you wish to perform the update againg, reset the Opta Controller");
+         delay(1500);
+      } else if(check_expansions() && current_expansion < OPTA_CONTROLLER_MAX_EXPANSION_NUM) {
+            if(isUpdatable(current_expansion)) {
                unsigned char *fw = nullptr;
                uint32_t sz = 0;
 
-               
-               ExpansionType_t type = OptaController.getExpansionType(i);
+               ExpansionType_t type = OptaController.getExpansionType(current_expansion);
                if(EXPANSION_OPTA_DIGITAL_MEC == type || EXPANSION_OPTA_DIGITAL_STS == type) {
                   fw = (unsigned char *)opta_digital_fw_update;
                   sz = od_fw_size;
@@ -166,50 +223,65 @@ void updateTask() {
                }
                
                if(sz == 0 || fw == nullptr) {
-                  continue;
+                  return;
                }
 
                Serial.print("REBOOTING expansion: ");
-
-             
                   
-                  if(BOSSA.begin(BossaSerial,&OptaController,i)) {
-                     Serial.println("BOSSA correctly initialized");
-                     #ifdef ASK_FOR_FW_UPDATE
-                     if(ask_for_confirmation(i)) {
-                        if(BOSSA.flash(fw,sz)) {
-                           Serial.println("UPDATE successfully performed... reset board");
-                           BOSSA.reset();
-                           
-                        }
-                        else {
-                           BOSSA.reset();
-                           
-                        }
+               if(BOSSA.begin(BossaSerial,&OptaController,current_expansion)) {
+                  Serial.println("BOSSA correctly initialized");
+                  #ifdef ASK_FOR_FW_UPDATE
+                  String msg = "Expansion ";
+                  msg += String(current_expansion);
+                  msg += " will be now updated... Proceed? [Y/n]";
+
+                  if(ask_for_confirmation(msg)) {
+                     Serial.println("Starting FW Update");
+                     if(BOSSA.flash(fw,sz)) {
+                        Serial.println("UPDATE successfully performed... reset board");
+                        BOSSA.reset();
+                        update_status[current_expansion] = NOT_UPDATABLE;
                      }
                      else {
                         BOSSA.reset();
-                       
                      }
-                     #else
-                     if(BOSSA.flash(fw,sz)) {
-                           Serial.println("UPDATE successfully performed... reset board");
-                        BOSSA.reset();
-                       
-                     }
-                     #endif
                   }
                   else {
-                     Serial.println("FAILED to initialize BOSSA...");
+                     update_status[current_expansion] = UPDATED_DECLINED;
+                     Serial.println("FW will NOT be updated!");
                      BOSSA.reset();
                     
                   }
-               
+                  #else
+                  if(BOSSA.flash(fw,sz)) {
+                     update_status[current_expansion] = NOT_UPDATABLE;
+                     Serial.println("UPDATE successfully performed... reset board");
+                     BOSSA.reset();
+                  }
+                  #endif
+               }
+               else {
+                  Serial.println("FAILED to initialize BOSSA...");
+                  BOSSA.reset();
+               }
             }
+            else {
+               update_status[current_expansion] = NOT_UPDATABLE;
+            }
+         current_expansion++;
+         if(current_expansion >= exp_num) {
+            current_expansion = 0;
          }
-      }
+      } ////
       else {
-         Serial.println("No expansion detected... connect an expansion");
+         Serial.println("[ERROR]: Wrong number of expansions or invalid type");
+         Serial.println("[!!!]: The FW Update is canceled. Please execute the following procedure");
+         Serial.println("       1. Power off all the expansions");
+         Serial.println("       2. Wait some time (15/20 seconds)");
+         Serial.println("       3. Power on the expansions again");
+         Serial.println("       4. Check connections and power then reset the Opta Controller to try again");
+         Serial.println();
+         delay(1500);
       }
    }
 }
@@ -221,6 +293,8 @@ void updateTask() {
 /* -------------------------------------------------------------------------- */
 void setup() {
 /* -------------------------------------------------------------------------- */    
+  init_update_status();
+  
   Serial.begin(115200);
   while(!Serial) {
   }
@@ -233,7 +307,44 @@ void setup() {
   Serial.print("  - OPTA ** ANALOG ** to version: ");
   printVersion(oa_M, oa_m, oa_r);
 
-  OptaController.begin(); 
+  OptaController.begin();
+
+  exp_num = OptaController.getExpansionNum();
+
+  Serial.print("- Found ");
+  Serial.print(exp_num);
+  Serial.println(" expansions");
+
+  if(exp_num == 0) {
+      while(1) {
+         Serial.println("[!!!]: The FW Update will NOT be executed.");
+         Serial.println("       No expansions to update were detected.");
+         Serial.println("       Check connections and power then reset the Opta Controller to try again");
+         Serial.println();
+         delay(2000);
+      }
+  }
+
+  while(Serial.available()) {
+      Serial.read();
+  }
+
+
+  String msg = "Is the numbe of detected expansions correct? [Y/N]";
+  if(ask_for_confirmation(msg) == false) {
+      while(1) {
+         Serial.println("[ERROR]: the number of detected expansion is not correct");
+         Serial.println("         Please check the connections");
+         Serial.println("         Are all the expansion correctly powered with DC power (12/24V)?");
+         Serial.println();
+         Serial.println("[!!!]: The FW Update will NOT be executed.");
+         Serial.println("       Check connections and power then reset the Opta Controller to try again");
+         Serial.println();
+         delay(2000);
+      }
+  }
+
+
 }
 
 /* -------------------------------------------------------------------------- */
