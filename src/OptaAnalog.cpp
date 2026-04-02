@@ -156,18 +156,20 @@ void OptaAnalog::updatePwmWithDefault(uint8_t ch) {
   if (ch >= OA_PWM_CHANNELS_NUM) {
     return;
   }
-
-  /* only if PWM is used */
   
   if(pwm_period_defaults[ch] == 0) {
     pwm[ch].pwm.suspend();
   } 
   else {
     if (pwm_pulse_defaults[ch] <= pwm_period_defaults[ch]) {
-      if (pwm_period_defaults[ch] != pwm[ch].period_us || pwm_pulse_defaults[ch] != pwm[ch].pulse_us) {
+      if (pwm[ch].period_us == 0) {
         pwm[ch].pwm.resume();
+      }
+      if (pwm_period_defaults[ch] != pwm[ch].period_us) {
         pwm[ch].pwm.period_us(pwm_period_defaults[ch]);
-        pwm[ch].pwm.pulseWidth_us(pwm_pulse_defaults[ch]);      
+      }
+      if(pwm_pulse_defaults[ch] != pwm[ch].pulse_us) {
+        pwm[ch].pwm.pulseWidth_us(pwm_pulse_defaults[ch]); 
       }
     }
   }
