@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cstdint>
 using namespace std;
 
 #define EXP_TYPE_DIGITAL 1

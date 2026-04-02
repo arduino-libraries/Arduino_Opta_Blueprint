@@ -396,7 +396,7 @@ int DigitalExpansion::analogRead(int pin, bool update /*= true*/) {
 
 float DigitalExpansion::pinVoltage(int pin, bool update /* = true*/) {
   float bit = (float)analogRead(pin, update);
-  return bit * 3.3 / 16383.0 / 0.1162;
+  return bit * 3.3f / 16383.0f / 0.1162f;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
