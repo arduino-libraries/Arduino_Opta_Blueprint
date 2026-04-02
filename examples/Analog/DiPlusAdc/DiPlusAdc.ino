@@ -15,6 +15,9 @@
 
 #include "OptaBlue.h"
 
+// change this with the index of the analog expansion in your configuration
+#define ANALOG_EXPANSION_INDEX 2
+
 #define PERIODIC_UPDATE_TIME_ANALOG 2000
  
 #define DAC_VALUE_NUM 10
@@ -45,7 +48,7 @@ void updateAnalogExpansion() {
   
    Serial.println("\n*** OPTA ANALOG expansion ");
    
-   AnalogExpansion aexp = OptaController.getExpansion(0);
+   AnalogExpansion aexp = OptaController.getExpansion(ANALOG_EXPANSION_INDEX);
    
    if(!aexp) {
      return;
@@ -132,7 +135,7 @@ void setup() {
   }
 
   /* analog expansion must be in position 0 */
-  AnalogExpansion aexp = OptaController.getExpansion(0);
+  AnalogExpansion aexp = OptaController.getExpansion(ANALOG_EXPANSION_INDEX);
 
   if(aexp) {
      setupAnalogExpansion(aexp);
