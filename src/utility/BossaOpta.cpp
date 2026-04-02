@@ -10,14 +10,12 @@
                 at http://mozilla.org/MPL/2.0/.
    NOTES:                                                                     */
 /* -------------------------------------------------------------------------- */
-
+#if defined(ARDUINO_OPTA) || defined(OPTA_PINS)
+#if __has_include("utility/BossaOpta.h")
 #include <cstdint>
 #include <cstring>
 #include <stdint.h>
 
-#ifdef ARDUINO_OPTA
-
-#if __has_include("utility/BossaOpta.h")
 
 #include "Arduino.h"
 #include "utility/BossaOpta.h"
